@@ -92,6 +92,11 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
 	const actionsMenuRef = useRef<HTMLDivElement>(null)
 	const lastCreatedPath = useRef<string | null>(null)
+	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
+	const filterMenuRef = useRef<HTMLDivElement>(null)
+	const [activeFilters, setActiveFilters] = useState<{ columnId: string; columnName: string; icon: string }[]>([])
+	const [openFilterPill, setOpenFilterPill] = useState<string | null>(null)
+	const filterPillRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -364,6 +369,54 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		setActionsMenuOpen(false)
 	}, [getSelectedFiles, manager])
 
+	// ── Fechar menu de filtros ao clicar fora ────────────────────────────────
+
+	useEffect(() => {
+		if (!filterMenuOpen) return
+		const handler = (e: MouseEvent) => {
+			if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) {
+				setFilterMenuOpen(false)
+			}
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [filterMenuOpen])
+
+	// ── Fechar pill de filtro ao clicar fora ──────────────────────────────────
+
+	useEffect(() => {
+		if (!openFilterPill) return
+		const handler = (e: MouseEvent) => {
+			const pillEl = filterPillRefs.current[openFilterPill]
+			if (pillEl && !pillEl.contains(e.target as Node)) {
+				setOpenFilterPill(null)
+			}
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [openFilterPill])
+
+	// ── Filtros ───────────────────────────────────────────────────────────────
+
+	const getColumnIcon = (type: string) => {
+		const icons: Record<string, string> = {
+			title: '📄', text: 'Aa', number: '#', select: '◉',
+			multiselect: '◈', date: '📅', checkbox: '☑', formula: 'ƒ',
+		}
+		return icons[type] ?? '·'
+	}
+
+	const addFilter = (columnId: string, columnName: string, icon: string) => {
+		if (activeFilters.some(f => f.columnId === columnId)) return
+		setActiveFilters(prev => [...prev, { columnId, columnName, icon }])
+		setFilterMenuOpen(false)
+	}
+
+	const removeFilter = (columnId: string) => {
+		setActiveFilters(prev => prev.filter(f => f.columnId !== columnId))
+		if (openFilterPill === columnId) setOpenFilterPill(null)
+	}
+
 	// ── Toggle visibilidade de um campo ──────────────────────────────────────
 
 	const toggleFieldVisibility = useCallback(async (fieldId: string) => {
@@ -515,9 +568,84 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 					)}
 				</div>
 
+				{/* Pills de filtros ativos */}
+				{activeFilters.map(filter => (
+					<div
+						key={filter.columnId}
+						className="nb-filter-pill-wrapper"
+						ref={el => { filterPillRefs.current[filter.columnId] = el }}
+					>
+						<button
+							className={`nb-filter-pill ${openFilterPill === filter.columnId ? 'nb-filter-pill--active' : ''}`}
+							onClick={() => setOpenFilterPill(v => v === filter.columnId ? null : filter.columnId)}
+						>
+							<span className="nb-filter-pill-icon">{filter.icon}</span>
+							<span className="nb-filter-pill-name">{filter.columnName}</span>
+							<span
+								className="nb-filter-pill-remove"
+								onClick={e => { e.stopPropagation(); removeFilter(filter.columnId) }}
+								title="Remover filtro"
+							>×</span>
+						</button>
+
+						{openFilterPill === filter.columnId && (
+							<div className="nb-filter-pill-dropdown">
+								<div className="nb-menu-label">Filtro: {filter.columnName}</div>
+								<div className="nb-filter-pill-placeholder">Em breve</div>
+							</div>
+						)}
+					</div>
+				))}
+
 				<span className="nb-row-count">
 					{tableRows.length} {tableRows.length === 1 ? 'item' : 'itens'}
 				</span>
+
+				{/* Botão Filtros */}
+				<div className="nb-fields-menu-wrapper" ref={filterMenuRef} style={{ marginLeft: 'auto' }}>
+					<button
+						className={`nb-toolbar-btn nb-toolbar-btn--icon ${filterMenuOpen ? 'nb-toolbar-btn--active' : ''}`}
+						onClick={() => setFilterMenuOpen(v => !v)}
+						title="Filtros"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+							<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+						</svg>
+						{activeFilters.length > 0 && (
+							<span className="nb-hidden-badge">{activeFilters.length}</span>
+						)}
+					</button>
+
+					{filterMenuOpen && (
+						<div className="nb-fields-dropdown nb-filter-menu-dropdown">
+							<div className="nb-fields-dropdown-label">Filtrar por</div>
+							<button
+								className="nb-menu-item"
+								onClick={() => addFilter('_title', 'Nome', '📄')}
+								disabled={activeFilters.some(f => f.columnId === '_title')}
+							>
+								<span className="nb-menu-item-icon">📄</span>
+								<span>Nome</span>
+							</button>
+							{config.schema.map(col => (
+								<button
+									key={col.id}
+									className="nb-menu-item"
+									onClick={() => addFilter(col.id, col.name, getColumnIcon(col.type))}
+									disabled={activeFilters.some(f => f.columnId === col.id)}
+								>
+									<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
+									<span>{col.name}</span>
+								</button>
+							))}
+							<div className="nb-menu-separator" />
+							<button className="nb-menu-item" onClick={() => setFilterMenuOpen(false)}>
+								<span className="nb-menu-item-icon">⚡</span>
+								<span>Adicionar filtro avançado</span>
+							</button>
+						</div>
+					)}
+				</div>
 			</div>
 
 			{/* Tabela */}

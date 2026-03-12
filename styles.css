@@ -77,6 +77,10 @@
 	color: var(--text-normal);
 }
 
+.nb-toolbar-btn--icon {
+	padding: 4px 6px;
+}
+
 .nb-toolbar-btn--active {
 	background: var(--background-modifier-hover);
 	color: var(--text-normal);
@@ -717,4 +721,84 @@
 	text-align: center;
 	padding: 32px;
 	color: var(--text-muted);
+}
+
+/* ── Filter pills ────────────────────────────────────────────────────────── */
+
+.nb-filter-pill-wrapper {
+	position: relative;
+}
+
+.nb-filter-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 6px 2px 8px;
+	background: var(--background-modifier-hover);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 999px;
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.nb-filter-pill:hover,
+.nb-filter-pill--active {
+	border-color: var(--interactive-accent);
+	color: var(--interactive-accent);
+}
+
+.nb-filter-pill-icon {
+	font-size: 10px;
+}
+
+.nb-filter-pill-name {
+	font-weight: 500;
+}
+
+.nb-filter-pill-remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	font-size: 12px;
+	line-height: 1;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.nb-filter-pill-remove:hover {
+	background: var(--background-modifier-border);
+	color: var(--text-normal);
+}
+
+.nb-filter-pill-dropdown {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	z-index: 100;
+	min-width: 180px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	box-shadow: var(--shadow-l);
+	padding: 4px;
+}
+
+.nb-filter-pill-placeholder {
+	padding: 8px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+	text-align: center;
+}
+
+/* ── Filter menu dropdown (right-aligned) ────────────────────────────────── */
+
+.nb-filter-menu-dropdown {
+	left: auto;
+	right: 0;
+	min-width: 200px;
 }
