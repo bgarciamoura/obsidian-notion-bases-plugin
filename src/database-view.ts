@@ -42,7 +42,6 @@ export class DatabaseView extends ItemView {
 	async setState(state: DatabaseViewState, result: Parameters<ItemView['setState']>[1]): Promise<void> {
 		if (state.dbFilePath) {
 			this.dbFilePath = state.dbFilePath
-			this.exposeFile(this.dbFilePath)
 		}
 		await super.setState(state, result)
 		this.render()
@@ -54,7 +53,6 @@ export class DatabaseView extends ItemView {
 
 	setDatabaseFile(file: TFile): void {
 		this.dbFilePath = file.path
-		this.exposeFile(file.path)
 		this.render()
 	}
 
@@ -62,23 +60,10 @@ export class DatabaseView extends ItemView {
 		return this.dbFilePath
 	}
 
-	/**
-	 * Expõe this.file para que o Obsidian reconheça esta view como
-	 * "exibindo" o arquivo de database. Sem isso, o Obsidian não sabe
-	 * que o arquivo está aberto e sempre cria uma nova aba markdown ao
-	 * clicar no arquivo, causando conflito de inicialização do CodeMirror.
-	 */
-	private exposeFile(filePath: string): void {
-		const file = this.app.vault.getFileByPath(filePath)
-		if (file) {
-			// @ts-ignore — propriedade interna do FileView/ItemView que o
-			// Obsidian usa para detectar se um arquivo já está aberto
-			this.file = file
-		}
-	}
-
 	async onOpen(): Promise<void> {
-		// setState sempre é chamado após onOpen e faz o render correto
+		// Não renderiza aqui — setState é sempre chamado após onOpen
+		// e é quem faz o render com o estado correto.
+		// Se onOpen renderizar, causa um render em branco antes do setState.
 	}
 
 	async onClose(): Promise<void> {
@@ -90,6 +75,7 @@ export class DatabaseView extends ItemView {
 		const container = this.containerEl.children[1] as HTMLElement | undefined
 		if (!container) return
 
+		// Desmontar ANTES de limpar o DOM (ordem correta para o React)
 		if (this.root) {
 			this.root.unmount()
 			this.root = null

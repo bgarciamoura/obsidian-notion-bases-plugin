@@ -44,17 +44,17 @@ export default class NotionBasesPlugin extends Plugin {
 			},
 		})
 
-		// Interceptar abertura de _database.md no explorador de arquivos.
-		// Com this.file exposto na DatabaseView, o Obsidian já reconhece o
-		// arquivo como aberto e revela a aba existente diretamente (sem criar
-		// uma nova aba markdown). Este handler cobre o caso de primeira abertura
-		// (sem database view existente) e qualquer edge case.
+		// Interceptar abertura de _database.md no explorador de arquivos
 		this.registerEvent(
 			this.app.workspace.on('file-open', async file => {
 				if (!file || this._redirecting) return
 				if (!this.manager.isDatabaseFile(file)) return
 
-				// Procurar o leaf que está exibindo ESTE arquivo como markdown
+				// Procurar o leaf que está exibindo ESTE arquivo como markdown.
+				// Checar activeLeaf.getViewType() é instável: quando o Obsidian
+				// converte uma leaf de database → markdown para abrir o arquivo,
+				// file-open pode disparar antes da transição completar, fazendo o
+				// guard retornar true incorretamente e bloqueando o redirecionamento.
 				let targetLeaf: WorkspaceLeaf | null = null
 				this.app.workspace.iterateAllLeaves(leaf => {
 					if (targetLeaf) return
@@ -67,11 +67,16 @@ export default class NotionBasesPlugin extends Plugin {
 				if (!targetLeaf) return // Já aberto como database view — nada a fazer
 				const mdLeaf = targetLeaf as WorkspaceLeaf
 
-				// Se já existe uma aba com esse database, revelar e fechar a markdown
+				// Se já existe uma aba com esse database aberto, fechar a nova
+				// aba markdown e revelar a existente em vez de criar outra.
 				const existingLeaf = this.findDatabaseLeaf(file.path)
 				if (existingLeaf) {
 					this.app.workspace.revealLeaf(existingLeaf)
-					mdLeaf.detach()
+					// Fechar somente após o editor CodeMirror estar completamente
+					// inicializado. Se fecharmos antes, saveHistory() falha com
+					// "Field is not present in this state" porque o StateField
+					// history ainda não foi registrado no estado do editor.
+					this.detachWhenEditorReady(mdLeaf)
 					return
 				}
 
@@ -107,11 +112,24 @@ export default class NotionBasesPlugin extends Plugin {
 	// ── Helpers ──────────────────────────────────────────────────────────────
 
 	async openOrCreateDatabase() {
+		// getActiveFile() retorna null quando a leaf ativa é uma database view
+		// (ItemView não expõe .file). Nesses casos, usar a pasta do próprio database.
 		const activeFile = this.app.workspace.getActiveFile()
-		const folderPath = activeFile?.parent?.path ?? ''
+		let folderPath = activeFile?.parent?.path ?? ''
+
+		if (!activeFile) {
+			const activeLeaf = this.app.workspace.activeLeaf
+			if (activeLeaf?.view instanceof DatabaseView) {
+				const dbPath = (activeLeaf.view as DatabaseView).getDatabaseFilePath()
+				const dbFile = this.app.vault.getFileByPath(dbPath)
+				folderPath = dbFile?.parent?.path ?? ''
+			}
+		}
+
 		const existing = this.manager.getDatabaseFileInFolder(folderPath)
 
 		if (existing) {
+			// Se já existe uma aba com esse database, apenas revelá-la
 			const existingLeaf = this.findDatabaseLeaf(existing.path)
 			if (existingLeaf) {
 				this.app.workspace.revealLeaf(existingLeaf)
@@ -135,6 +153,7 @@ export default class NotionBasesPlugin extends Plugin {
 	}
 
 	async openDatabaseInLeaf(leaf: WorkspaceLeaf, file: TFile) {
+		// setViewState cria a DatabaseView e chama setState com o state fornecido
 		await leaf.setViewState({
 			type: DATABASE_VIEW_TYPE,
 			state: { dbFilePath: file.path },
@@ -142,10 +161,33 @@ export default class NotionBasesPlugin extends Plugin {
 		})
 		this.app.workspace.revealLeaf(leaf)
 
+		// Garantia extra: chamar setDatabaseFile diretamente caso setState
+		// não tenha renderizado (ex: leaf recém-criado sem container pronto)
 		const view = leaf.view
 		if (view instanceof DatabaseView && view.getDatabaseFilePath() !== file.path) {
 			view.setDatabaseFile(file)
 		}
+	}
+
+	/**
+	 * Fecha um leaf markdown somente quando o editor CodeMirror terminou
+	 * de inicializar (cm.state presente). Evita o RangeError "Field is not
+	 * present in this state" que ocorre ao chamar detach() antes do
+	 * StateField history ser registrado no estado do editor.
+	 */
+	private detachWhenEditorReady(leaf: WorkspaceLeaf): void {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const view = leaf.view as any
+		const check = () => {
+			// cm.state existindo significa que o EditorState foi construído
+			// com todos os extensions (incluindo o StateField history)
+			if (view.editor?.cm?.state) {
+				leaf.detach()
+			} else {
+				window.setTimeout(check, 16)
+			}
+		}
+		check()
 	}
 
 	/** Procura uma aba já aberta mostrando o database do caminho indicado */
