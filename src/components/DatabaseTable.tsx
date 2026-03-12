@@ -9,7 +9,7 @@ import {
 	ColumnFiltersState,
 } from '@tanstack/react-table'
 import { TFile } from 'obsidian'
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import { ColumnSchema, DatabaseConfig, NoteRow, DEFAULT_DATABASE_CONFIG } from '../types'
@@ -30,6 +30,8 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const [globalFilter, setGlobalFilter] = useState('')
 	const [editingCell, setEditingCell] = useState<{ rowIndex: number; columnId: string } | null>(null)
 	const [loading, setLoading] = useState(true)
+	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
+	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 
 	// ── Carregar config e linhas ─────────────────────────────────────────────
 
@@ -194,6 +196,28 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		// loadData será chamado pelo evento vault.on('create')
 	}
 
+	// ── Fechar menu de campos ao clicar fora ─────────────────────────────────
+
+	useEffect(() => {
+		if (!fieldsMenuOpen) return
+		const handler = (e: MouseEvent) => {
+			if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) {
+				setFieldsMenuOpen(false)
+			}
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [fieldsMenuOpen])
+
+	// ── Toggle visibilidade de um campo ──────────────────────────────────────
+
+	const toggleFieldVisibility = useCallback(async (fieldId: string) => {
+		const newSchema = config.schema.map(col =>
+			col.id === fieldId ? { ...col, visible: !col.visible } : col
+		)
+		await updateSchema(newSchema)
+	}, [config.schema, updateSchema])
+
 	// ── Adicionar coluna ─────────────────────────────────────────────────────
 
 	const handleAddColumn = async () => {
@@ -236,6 +260,48 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 					value={globalFilter}
 					onChange={e => setGlobalFilter(e.target.value)}
 				/>
+
+				{/* Botão Campos */}
+				<div className="nb-fields-menu-wrapper" ref={fieldsMenuRef}>
+					<button
+						className={`nb-toolbar-btn ${fieldsMenuOpen ? 'nb-toolbar-btn--active' : ''}`}
+						onClick={() => setFieldsMenuOpen(v => !v)}
+						title="Gerenciar campos"
+					>
+						Campos {config.schema.some(c => !c.visible) && (
+							<span className="nb-hidden-badge">
+								{config.schema.filter(c => !c.visible).length}
+							</span>
+						)}
+					</button>
+
+					{fieldsMenuOpen && (
+						<div className="nb-fields-dropdown">
+							<div className="nb-fields-dropdown-label">Campos</div>
+							{config.schema.map(col => (
+								<label key={col.id} className="nb-field-row">
+									<input
+										type="checkbox"
+										className="nb-field-checkbox"
+										checked={col.visible}
+										onChange={() => toggleFieldVisibility(col.id)}
+									/>
+									<span className="nb-field-icon">{
+										col.type === 'text' ? 'Aa' :
+										col.type === 'number' ? '#' :
+										col.type === 'select' ? '◉' :
+										col.type === 'multiselect' ? '◈' :
+										col.type === 'date' ? '📅' :
+										col.type === 'checkbox' ? '☑' :
+										col.type === 'formula' ? 'ƒ' : '·'
+									}</span>
+									<span className="nb-field-name">{col.name}</span>
+								</label>
+							))}
+						</div>
+					)}
+				</div>
+
 				<span className="nb-row-count">
 					{tableRows.length} {tableRows.length === 1 ? 'item' : 'itens'}
 				</span>

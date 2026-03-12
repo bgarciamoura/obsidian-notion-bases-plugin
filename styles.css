@@ -56,6 +56,112 @@
 	white-space: nowrap;
 }
 
+/* ── Toolbar buttons ─────────────────────────────────────────────────────── */
+
+.nb-toolbar-btn {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: var(--radius-s);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.nb-toolbar-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.nb-toolbar-btn--active {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+	border-color: var(--background-modifier-border);
+}
+
+.nb-hidden-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 16px;
+	height: 16px;
+	padding: 0 4px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-radius: 8px;
+	font-size: 10px;
+	font-weight: 600;
+}
+
+/* ── Fields dropdown menu ────────────────────────────────────────────────── */
+
+.nb-fields-menu-wrapper {
+	position: relative;
+}
+
+.nb-fields-dropdown {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	z-index: 100;
+	min-width: 200px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	box-shadow: var(--shadow-l);
+	padding: 4px;
+}
+
+.nb-fields-dropdown-label {
+	padding: 4px 8px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.nb-field-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 5px 8px;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+}
+
+.nb-field-row:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nb-field-checkbox {
+	width: 14px;
+	height: 14px;
+	cursor: pointer;
+	accent-color: var(--interactive-accent);
+	flex-shrink: 0;
+}
+
+.nb-field-icon {
+	font-size: 11px;
+	color: var(--text-muted);
+	flex-shrink: 0;
+	min-width: 14px;
+	text-align: center;
+}
+
+.nb-field-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 /* ── Wrapper da tabela ───────────────────────────────────────────────────── */
 
 .nb-table-wrapper {
