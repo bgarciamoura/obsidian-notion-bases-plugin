@@ -65,10 +65,20 @@ export default class NotionBasesPlugin extends Plugin {
 				})
 
 				if (!targetLeaf) return // Já aberto como database view — nada a fazer
+				const mdLeaf = targetLeaf as WorkspaceLeaf
+
+				// Se já existe uma aba com esse database aberto, fechar a nova
+				// aba markdown e revelar a existente em vez de criar outra.
+				const existingLeaf = this.findDatabaseLeaf(file.path)
+				if (existingLeaf) {
+					mdLeaf.detach()
+					this.app.workspace.revealLeaf(existingLeaf)
+					return
+				}
 
 				this._redirecting = true
 				try {
-					await this.openDatabaseInLeaf(targetLeaf, file)
+					await this.openDatabaseInLeaf(mdLeaf, file)
 				} finally {
 					this._redirecting = false
 				}
