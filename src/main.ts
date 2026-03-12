@@ -72,11 +72,11 @@ export default class NotionBasesPlugin extends Plugin {
 				const existingLeaf = this.findDatabaseLeaf(file.path)
 				if (existingLeaf) {
 					this.app.workspace.revealLeaf(existingLeaf)
-					// Diferir o detach por um tick: chamar imediatamente causa
-					// "Field is not present in this state" do CodeMirror porque
-					// o editor markdown ainda não terminou de inicializar e o
-					// Obsidian tenta salvar o histórico durante onUnloadFile.
-					setTimeout(() => mdLeaf.detach(), 0)
+					// Fechar somente após o editor CodeMirror estar completamente
+					// inicializado. Se fecharmos antes, saveHistory() falha com
+					// "Field is not present in this state" porque o StateField
+					// history ainda não foi registrado no estado do editor.
+					this.detachWhenEditorReady(mdLeaf)
 					return
 				}
 
@@ -167,6 +167,27 @@ export default class NotionBasesPlugin extends Plugin {
 		if (view instanceof DatabaseView && view.getDatabaseFilePath() !== file.path) {
 			view.setDatabaseFile(file)
 		}
+	}
+
+	/**
+	 * Fecha um leaf markdown somente quando o editor CodeMirror terminou
+	 * de inicializar (cm.state presente). Evita o RangeError "Field is not
+	 * present in this state" que ocorre ao chamar detach() antes do
+	 * StateField history ser registrado no estado do editor.
+	 */
+	private detachWhenEditorReady(leaf: WorkspaceLeaf): void {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const view = leaf.view as any
+		const check = () => {
+			// cm.state existindo significa que o EditorState foi construído
+			// com todos os extensions (incluindo o StateField history)
+			if (view.editor?.cm?.state) {
+				leaf.detach()
+			} else {
+				window.setTimeout(check, 16)
+			}
+		}
+		check()
 	}
 
 	/** Procura uma aba já aberta mostrando o database do caminho indicado */
