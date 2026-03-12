@@ -72,11 +72,14 @@ export default class NotionBasesPlugin extends Plugin {
 				const existingLeaf = this.findDatabaseLeaf(file.path)
 				if (existingLeaf) {
 					this.app.workspace.revealLeaf(existingLeaf)
-					// Diferir o detach por um tick: chamar imediatamente causa
-					// "Field is not present in this state" do CodeMirror porque
-					// o editor markdown ainda não terminou de inicializar e o
-					// Obsidian tenta salvar o histórico durante onUnloadFile.
-					setTimeout(() => mdLeaf.detach(), 0)
+					// Navegar para 'empty' antes de fechar força o Obsidian a
+					// descarregar o editor CodeMirror de forma limpa (chama
+					// onUnloadFile enquanto o estado já está completo). Chamar
+					// detach() diretamente, ou com setTimeout, ainda pode ocorrer
+					// antes do CodeMirror terminar de registrar suas StateFields,
+					// causando "Field is not present in this state".
+					await mdLeaf.setViewState({ type: 'empty' })
+					mdLeaf.detach()
 					return
 				}
 
