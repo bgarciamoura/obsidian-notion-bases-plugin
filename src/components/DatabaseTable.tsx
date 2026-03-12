@@ -99,6 +99,14 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		await manager.writeConfig(dbFile, newConfig)
 	}, [dbFile, config, manager])
 
+	// ── Renomear coluna (id + nome + chave do frontmatter nas notas) ──────────
+
+	const renameColumn = useCallback(async (oldId: string, newName: string) => {
+		if (!dbFile) return
+		const newConfig = await manager.renameColumn(dbFile, config, oldId, newName)
+		setConfig(newConfig)
+	}, [dbFile, config, manager])
+
 	// ── Colunas TanStack Table ───────────────────────────────────────────────
 
 	const columns = useMemo<ColumnDef<NoteRow>[]>(() => {
@@ -140,6 +148,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 						col={col}
 						schema={config.schema}
 						onUpdateSchema={updateSchema}
+						onRenameColumn={renameColumn}
 					/>
 				),
 				cell: info => (

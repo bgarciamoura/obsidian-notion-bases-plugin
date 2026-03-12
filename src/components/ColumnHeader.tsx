@@ -16,9 +16,10 @@ interface ColumnHeaderProps {
 	col: ColumnSchema
 	schema: ColumnSchema[]
 	onUpdateSchema: (schema: ColumnSchema[]) => Promise<void>
+	onRenameColumn: (oldId: string, newName: string) => Promise<void>
 }
 
-export function ColumnHeader({ col, schema, onUpdateSchema }: ColumnHeaderProps) {
+export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: ColumnHeaderProps) {
 	const [menuOpen, setMenuOpen] = useState(false)
 	const [renaming, setRenaming] = useState(false)
 	const [nameValue, setNameValue] = useState(col.name)
@@ -57,8 +58,10 @@ export function ColumnHeader({ col, schema, onUpdateSchema }: ColumnHeaderProps)
 	}
 
 	const handleRename = async () => {
-		if (nameValue.trim() && nameValue !== col.name) {
-			await updateCol({ name: nameValue.trim() })
+		const trimmed = nameValue.trim()
+		if (trimmed && trimmed !== col.name) {
+			// Delega ao pai: atualiza id + name + frontmatter das notas
+			await onRenameColumn(col.id, trimmed)
 		}
 		setRenaming(false)
 		setMenuOpen(false)

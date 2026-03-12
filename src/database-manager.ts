@@ -226,4 +226,59 @@ export class DatabaseManager {
 			.replace(/([a-z])([A-Z])/g, '$1 $2')
 			.replace(/^./, c => c.toUpperCase())
 	}
+
+	// ── Renomear coluna (id + nome + frontmatter das notas) ────────────────
+
+	async renameColumn(
+		dbFile: TFile,
+		config: DatabaseConfig,
+		oldId: string,
+		newName: string,
+	): Promise<DatabaseConfig> {
+		const newId = this.uniqueSlug(newName, config.schema, oldId)
+		const keyChanged = newId !== oldId
+
+		// Atualizar frontmatter de todas as notas que possuem a chave antiga
+		if (keyChanged) {
+			const notes = this.getNotesInDatabase(dbFile)
+			for (const note of notes) {
+				const cache = this.app.metadataCache.getFileCache(note)
+				if (cache?.frontmatter && oldId in cache.frontmatter) {
+					await this.app.fileManager.processFrontMatter(note, fm => {
+						fm[newId] = fm[oldId]
+						delete fm[oldId]
+					})
+				}
+			}
+		}
+
+		// Atualizar schema
+		const newSchema = config.schema.map(col =>
+			col.id === oldId ? { ...col, id: newId, name: newName } : col
+		)
+		const newConfig: DatabaseConfig = { ...config, schema: newSchema }
+		await this.writeConfig(dbFile, newConfig)
+
+		return newConfig
+	}
+
+	private slugify(name: string): string {
+		return name
+			.toLowerCase()
+			.normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '')   // remove acentos
+			.replace(/[^a-z0-9]+/g, '_')
+			.replace(/^_+|_+$/g, '')
+			.replace(/_+/g, '_')
+			|| 'campo'
+	}
+
+	private uniqueSlug(name: string, schema: ColumnSchema[], excludeId?: string): string {
+		const base = this.slugify(name)
+		const taken = new Set(schema.filter(c => c.id !== excludeId).map(c => c.id))
+		if (!taken.has(base)) return base
+		let i = 2
+		while (taken.has(`${base}_${i}`)) i++
+		return `${base}_${i}`
+	}
 }
