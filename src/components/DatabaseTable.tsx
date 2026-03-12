@@ -91,6 +91,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 	const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
 	const actionsMenuRef = useRef<HTMLDivElement>(null)
+	const lastCreatedPath = useRef<string | null>(null)
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -112,6 +113,13 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		}
 
 		const noteRows = notes.map(f => manager.getNoteData(f, cfg.schema))
+
+		// Garantir que a linha recém-criada apareça no final
+		if (lastCreatedPath.current) {
+			const idx = noteRows.findIndex(r => r._file.path === lastCreatedPath.current)
+			if (idx !== -1) noteRows.push(...noteRows.splice(idx, 1))
+			lastCreatedPath.current = null
+		}
 
 		setConfig(cfg)
 		setRows(noteRows)
@@ -289,7 +297,9 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 
 	const handleAddRow = async () => {
 		if (!dbFile) return
-		await manager.createNote(dbFile)
+		setSorting([])
+		const newFile = await manager.createNote(dbFile)
+		lastCreatedPath.current = newFile.path
 		// loadData será chamado pelo evento vault.on('create')
 	}
 
