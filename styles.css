@@ -511,6 +511,23 @@
 	background: var(--background-modifier-hover);
 }
 
+.nb-cell-editable {
+	cursor: text;
+}
+
+.nb-cell-title-link {
+	cursor: pointer;
+}
+
+.nb-cell-title-link:hover {
+	text-decoration: underline;
+}
+
+.nb-cell-editable:hover {
+	outline: 1px solid var(--background-modifier-border);
+	outline-offset: -1px;
+}
+
 .nb-cell-empty {
 	color: var(--text-faint);
 }

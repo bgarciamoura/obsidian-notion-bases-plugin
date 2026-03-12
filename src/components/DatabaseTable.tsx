@@ -235,6 +235,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 					value={info.getValue<string>()}
 					rowIndex={info.row.index}
 					columnId="_title"
+					file={info.row.original._file}
 				/>
 			),
 		})

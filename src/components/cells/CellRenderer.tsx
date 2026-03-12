@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { useReactTable } from '@tanstack/react-table'
+import { TFile } from 'obsidian'
 import { ColumnSchema, NoteRow, SelectOption } from '../../types'
 import { useApp } from '../../context'
 
@@ -8,6 +8,7 @@ interface CellProps {
 	value: unknown
 	rowIndex: number
 	columnId: string
+	file?: TFile
 }
 
 // Hook para acessar o meta da tabela via contexto implícito
@@ -32,8 +33,9 @@ export function useCellContext(): CellContextType {
 
 // ── Componente principal ─────────────────────────────────────────────────────
 
-export function CellRenderer({ col, value, rowIndex, columnId }: CellProps) {
+export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps) {
 	const { editingCell, setEditingCell, updateCell } = useCellContext()
+	const app = useApp()
 	const isEditing = editingCell?.rowIndex === rowIndex && editingCell?.columnId === columnId
 
 	const startEditing = () => {
@@ -43,6 +45,17 @@ export function CellRenderer({ col, value, rowIndex, columnId }: CellProps) {
 
 	switch (col.type) {
 		case 'title':
+			return (
+				<TextCell
+					value={String(value ?? '')}
+					isEditing={isEditing}
+					onStartEdit={startEditing}
+					onCommit={v => updateCell(rowIndex, columnId, v)}
+					onCancel={() => setEditingCell(null)}
+					onOpen={file ? () => app.workspace.getLeaf(false).openFile(file) : undefined}
+				/>
+			)
+
 		case 'text':
 			return (
 				<TextCell
@@ -118,15 +131,17 @@ export function CellRenderer({ col, value, rowIndex, columnId }: CellProps) {
 
 // ── TextCell ─────────────────────────────────────────────────────────────────
 
-function TextCell({ value, isEditing, onStartEdit, onCommit, onCancel }: {
+function TextCell({ value, isEditing, onStartEdit, onCommit, onCancel, onOpen }: {
 	value: string
 	isEditing: boolean
 	onStartEdit: () => void
 	onCommit: (v: string) => void
 	onCancel: () => void
+	onOpen?: () => void
 }) {
 	const inputRef = useRef<HTMLInputElement>(null)
 	const [draft, setDraft] = useState(value)
+	const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	useEffect(() => {
 		if (isEditing) {
@@ -135,10 +150,44 @@ function TextCell({ value, isEditing, onStartEdit, onCommit, onCancel }: {
 		}
 	}, [isEditing, value])
 
+	useEffect(() => {
+		return () => { if (clickTimer.current) clearTimeout(clickTimer.current) }
+	}, [])
+
+	const handleTextClick = () => {
+		if (!onOpen) return
+		if (clickTimer.current !== null) {
+			clearTimeout(clickTimer.current)
+			clickTimer.current = null
+			return
+		}
+		clickTimer.current = setTimeout(() => {
+			clickTimer.current = null
+			onOpen()
+		}, 250)
+	}
+
+	const handleDoubleClick = () => {
+		if (clickTimer.current) {
+			clearTimeout(clickTimer.current)
+			clickTimer.current = null
+		}
+		onStartEdit()
+	}
+
 	if (!isEditing) {
 		return (
-			<div className="nb-cell-text nb-cell-clickable" onDoubleClick={onStartEdit}>
-				{value || <span className="nb-cell-empty">—</span>}
+			<div
+				className="nb-cell-text nb-cell-clickable nb-cell-editable"
+				onDoubleClick={handleDoubleClick}
+			>
+				{onOpen ? (
+					<span className="nb-cell-title-link" onClick={handleTextClick}>
+						{value || <span className="nb-cell-empty">—</span>}
+					</span>
+				) : (
+					value || <span className="nb-cell-empty">—</span>
+				)}
 			</div>
 		)
 	}
