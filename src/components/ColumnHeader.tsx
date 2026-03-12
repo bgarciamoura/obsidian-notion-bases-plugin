@@ -114,7 +114,8 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 			{menuOpen && (
 				<div className="nb-column-menu">
 					<button className="nb-menu-item" onClick={() => { setMenuOpen(false); setRenaming(true) }}>
-						✏️ Renomear
+						<span className="nb-menu-item-icon">✏️</span>
+						<span>Renomear</span>
 					</button>
 
 					<div className="nb-menu-separator" />
@@ -125,17 +126,19 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 							className={`nb-menu-item nb-menu-type-item ${col.type === type ? 'nb-menu-item--active' : ''}`}
 							onClick={() => handleTypeChange(type)}
 						>
-							<span>{TYPE_ICONS[type]}</span>
+							<span className="nb-menu-item-icon">{TYPE_ICONS[type]}</span>
 							<span>{type}</span>
 						</button>
 					))}
 
 					<div className="nb-menu-separator" />
 					<button className="nb-menu-item" onClick={handleHide}>
-						👁 Ocultar campo
+						<span className="nb-menu-item-icon">👁</span>
+						<span>Ocultar campo</span>
 					</button>
 					<button className="nb-menu-item nb-menu-item--danger" onClick={handleDelete}>
-						🗑 Excluir campo
+						<span className="nb-menu-item-icon">🗑</span>
+						<span>Excluir campo</span>
 					</button>
 				</div>
 			)}

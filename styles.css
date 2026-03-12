@@ -349,7 +349,8 @@
 	color: var(--text-normal);
 	font-size: var(--font-ui-small);
 	cursor: pointer;
-	text-align: left;
+	text-align: left !important;
+	justify-content: flex-start;
 	width: 100%;
 }
 
@@ -366,9 +367,18 @@
 }
 
 .nb-menu-type-item {
-	padding-left: 24px;
 	font-size: var(--font-ui-smaller);
 	color: var(--text-muted);
+}
+
+.nb-menu-item-icon {
+	flex-shrink: 0;
+	width: 20px;
+	text-align: center;
+}
+
+.nb-menu-item span:last-child {
+	text-transform: capitalize;
 }
 
 .nb-menu-separator {
