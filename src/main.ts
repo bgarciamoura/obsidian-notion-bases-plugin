@@ -7,6 +7,9 @@ export default class NotionBasesPlugin extends Plugin {
 	settings: NotionBasesSettings
 	manager: DatabaseManager
 
+	// Evita loop: quando nós mesmos abrimos a view, file-open é disparado novamente
+	private _redirecting = false
+
 	async onload() {
 		await this.loadSettings()
 		this.manager = new DatabaseManager(this.app, this.settings.databaseFileName)
@@ -41,17 +44,25 @@ export default class NotionBasesPlugin extends Plugin {
 			},
 		})
 
-		// Interceptar abertura de arquivos _database.md
+		// Interceptar abertura de _database.md no explorador de arquivos
 		this.registerEvent(
 			this.app.workspace.on('file-open', async file => {
-				if (!file) return
-				// Evitar loop: só redirecionar se a view atual NÃO for já nossa view
-				const activeLeaf = this.app.workspace.getMostRecentLeaf()
+				if (!file || this._redirecting) return
+				if (!this.manager.isDatabaseFile(file)) return
+
+				// Verificar o leaf ATIVO agora (o que acabou de abrir o arquivo),
+				// não o "mais recente" — getMostRecentLeaf pode retornar uma
+				// database view já aberta em outra aba e causar falso positivo no guard.
+				const activeLeaf = this.app.workspace.activeLeaf
 				if (activeLeaf?.view.getViewType() === DATABASE_VIEW_TYPE) return
 
-				if (this.manager.isDatabaseFile(file)) {
-					const leaf = this.app.workspace.getLeaf(false)
+				this._redirecting = true
+				try {
+					// Reutilizar o leaf ativo (que está mostrando o .md como texto)
+					const leaf = activeLeaf ?? this.app.workspace.getLeaf(false)
 					await this.openDatabaseInLeaf(leaf, file)
+				} finally {
+					this._redirecting = false
 				}
 			})
 		)
@@ -84,6 +95,12 @@ export default class NotionBasesPlugin extends Plugin {
 		const existing = this.manager.getDatabaseFileInFolder(folderPath)
 
 		if (existing) {
+			// Se já existe uma aba com esse database, apenas revelá-la
+			const existingLeaf = this.findDatabaseLeaf(existing.path)
+			if (existingLeaf) {
+				this.app.workspace.revealLeaf(existingLeaf)
+				return
+			}
 			const leaf = this.app.workspace.getLeaf('tab')
 			await this.openDatabaseInLeaf(leaf, existing)
 		} else {
@@ -102,11 +119,31 @@ export default class NotionBasesPlugin extends Plugin {
 	}
 
 	async openDatabaseInLeaf(leaf: WorkspaceLeaf, file: TFile) {
+		// setViewState cria a DatabaseView e chama setState com o state fornecido
 		await leaf.setViewState({
 			type: DATABASE_VIEW_TYPE,
 			state: { dbFilePath: file.path },
 			active: true,
 		})
 		this.app.workspace.revealLeaf(leaf)
+
+		// Garantia extra: chamar setDatabaseFile diretamente caso setState
+		// não tenha renderizado (ex: leaf recém-criado sem container pronto)
+		const view = leaf.view
+		if (view instanceof DatabaseView && view.getDatabaseFilePath() !== file.path) {
+			view.setDatabaseFile(file)
+		}
+	}
+
+	/** Procura uma aba já aberta mostrando o database do caminho indicado */
+	private findDatabaseLeaf(filePath: string): WorkspaceLeaf | null {
+		let found: WorkspaceLeaf | null = null
+		this.app.workspace.iterateAllLeaves(leaf => {
+			if (found) return
+			if (leaf.view.getViewType() !== DATABASE_VIEW_TYPE) return
+			const state = leaf.view.getState() as { dbFilePath?: string }
+			if (state.dbFilePath === filePath) found = leaf
+		})
+		return found
 	}
 }

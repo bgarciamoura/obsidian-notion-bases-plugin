@@ -38,7 +38,7 @@ export class DatabaseView extends ItemView {
 		return 'table'
 	}
 
-	// Obsidian usa setState para restaurar estado após reload
+	// Restaura estado após reload do workspace
 	async setState(state: DatabaseViewState, result: Parameters<ItemView['setState']>[1]): Promise<void> {
 		if (state.dbFilePath) {
 			this.dbFilePath = state.dbFilePath
@@ -56,8 +56,14 @@ export class DatabaseView extends ItemView {
 		this.render()
 	}
 
+	getDatabaseFilePath(): string {
+		return this.dbFilePath
+	}
+
 	async onOpen(): Promise<void> {
-		this.render()
+		// Não renderiza aqui — setState é sempre chamado após onOpen
+		// e é quem faz o render com o estado correto.
+		// Se onOpen renderizar, causa um render em branco antes do setState.
 	}
 
 	async onClose(): Promise<void> {
@@ -66,7 +72,15 @@ export class DatabaseView extends ItemView {
 	}
 
 	private render(): void {
-		const container = this.containerEl.children[1] as HTMLElement
+		const container = this.containerEl.children[1] as HTMLElement | undefined
+		if (!container) return
+
+		// Desmontar ANTES de limpar o DOM (ordem correta para o React)
+		if (this.root) {
+			this.root.unmount()
+			this.root = null
+		}
+
 		container.empty()
 		container.addClass('notion-bases-view-container')
 
@@ -78,10 +92,6 @@ export class DatabaseView extends ItemView {
 			this.app,
 			this.plugin.settings.databaseFileName
 		)
-
-		if (this.root) {
-			this.root.unmount()
-		}
 
 		this.root = createRoot(container)
 		this.root.render(
