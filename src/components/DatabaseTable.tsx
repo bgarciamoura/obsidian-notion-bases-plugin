@@ -202,12 +202,25 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 			accessorFn: row => row._title,
 			size: config.views[0]?.columnWidths['_title'] ?? 260,
 			enableColumnFilter: true,
-			header: () => (
-				<div className="nb-header-title">
-					<span>📄</span>
-					<span>Nome</span>
-				</div>
-			),
+			enableSorting: true,
+			sortingFn: 'text',
+			header: ({ column }) => {
+				const sorted = column.getIsSorted()
+				return (
+					<div className="nb-header-title">
+						<span>📄</span>
+						<span>Nome</span>
+						<button
+							className={`nb-sort-btn ${sorted ? 'nb-sort-btn--sorted' : ''}`}
+							onClick={e => { e.stopPropagation(); column.toggleSorting(sorted === 'asc') }}
+							title={sorted === 'asc' ? 'Ordenar Z→A' : sorted === 'desc' ? 'Remover ordenação' : 'Ordenar A→Z'}
+						>
+							<span className={sorted === 'asc' ? 'nb-sort-chevron--active' : 'nb-sort-chevron'}>⌃</span>
+							<span className={sorted === 'desc' ? 'nb-sort-chevron--active' : 'nb-sort-chevron'}>⌄</span>
+						</button>
+					</div>
+				)
+			},
 			cell: info => (
 				<CellRenderer
 					col={{ id: '_title', name: 'Nome', type: 'title', visible: true }}

@@ -313,6 +313,42 @@
 	font-weight: 500;
 }
 
+.nb-sort-btn {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background: transparent !important;
+	border: none;
+	outline: none;
+	box-shadow: none !important;
+	-webkit-appearance: none;
+	appearance: none;
+	cursor: pointer;
+	padding: 0 1px;
+	margin-left: auto;
+	opacity: 0;
+	transition: opacity 100ms;
+	line-height: 1;
+}
+
+.nb-header-title:hover .nb-sort-btn,
+.nb-sort-btn--sorted {
+	opacity: 1;
+}
+
+.nb-sort-chevron {
+	font-size: 10px;
+	line-height: 1;
+	color: var(--text-faint);
+}
+
+.nb-sort-chevron--active {
+	font-size: 10px;
+	line-height: 1;
+	color: var(--interactive-accent);
+}
+
 .nb-header-rename-input {
 	width: calc(100% - 8px);
 	margin: 4px;
