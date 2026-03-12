@@ -50,17 +50,25 @@ export default class NotionBasesPlugin extends Plugin {
 				if (!file || this._redirecting) return
 				if (!this.manager.isDatabaseFile(file)) return
 
-				// Verificar o leaf ATIVO agora (o que acabou de abrir o arquivo),
-				// não o "mais recente" — getMostRecentLeaf pode retornar uma
-				// database view já aberta em outra aba e causar falso positivo no guard.
-				const activeLeaf = this.app.workspace.activeLeaf
-				if (activeLeaf?.view.getViewType() === DATABASE_VIEW_TYPE) return
+				// Procurar o leaf que está exibindo ESTE arquivo como markdown.
+				// Checar activeLeaf.getViewType() é instável: quando o Obsidian
+				// converte uma leaf de database → markdown para abrir o arquivo,
+				// file-open pode disparar antes da transição completar, fazendo o
+				// guard retornar true incorretamente e bloqueando o redirecionamento.
+				let targetLeaf: WorkspaceLeaf | null = null
+				this.app.workspace.iterateAllLeaves(leaf => {
+					if (targetLeaf) return
+					if (leaf.view.getViewType() !== 'markdown') return
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					const leafFile = (leaf.view as any).file as TFile | undefined
+					if (leafFile?.path === file.path) targetLeaf = leaf
+				})
+
+				if (!targetLeaf) return // Já aberto como database view — nada a fazer
 
 				this._redirecting = true
 				try {
-					// Reutilizar o leaf ativo (que está mostrando o .md como texto)
-					const leaf = activeLeaf ?? this.app.workspace.getLeaf(false)
-					await this.openDatabaseInLeaf(leaf, file)
+					await this.openDatabaseInLeaf(targetLeaf, file)
 				} finally {
 					this._redirecting = false
 				}
@@ -90,8 +98,20 @@ export default class NotionBasesPlugin extends Plugin {
 	// ── Helpers ──────────────────────────────────────────────────────────────
 
 	async openOrCreateDatabase() {
+		// getActiveFile() retorna null quando a leaf ativa é uma database view
+		// (ItemView não expõe .file). Nesses casos, usar a pasta do próprio database.
 		const activeFile = this.app.workspace.getActiveFile()
-		const folderPath = activeFile?.parent?.path ?? ''
+		let folderPath = activeFile?.parent?.path ?? ''
+
+		if (!activeFile) {
+			const activeLeaf = this.app.workspace.activeLeaf
+			if (activeLeaf?.view instanceof DatabaseView) {
+				const dbPath = (activeLeaf.view as DatabaseView).getDatabaseFilePath()
+				const dbFile = this.app.vault.getFileByPath(dbPath)
+				folderPath = dbFile?.parent?.path ?? ''
+			}
+		}
+
 		const existing = this.manager.getDatabaseFileInFolder(folderPath)
 
 		if (existing) {
