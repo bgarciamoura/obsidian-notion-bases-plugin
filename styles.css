@@ -212,16 +212,25 @@
 
 /* ── Drag handle de coluna ───────────────────────────────────────────────── */
 
+/* Wrapper flex que alinha handle + header na mesma linha */
+.nb-th-inner {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	overflow: visible;
+}
+
 .nb-col-drag-handle {
-	display: inline-flex;
+	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 14px;
 	flex-shrink: 0;
+	width: 16px;
+	height: 28px;
 	color: var(--text-faint);
 	cursor: grab;
 	font-size: 11px;
-	padding: 6px 2px 6px 6px;
+	padding: 0 2px 0 4px;
 	opacity: 0;
 	transition: opacity 100ms;
 	user-select: none;
@@ -237,6 +246,11 @@
 	cursor: grabbing;
 }
 
+.nb-col-drag-spacer {
+	flex-shrink: 0;
+	width: 16px;
+}
+
 .nb-th--dragging {
 	opacity: 0.5;
 }
@@ -245,9 +259,8 @@
 
 .nb-column-header {
 	position: relative;
-	width: 100%;
-	display: flex;
-	align-items: center;
+	flex: 1;
+	min-width: 0;
 }
 
 .nb-header-label {
@@ -256,8 +269,12 @@
 	gap: 5px;
 	width: 100%;
 	padding: 6px 10px;
-	background: none;
+	background-color: transparent !important;
 	border: none;
+	outline: none;
+	box-shadow: none !important;
+	-webkit-appearance: none;
+	appearance: none;
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 	font-weight: 500;
@@ -267,7 +284,7 @@
 }
 
 .nb-header-label:hover {
-	background: var(--background-modifier-hover);
+	background-color: transparent !important;
 	color: var(--text-normal);
 }
 

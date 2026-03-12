@@ -55,14 +55,17 @@ function SortableTh({ id, size, children }: { id: string; size: number; children
 				zIndex: isDragging ? 1 : undefined,
 			}}
 		>
-			<span
-				ref={setActivatorNodeRef}
-				{...listeners}
-				{...attributes}
-				className="nb-col-drag-handle"
-				title="Arrastar para reordenar"
-			>⠿</span>
-			{children}
+			<div className="nb-th-inner">
+				<span
+					ref={setActivatorNodeRef}
+					{...listeners}
+					{...attributes}
+					className="nb-col-drag-handle"
+					title="Arrastar para reordenar"
+				>⠿</span>
+				{children}
+				<span className="nb-col-drag-spacer" aria-hidden="true" />
+			</div>
 		</th>
 	)
 }
