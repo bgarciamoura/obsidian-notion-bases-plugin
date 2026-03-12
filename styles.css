@@ -1,8 +1,484 @@
-/*
+/* ═══════════════════════════════════════════════════════════════════════════
+   Notion Bases — estilos usando CSS variables do Obsidian
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* ── Container principal ─────────────────────────────────────────────────── */
 
-If your plugin does not need CSS, delete this file.
+.notion-bases-view-container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: hidden;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-family: var(--font-interface);
+	font-size: var(--font-ui-small);
+}
 
-*/
+.nb-container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: hidden;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+
+.nb-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	flex-shrink: 0;
+}
+
+.nb-search {
+	flex: 1;
+	max-width: 240px;
+	padding: 4px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	outline: none;
+}
+
+.nb-search:focus {
+	border-color: var(--interactive-accent);
+}
+
+.nb-row-count {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	white-space: nowrap;
+}
+
+/* ── Wrapper da tabela ───────────────────────────────────────────────────── */
+
+.nb-table-wrapper {
+	flex: 1;
+	overflow: auto;
+	position: relative;
+}
+
+/* ── Tabela ──────────────────────────────────────────────────────────────── */
+
+.nb-table {
+	width: max-content;
+	min-width: 100%;
+	border-collapse: collapse;
+	table-layout: fixed;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.nb-thead {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	background: var(--background-secondary);
+}
+
+.nb-header-row {
+	border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.nb-th {
+	padding: 0;
+	text-align: left;
+	font-weight: 500;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	border-right: 1px solid var(--background-modifier-border);
+	position: relative;
+	user-select: none;
+	/* overflow: visible é obrigatório para o dropdown não ser clipado */
+	overflow: visible;
+}
+
+.nb-th-add-col {
+	width: 40px;
+	border-right: none;
+}
+
+/* ── Column header component ─────────────────────────────────────────────── */
+
+.nb-column-header {
+	position: relative;
+	width: 100%;
+}
+
+.nb-header-label {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	width: 100%;
+	padding: 6px 10px;
+	background: none;
+	border: none;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: 500;
+	cursor: pointer;
+	text-align: left;
+	overflow: hidden;
+}
+
+.nb-header-label:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.nb-header-icon {
+	font-size: 10px;
+	flex-shrink: 0;
+}
+
+.nb-header-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.nb-header-title {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	padding: 6px 10px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: 500;
+}
+
+.nb-header-rename-input {
+	width: calc(100% - 8px);
+	margin: 4px;
+	padding: 3px 6px;
+	border: 1px solid var(--interactive-accent);
+	border-radius: var(--radius-s);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller);
+	outline: none;
+}
+
+/* ── Column dropdown menu ────────────────────────────────────────────────── */
+
+.nb-column-menu {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	z-index: 100;
+	min-width: 180px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	box-shadow: var(--shadow-l);
+	padding: 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.nb-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 8px;
+	background: none;
+	border: none;
+	border-radius: var(--radius-s);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+	text-align: left;
+	width: 100%;
+}
+
+.nb-menu-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nb-menu-item--active {
+	background: var(--background-modifier-active-hover);
+}
+
+.nb-menu-item--danger {
+	color: var(--text-error);
+}
+
+.nb-menu-type-item {
+	padding-left: 24px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.nb-menu-separator {
+	height: 1px;
+	background: var(--background-modifier-border);
+	margin: 3px 0;
+}
+
+.nb-menu-label {
+	padding: 4px 8px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.nb-add-col-btn {
+	width: 100%;
+	height: 100%;
+	padding: 6px;
+	background: none;
+	border: none;
+	color: var(--text-muted);
+	font-size: 16px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.nb-add-col-btn:hover {
+	color: var(--interactive-accent);
+	background: var(--background-modifier-hover);
+}
+
+/* ── Linhas ──────────────────────────────────────────────────────────────── */
+
+.nb-row {
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.nb-row:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nb-td {
+	padding: 0;
+	border-right: 1px solid var(--background-modifier-border);
+	height: 36px;
+	max-height: 36px;
+	overflow: hidden;
+	vertical-align: middle;
+}
+
+.nb-td-empty {
+	border-right: none;
+}
+
+/* ── Células genéricas ───────────────────────────────────────────────────── */
+
+.nb-cell-text {
+	padding: 4px 10px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height: 36px;
+	line-height: 28px;
+}
+
+.nb-cell-clickable {
+	cursor: default;
+	display: flex;
+	align-items: center;
+	height: 100%;
+	padding: 0 10px;
+}
+
+.nb-cell-clickable:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nb-cell-empty {
+	color: var(--text-faint);
+}
+
+.nb-cell-number {
+	font-variant-numeric: tabular-nums;
+	justify-content: flex-end;
+}
+
+.nb-cell-date {
+	font-size: var(--font-ui-smaller);
+}
+
+.nb-cell-formula {
+	padding: 4px 10px;
+	color: var(--text-accent);
+	font-size: var(--font-ui-smaller);
+	font-variant-numeric: tabular-nums;
+	line-height: 28px;
+}
+
+/* ── Inputs de edição ────────────────────────────────────────────────────── */
+
+.nb-cell-input {
+	width: 100%;
+	height: 34px;
+	padding: 4px 10px;
+	border: 2px solid var(--interactive-accent);
+	border-radius: 0;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	outline: none;
+	box-sizing: border-box;
+}
+
+.nb-cell-input--number {
+	text-align: right;
+}
+
+.nb-cell-input--date {
+	font-size: var(--font-ui-smaller);
+}
+
+/* ── Checkbox ────────────────────────────────────────────────────────────── */
+
+.nb-cell-checkbox-wrapper {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	padding: 0 10px;
+}
+
+.nb-cell-checkbox {
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+	accent-color: var(--interactive-accent);
+}
+
+/* ── Select / Multiselect ────────────────────────────────────────────────── */
+
+.nb-cell-select-wrapper {
+	position: relative;
+	height: 100%;
+}
+
+.nb-cell-multiselect {
+	gap: 3px;
+	flex-wrap: nowrap;
+	overflow: hidden;
+}
+
+.nb-select-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 1px 7px;
+	border-radius: 3px;
+	font-size: var(--font-ui-smaller);
+	font-weight: 500;
+	white-space: nowrap;
+	color: rgba(0, 0, 0, 0.75);
+}
+
+.nb-select-dropdown {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	z-index: 100;
+	min-width: 160px;
+	max-height: 240px;
+	overflow-y: auto;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	box-shadow: var(--shadow-l);
+	padding: 4px;
+}
+
+.nb-select-option {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	width: 100%;
+	padding: 5px 8px;
+	background: none;
+	border: none;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	text-align: left;
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+}
+
+.nb-select-option:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nb-select-option--active {
+	background: var(--background-modifier-active-hover);
+}
+
+.nb-select-clear {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	border-bottom: 1px solid var(--background-modifier-border);
+	margin-bottom: 3px;
+	padding-bottom: 6px;
+}
+
+.nb-checkbox-indicator {
+	width: 14px;
+	height: 14px;
+	border: 1.5px solid var(--background-modifier-border);
+	border-radius: 3px;
+	flex-shrink: 0;
+}
+
+.nb-checkbox-indicator--checked {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+}
+
+/* ── Botão adicionar linha ───────────────────────────────────────────────── */
+
+.nb-add-row-btn {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 12px;
+	margin: 0;
+	background: none;
+	border: none;
+	border-top: 1px solid var(--background-modifier-border);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+	width: 100%;
+	text-align: left;
+	flex-shrink: 0;
+}
+
+.nb-add-row-btn:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+/* ── Estados especiais ───────────────────────────────────────────────────── */
+
+.nb-empty-state,
+.nb-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	gap: 8px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.nb-empty-rows td {
+	text-align: center;
+	padding: 32px;
+	color: var(--text-muted);
+}
