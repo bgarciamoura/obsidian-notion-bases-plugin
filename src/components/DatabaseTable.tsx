@@ -608,16 +608,18 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 								</tr>
 							))
 						)}
+						<tr>
+							<td colSpan={columns.length + 1} className="nb-add-row-td">
+								<button className="nb-add-row-btn" onClick={handleAddRow}>
+									+ Nova linha
+								</button>
+							</td>
+						</tr>
 					</tbody>
 				</table>
 			</div>
 
 			</CellContext.Provider>
-
-			{/* Botão adicionar linha */}
-			<button className="nb-add-row-btn" onClick={handleAddRow}>
-				+ Nova linha
-			</button>
 		</div>
 	)
 }

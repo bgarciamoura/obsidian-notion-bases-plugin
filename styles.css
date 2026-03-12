@@ -657,6 +657,11 @@
 
 /* ── Botão adicionar linha ───────────────────────────────────────────────── */
 
+.nb-add-row-td {
+	padding: 0;
+	border-right: none;
+}
+
 .nb-add-row-btn {
 	display: flex;
 	align-items: center;
@@ -665,13 +670,11 @@
 	margin: 0;
 	background: none;
 	border: none;
-	border-top: 1px solid var(--background-modifier-border);
 	color: var(--text-muted);
 	font-size: var(--font-ui-small);
 	cursor: pointer;
 	width: 100%;
 	text-align: left;
-	flex-shrink: 0;
 }
 
 .nb-add-row-btn:hover {
