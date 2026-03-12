@@ -8,13 +8,64 @@ import {
 	SortingState,
 	ColumnFiltersState,
 } from '@tanstack/react-table'
+import {
+	DndContext,
+	DragEndEvent,
+	closestCenter,
+	PointerSensor,
+	useSensor,
+	useSensors,
+} from '@dnd-kit/core'
+import {
+	SortableContext,
+	horizontalListSortingStrategy,
+	arrayMove,
+	useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { TFile } from 'obsidian'
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { ReactNode, useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import { ColumnSchema, DatabaseConfig, NoteRow, DEFAULT_DATABASE_CONFIG } from '../types'
 import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
+
+// ── Cabeçalho de coluna arrastável ───────────────────────────────────────────
+
+function SortableTh({ id, size, children }: { id: string; size: number; children: ReactNode }) {
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		setActivatorNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id })
+
+	return (
+		<th
+			ref={setNodeRef}
+			className={`nb-th${isDragging ? ' nb-th--dragging' : ''}`}
+			style={{
+				width: size,
+				transform: CSS.Transform.toString(transform),
+				transition,
+				zIndex: isDragging ? 1 : undefined,
+			}}
+		>
+			<span
+				ref={setActivatorNodeRef}
+				{...listeners}
+				{...attributes}
+				className="nb-col-drag-handle"
+				title="Arrastar para reordenar"
+			>⠿</span>
+			{children}
+		</th>
+	)
+}
 
 interface DatabaseTableProps {
 	dbFile: TFile | null
@@ -32,6 +83,10 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const [loading, setLoading] = useState(true)
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
+
+	const sensors = useSensors(
+		useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+	)
 
 	// ── Carregar config e linhas ─────────────────────────────────────────────
 
@@ -218,6 +273,19 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		await updateSchema(newSchema)
 	}, [config.schema, updateSchema])
 
+	// ── Reordenar colunas via drag ────────────────────────────────────────────
+
+	const handleColumnDragEnd = useCallback(async (event: DragEndEvent) => {
+		const { active, over } = event
+		if (!over || active.id === over.id) return
+
+		const oldIndex = config.schema.findIndex(c => c.id === active.id)
+		const newIndex = config.schema.findIndex(c => c.id === over.id)
+		if (oldIndex === -1 || newIndex === -1) return
+
+		await updateSchema(arrayMove(config.schema, oldIndex, newIndex))
+	}, [config.schema, updateSchema])
+
 	// ── Adicionar coluna ─────────────────────────────────────────────────────
 
 	const handleAddColumn = async () => {
@@ -312,25 +380,51 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 			<div className="nb-table-wrapper">
 				<table className="nb-table">
 					<thead className="nb-thead">
-						{table.getHeaderGroups().map(group => (
-							<tr key={group.id} className="nb-header-row">
-								{group.headers.map(header => (
-									<th
-										key={header.id}
-										className="nb-th"
-										style={{ width: header.getSize() }}
+						{table.getHeaderGroups().map(group => {
+							const visibleSchemaIds = config.schema
+								.filter(c => c.visible)
+								.map(c => c.id)
+							return (
+								<DndContext
+									key={group.id}
+									sensors={sensors}
+									collisionDetection={closestCenter}
+									onDragEnd={handleColumnDragEnd}
+								>
+									<SortableContext
+										items={visibleSchemaIds}
+										strategy={horizontalListSortingStrategy}
 									>
-										{flexRender(header.column.columnDef.header, header.getContext())}
-									</th>
-								))}
-								{/* Botão adicionar coluna */}
-								<th className="nb-th nb-th-add-col">
-									<button className="nb-add-col-btn" onClick={handleAddColumn} title="Adicionar campo">
-										+
-									</button>
-								</th>
-							</tr>
-						))}
+										<tr className="nb-header-row">
+											{group.headers.map(header =>
+												header.id === '_title' ? (
+													<th
+														key={header.id}
+														className="nb-th"
+														style={{ width: header.getSize() }}
+													>
+														{flexRender(header.column.columnDef.header, header.getContext())}
+													</th>
+												) : (
+													<SortableTh
+														key={header.id}
+														id={header.id}
+														size={header.getSize()}
+													>
+														{flexRender(header.column.columnDef.header, header.getContext())}
+													</SortableTh>
+												)
+											)}
+											<th className="nb-th nb-th-add-col">
+												<button className="nb-add-col-btn" onClick={handleAddColumn} title="Adicionar campo">
+													+
+												</button>
+											</th>
+										</tr>
+									</SortableContext>
+								</DndContext>
+							)
+						})}
 					</thead>
 
 					<tbody className="nb-tbody">

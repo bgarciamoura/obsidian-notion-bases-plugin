@@ -210,11 +210,44 @@
 	border-right: none;
 }
 
+/* ── Drag handle de coluna ───────────────────────────────────────────────── */
+
+.nb-col-drag-handle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	flex-shrink: 0;
+	color: var(--text-faint);
+	cursor: grab;
+	font-size: 11px;
+	padding: 6px 2px 6px 6px;
+	opacity: 0;
+	transition: opacity 100ms;
+	user-select: none;
+	outline: none;
+}
+
+.nb-th:hover .nb-col-drag-handle,
+.nb-th--dragging .nb-col-drag-handle {
+	opacity: 1;
+}
+
+.nb-col-drag-handle:active {
+	cursor: grabbing;
+}
+
+.nb-th--dragging {
+	opacity: 0.5;
+}
+
 /* ── Column header component ─────────────────────────────────────────────── */
 
 .nb-column-header {
 	position: relative;
 	width: 100%;
+	display: flex;
+	align-items: center;
 }
 
 .nb-header-label {
