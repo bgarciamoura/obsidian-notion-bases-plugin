@@ -1,99 +1,112 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import { Notice, Plugin, TFile, WorkspaceLeaf } from 'obsidian'
+import { DATABASE_VIEW_TYPE, DatabaseView } from './database-view'
+import { DatabaseManager } from './database-manager'
+import { DEFAULT_SETTINGS, NotionBasesSettings, NotionBasesSettingTab } from './settings'
 
-// Remember to rename these classes and interfaces!
-
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class NotionBasesPlugin extends Plugin {
+	settings: NotionBasesSettings
+	manager: DatabaseManager
 
 	async onload() {
-		await this.loadSettings();
+		await this.loadSettings()
+		this.manager = new DatabaseManager(this.app, this.settings.databaseFileName)
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
+		// Registrar o tipo de view customizado
+		this.registerView(
+			DATABASE_VIEW_TYPE,
+			leaf => new DatabaseView(leaf, this)
+		)
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
+		// Ribbon — abrir/criar banco na pasta atual
+		this.addRibbonIcon('table', 'Notion Bases', async () => {
+			await this.openOrCreateDatabase()
+		})
 
-		// This adds a simple command that can be triggered anywhere
+		// Comandos
 		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
+			id: 'open-database',
+			name: 'Abrir banco de dados desta pasta',
+			callback: async () => {
+				await this.openOrCreateDatabase()
+			},
+		})
 
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
+		this.addCommand({
+			id: 'create-database',
+			name: 'Criar novo banco de dados na pasta atual',
+			callback: async () => {
+				const activeFile = this.app.workspace.getActiveFile()
+				const folderPath = activeFile?.parent?.path ?? ''
+				await this.createAndOpenDatabase(folderPath)
+			},
+		})
+
+		// Interceptar abertura de arquivos _database.md
+		this.registerEvent(
+			this.app.workspace.on('file-open', async file => {
+				if (!file) return
+				// Evitar loop: só redirecionar se a view atual NÃO for já nossa view
+				const activeLeaf = this.app.workspace.getMostRecentLeaf()
+				if (activeLeaf?.view.getViewType() === DATABASE_VIEW_TYPE) return
+
+				if (this.manager.isDatabaseFile(file)) {
+					const leaf = this.app.workspace.getLeaf(false)
+					await this.openDatabaseInLeaf(leaf, file)
 				}
-				return false;
-			}
-		});
+			})
+		)
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
+		// Settings tab
+		this.addSettingTab(new NotionBasesSettingTab(this.app, this))
 	}
 
 	onunload() {
+		// O Obsidian desmonta as views automaticamente
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+		this.settings = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			(await this.loadData()) as Partial<NotionBasesSettings>
+		)
 	}
 
 	async saveSettings() {
-		await this.saveData(this.settings);
-	}
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
+		await this.saveData(this.settings)
 	}
 
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
+	// ── Helpers ──────────────────────────────────────────────────────────────
+
+	async openOrCreateDatabase() {
+		const activeFile = this.app.workspace.getActiveFile()
+		const folderPath = activeFile?.parent?.path ?? ''
+		const existing = this.manager.getDatabaseFileInFolder(folderPath)
+
+		if (existing) {
+			const leaf = this.app.workspace.getLeaf('tab')
+			await this.openDatabaseInLeaf(leaf, existing)
+		} else {
+			await this.createAndOpenDatabase(folderPath)
+		}
 	}
 
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
+	async createAndOpenDatabase(folderPath: string) {
+		try {
+			const dbFile = await this.manager.createDatabase(folderPath)
+			const leaf = this.app.workspace.getLeaf('tab')
+			await this.openDatabaseInLeaf(leaf, dbFile)
+		} catch (e) {
+			new Notice(String(e))
+		}
+	}
+
+	async openDatabaseInLeaf(leaf: WorkspaceLeaf, file: TFile) {
+		await leaf.setViewState({
+			type: DATABASE_VIEW_TYPE,
+			state: { dbFilePath: file.path },
+			active: true,
+		})
+		this.app.workspace.revealLeaf(leaf)
 	}
 }

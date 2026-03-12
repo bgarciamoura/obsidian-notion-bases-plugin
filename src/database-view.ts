@@ -1,0 +1,95 @@
+import { ItemView, TFile, WorkspaceLeaf } from 'obsidian'
+import { createElement } from 'react'
+import { createRoot, Root } from 'react-dom/client'
+import { AppContext } from './context'
+import { DatabaseManager } from './database-manager'
+import { DatabaseTable } from './components/DatabaseTable'
+import type NotionBasesPlugin from './main'
+
+export const DATABASE_VIEW_TYPE = 'notion-bases-view'
+
+interface DatabaseViewState extends Record<string, unknown> {
+	dbFilePath?: string
+}
+
+export class DatabaseView extends ItemView {
+	private root: Root | null = null
+	private dbFilePath = ''
+	private plugin: NotionBasesPlugin
+
+	constructor(leaf: WorkspaceLeaf, plugin: NotionBasesPlugin) {
+		super(leaf)
+		this.plugin = plugin
+	}
+
+	getViewType(): string {
+		return DATABASE_VIEW_TYPE
+	}
+
+	getDisplayText(): string {
+		if (this.dbFilePath) {
+			const file = this.app.vault.getFileByPath(this.dbFilePath)
+			return file?.parent?.name ?? 'Banco de Dados'
+		}
+		return 'Notion Bases'
+	}
+
+	getIcon(): string {
+		return 'table'
+	}
+
+	// Obsidian usa setState para restaurar estado após reload
+	async setState(state: DatabaseViewState, result: Parameters<ItemView['setState']>[1]): Promise<void> {
+		if (state.dbFilePath) {
+			this.dbFilePath = state.dbFilePath
+		}
+		await super.setState(state, result)
+		this.render()
+	}
+
+	getState(): DatabaseViewState {
+		return { dbFilePath: this.dbFilePath }
+	}
+
+	setDatabaseFile(file: TFile): void {
+		this.dbFilePath = file.path
+		this.render()
+	}
+
+	async onOpen(): Promise<void> {
+		this.render()
+	}
+
+	async onClose(): Promise<void> {
+		this.root?.unmount()
+		this.root = null
+	}
+
+	private render(): void {
+		const container = this.containerEl.children[1] as HTMLElement
+		container.empty()
+		container.addClass('notion-bases-view-container')
+
+		const dbFile = this.dbFilePath
+			? this.app.vault.getFileByPath(this.dbFilePath) ?? null
+			: null
+
+		const manager = new DatabaseManager(
+			this.app,
+			this.plugin.settings.databaseFileName
+		)
+
+		if (this.root) {
+			this.root.unmount()
+		}
+
+		this.root = createRoot(container)
+		this.root.render(
+			createElement(
+				AppContext.Provider,
+				{ value: this.app },
+				createElement(DatabaseTable, { dbFile, manager })
+			)
+		)
+	}
+}
