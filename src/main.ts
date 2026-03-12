@@ -71,8 +71,12 @@ export default class NotionBasesPlugin extends Plugin {
 				// aba markdown e revelar a existente em vez de criar outra.
 				const existingLeaf = this.findDatabaseLeaf(file.path)
 				if (existingLeaf) {
-					mdLeaf.detach()
 					this.app.workspace.revealLeaf(existingLeaf)
+					// Diferir o detach por um tick: chamar imediatamente causa
+					// "Field is not present in this state" do CodeMirror porque
+					// o editor markdown ainda não terminou de inicializar e o
+					// Obsidian tenta salvar o histórico durante onUnloadFile.
+					setTimeout(() => mdLeaf.detach(), 0)
 					return
 				}
 
