@@ -210,6 +210,11 @@
 	border-right: none;
 }
 
+.nb-th-select {
+	width: 40px;
+	text-align: center;
+}
+
 /* ── Drag handle de coluna ───────────────────────────────────────────────── */
 
 /* Wrapper flex que alinha handle + header na mesma linha */
@@ -375,6 +380,15 @@
 	flex-shrink: 0;
 	width: 20px;
 	text-align: center;
+}
+
+.nb-menu-item:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.nb-actions-dropdown {
+	min-width: 220px;
 }
 
 .nb-menu-item span:last-child {

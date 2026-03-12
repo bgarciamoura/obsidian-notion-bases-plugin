@@ -7,6 +7,7 @@ import {
 	ColumnDef,
 	SortingState,
 	ColumnFiltersState,
+	RowSelectionState,
 } from '@tanstack/react-table'
 import {
 	DndContext,
@@ -30,6 +31,7 @@ import { DatabaseManager } from '../database-manager'
 import { ColumnSchema, DatabaseConfig, NoteRow, DEFAULT_DATABASE_CONFIG } from '../types'
 import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
+import { FolderPickerModal } from '../folder-picker-modal'
 
 // ── Cabeçalho de coluna arrastável ───────────────────────────────────────────
 
@@ -86,6 +88,9 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const [loading, setLoading] = useState(true)
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
+	const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+	const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
+	const actionsMenuRef = useRef<HTMLDivElement>(null)
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -172,7 +177,26 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const columns = useMemo<ColumnDef<NoteRow>[]>(() => {
 		const cols: ColumnDef<NoteRow>[] = []
 
-		// Coluna título (sempre primeira)
+		// Coluna seleção (sempre primeira)
+		cols.push({
+			id: '_select',
+			size: 40,
+			enableSorting: false,
+			enableColumnFilter: false,
+			header: () => null,
+			cell: ({ row }) => (
+				<div className="nb-cell-checkbox-wrapper">
+					<input
+						type="checkbox"
+						className="nb-cell-checkbox"
+						checked={row.getIsSelected()}
+						onChange={row.getToggleSelectedHandler()}
+					/>
+				</div>
+			),
+		})
+
+		// Coluna título (sempre segunda)
 		cols.push({
 			id: '_title',
 			accessorFn: row => row._title,
@@ -231,10 +255,12 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const table = useReactTable({
 		data: rows,
 		columns,
-		state: { sorting, columnFilters, globalFilter },
+		state: { sorting, columnFilters, globalFilter, rowSelection },
 		onSortingChange: setSorting,
 		onColumnFiltersChange: setColumnFilters,
 		onGlobalFilterChange: setGlobalFilter,
+		onRowSelectionChange: setRowSelection,
+		enableRowSelection: true,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
@@ -266,6 +292,53 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		document.addEventListener('mousedown', handler)
 		return () => document.removeEventListener('mousedown', handler)
 	}, [fieldsMenuOpen])
+
+	// ── Fechar menu de ações ao clicar fora ──────────────────────────────────
+
+	useEffect(() => {
+		if (!actionsMenuOpen) return
+		const handler = (e: MouseEvent) => {
+			if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+				setActionsMenuOpen(false)
+			}
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [actionsMenuOpen])
+
+	// ── Ações em lote ────────────────────────────────────────────────────────
+
+	const getSelectedFiles = useCallback(() => {
+		return table.getSelectedRowModel().rows.map(r => r.original._file)
+	}, [table])
+
+	const handleDeleteSelected = useCallback(async () => {
+		const files = getSelectedFiles()
+		if (files.length === 0) return
+		if (!window.confirm(`Apagar ${files.length} nota(s)? Esta ação não pode ser desfeita.`)) return
+		await manager.deleteNotes(files)
+		setRowSelection({})
+		setActionsMenuOpen(false)
+	}, [getSelectedFiles, manager])
+
+	const handleMoveSelected = useCallback(() => {
+		const files = getSelectedFiles()
+		if (files.length === 0) return
+		const modal = new FolderPickerModal(app, async folder => {
+			await manager.moveNotes(files, folder.path)
+			setRowSelection({})
+		})
+		modal.open()
+		setActionsMenuOpen(false)
+	}, [app, getSelectedFiles, manager])
+
+	const handleDuplicateSelected = useCallback(async () => {
+		const files = getSelectedFiles()
+		if (files.length === 0) return
+		await manager.duplicateNotes(files)
+		setRowSelection({})
+		setActionsMenuOpen(false)
+	}, [getSelectedFiles, manager])
 
 	// ── Toggle visibilidade de um campo ──────────────────────────────────────
 
@@ -373,6 +446,51 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 					)}
 				</div>
 
+				{/* Botão Ações */}
+				<div className="nb-fields-menu-wrapper" ref={actionsMenuRef}>
+					<button
+						className={`nb-toolbar-btn ${actionsMenuOpen ? 'nb-toolbar-btn--active' : ''}`}
+						onClick={() => setActionsMenuOpen(v => !v)}
+						title="Ações em lote"
+					>
+						Ações
+						{table.getSelectedRowModel().rows.length > 0 && (
+							<span className="nb-hidden-badge">
+								{table.getSelectedRowModel().rows.length}
+							</span>
+						)}
+					</button>
+
+					{actionsMenuOpen && (
+						<div className="nb-fields-dropdown nb-actions-dropdown">
+							<button
+								className="nb-menu-item"
+								onClick={handleDeleteSelected}
+								disabled={table.getSelectedRowModel().rows.length === 0}
+							>
+								<span className="nb-menu-item-icon">🗑</span>
+								<span>Apagar todos selecionados</span>
+							</button>
+							<button
+								className="nb-menu-item"
+								onClick={handleMoveSelected}
+								disabled={table.getSelectedRowModel().rows.length === 0}
+							>
+								<span className="nb-menu-item-icon">📁</span>
+								<span>Mover todos selecionados</span>
+							</button>
+							<button
+								className="nb-menu-item"
+								onClick={handleDuplicateSelected}
+								disabled={table.getSelectedRowModel().rows.length === 0}
+							>
+								<span className="nb-menu-item-icon">📋</span>
+								<span>Duplicar todos selecionados</span>
+							</button>
+						</div>
+					)}
+				</div>
+
 				<span className="nb-row-count">
 					{tableRows.length} {tableRows.length === 1 ? 'item' : 'itens'}
 				</span>
@@ -400,7 +518,23 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 									>
 										<tr className="nb-header-row">
 											{group.headers.map(header =>
-												header.id === '_title' ? (
+												header.id === '_select' ? (
+													<th
+														key={header.id}
+														className="nb-th nb-th-select"
+														style={{ width: header.getSize() }}
+													>
+														<div className="nb-cell-checkbox-wrapper">
+															<input
+																type="checkbox"
+																className="nb-cell-checkbox"
+																checked={table.getIsAllRowsSelected()}
+																ref={el => { if (el) el.indeterminate = table.getIsSomeRowsSelected() }}
+																onChange={table.getToggleAllRowsSelectedHandler()}
+															/>
+														</div>
+													</th>
+												) : header.id === '_title' ? (
 													<th
 														key={header.id}
 														className="nb-th"

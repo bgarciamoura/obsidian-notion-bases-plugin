@@ -109,6 +109,34 @@ export class DatabaseManager {
 		return this.app.vault.create(path, '---\n---\n')
 	}
 
+	// ── Operações em lote ──────────────────────────────────────────────────
+
+	async deleteNotes(files: TFile[]): Promise<void> {
+		for (const file of files) {
+			await this.app.vault.delete(file)
+		}
+	}
+
+	async duplicateNotes(files: TFile[]): Promise<void> {
+		for (const file of files) {
+			const folderPath = file.parent?.path ?? ''
+			let path = normalizePath(`${folderPath}/${file.basename} (cópia).md`)
+			let i = 2
+			while (this.app.vault.getFileByPath(path)) {
+				path = normalizePath(`${folderPath}/${file.basename} (cópia ${i++}).md`)
+			}
+			const content = await this.app.vault.read(file)
+			await this.app.vault.create(path, content)
+		}
+	}
+
+	async moveNotes(files: TFile[], targetFolderPath: string): Promise<void> {
+		for (const file of files) {
+			const newPath = normalizePath(`${targetFolderPath}/${file.name}`)
+			await this.app.fileManager.renameFile(file, newPath)
+		}
+	}
+
 	// ── Criar banco de dados ───────────────────────────────────────────────
 
 	async createDatabase(folderPath: string): Promise<TFile> {
