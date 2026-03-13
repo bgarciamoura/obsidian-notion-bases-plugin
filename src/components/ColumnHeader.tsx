@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { ColumnSchema, ColumnType } from '../types'
+import { validateFormulaSyntax } from '../formula-engine'
 
 const TYPE_ICONS: Record<ColumnType, string> = {
 	title:       '📄',
@@ -10,6 +11,17 @@ const TYPE_ICONS: Record<ColumnType, string> = {
 	date:        '📅',
 	checkbox:    '☑',
 	formula:     'ƒ',
+}
+
+const TYPE_LABELS: Record<ColumnType, string> = {
+	title:       'Título',
+	text:        'Texto',
+	number:      'Número',
+	select:      'Seleção',
+	multiselect: 'Multi-seleção',
+	date:        'Data',
+	checkbox:    'Checkbox',
+	formula:     'Fórmula',
 }
 
 interface ColumnHeaderProps {
@@ -23,8 +35,12 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 	const [menuOpen, setMenuOpen] = useState(false)
 	const [renaming, setRenaming] = useState(false)
 	const [nameValue, setNameValue] = useState(col.name)
+	const [editingFormula, setEditingFormula] = useState(false)
+	const [formulaValue, setFormulaValue] = useState(col.formula ?? '')
+	const [formulaError, setFormulaError] = useState<string | null>(null)
 	const menuRef = useRef<HTMLDivElement>(null)
 	const inputRef = useRef<HTMLInputElement>(null)
+	const formulaRef = useRef<HTMLTextAreaElement>(null)
 
 	// Fechar menu ao clicar fora
 	useEffect(() => {
@@ -32,18 +48,24 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 		const handler = (e: MouseEvent) => {
 			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
 				setMenuOpen(false)
+				setEditingFormula(false)
 			}
 		}
 		document.addEventListener('mousedown', handler)
 		return () => document.removeEventListener('mousedown', handler)
 	}, [menuOpen])
 
-	// Sincronizar nameValue com col.name (caso o schema atualize externamente)
+	// Sincronizar nameValue com col.name
 	useEffect(() => {
 		if (!renaming) setNameValue(col.name)
 	}, [col.name, renaming])
 
-	// Focar e selecionar o input ao entrar em modo rename
+	// Sincronizar formulaValue com col.formula
+	useEffect(() => {
+		if (!editingFormula) setFormulaValue(col.formula ?? '')
+	}, [col.formula, editingFormula])
+
+	// Focar input ao renomear
 	useEffect(() => {
 		if (!renaming) return
 		const input = inputRef.current
@@ -51,6 +73,17 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 		input.focus()
 		input.select()
 	}, [renaming])
+
+	// Focar textarea ao abrir editor de fórmula
+	useEffect(() => {
+		if (!editingFormula) return
+		setTimeout(() => formulaRef.current?.focus(), 50)
+	}, [editingFormula])
+
+	// Validar fórmula em tempo real
+	useEffect(() => {
+		setFormulaError(validateFormulaSyntax(formulaValue))
+	}, [formulaValue])
 
 	const updateCol = async (changes: Partial<ColumnSchema>) => {
 		const newSchema = schema.map(s => s.id === col.id ? { ...s, ...changes } : s)
@@ -60,7 +93,6 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 	const handleRename = async () => {
 		const trimmed = nameValue.trim()
 		if (trimmed && trimmed !== col.name) {
-			// Delega ao pai: atualiza id + name + frontmatter das notas
 			await onRenameColumn(col.id, trimmed)
 		}
 		setRenaming(false)
@@ -80,8 +112,21 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 
 	const handleTypeChange = async (type: ColumnType) => {
 		await updateCol({ type })
+		if (type === 'formula') {
+			setEditingFormula(true)
+		} else {
+			setMenuOpen(false)
+		}
+	}
+
+	const handleSaveFormula = async () => {
+		if (formulaError) return
+		await updateCol({ formula: formulaValue.trim() || undefined })
+		setEditingFormula(false)
 		setMenuOpen(false)
 	}
+
+	const otherCols = schema.filter(c => c.id !== col.id && c.type !== 'formula')
 
 	return (
 		<div className="nb-column-header" ref={menuRef}>
@@ -102,7 +147,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 			) : (
 				<button
 					className="nb-header-label"
-					onClick={() => setMenuOpen(v => !v)}
+					onClick={() => { setMenuOpen(v => !v); setEditingFormula(false) }}
 					title={col.name}
 				>
 					<span className="nb-header-icon">{TYPE_ICONS[col.type]}</span>
@@ -111,12 +156,19 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 			)}
 
 			{/* Menu dropdown */}
-			{menuOpen && (
+			{menuOpen && !editingFormula && (
 				<div className="nb-column-menu">
 					<button className="nb-menu-item" onClick={() => { setMenuOpen(false); setRenaming(true) }}>
 						<span className="nb-menu-item-icon">✏️</span>
 						<span>Renomear</span>
 					</button>
+
+					{col.type === 'formula' && (
+						<button className="nb-menu-item" onClick={() => setEditingFormula(true)}>
+							<span className="nb-menu-item-icon">ƒ</span>
+							<span>Editar fórmula</span>
+						</button>
+					)}
 
 					<div className="nb-menu-separator" />
 					<div className="nb-menu-label">Tipo de campo</div>
@@ -127,7 +179,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 							onClick={() => handleTypeChange(type)}
 						>
 							<span className="nb-menu-item-icon">{TYPE_ICONS[type]}</span>
-							<span>{type}</span>
+							<span>{TYPE_LABELS[type]}</span>
 						</button>
 					))}
 
@@ -140,6 +192,75 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 						<span className="nb-menu-item-icon">🗑</span>
 						<span>Excluir campo</span>
 					</button>
+				</div>
+			)}
+
+			{/* Editor de fórmula */}
+			{menuOpen && editingFormula && (
+				<div className="nb-column-menu nb-formula-panel">
+					<div className="nb-formula-panel-header">
+						<button className="nb-formula-back" onClick={() => setEditingFormula(false)}>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+						</button>
+						<span className="nb-formula-panel-title">Fórmula: {col.name}</span>
+					</div>
+
+					<textarea
+						ref={formulaRef}
+						className={`nb-formula-textarea${formulaError ? ' nb-formula-textarea--error' : formulaValue.trim() ? ' nb-formula-textarea--ok' : ''}`}
+						value={formulaValue}
+						onChange={e => setFormulaValue(e.target.value)}
+						placeholder={'Ex: IF(status = "feito", 1, 0)'}
+						rows={3}
+						spellCheck={false}
+						onKeyDown={e => {
+							if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); handleSaveFormula() }
+							if (e.key === 'Escape') setEditingFormula(false)
+						}}
+					/>
+
+					{formulaError && (
+						<div className="nb-formula-feedback nb-formula-feedback--error">
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+							{formulaError}
+						</div>
+					)}
+					{!formulaError && formulaValue.trim() && (
+						<div className="nb-formula-feedback nb-formula-feedback--ok">
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+							Sintaxe válida
+						</div>
+					)}
+
+					{otherCols.length > 0 && (
+						<div className="nb-formula-cols-hint">
+							<span className="nb-formula-cols-label">Colunas disponíveis:</span>
+							<div className="nb-formula-cols-list">
+								{otherCols.map(c => (
+									<code
+										key={c.id}
+										className="nb-formula-col-chip"
+										title={`ID: ${c.id}`}
+										onClick={() => {
+											const name = /\s/.test(c.name) ? `[${c.name}]` : c.name
+											setFormulaValue(v => v + name)
+											formulaRef.current?.focus()
+										}}
+									>{c.name}</code>
+								))}
+							</div>
+						</div>
+					)}
+
+					<div className="nb-formula-actions">
+						<button
+							className="nb-formula-save"
+							disabled={!!formulaError}
+							onClick={handleSaveFormula}
+							title="Salvar (Ctrl+Enter)"
+						>Salvar</button>
+						<button className="nb-formula-cancel" onClick={() => setEditingFormula(false)}>Cancelar</button>
+					</div>
 				</div>
 			)}
 		</div>

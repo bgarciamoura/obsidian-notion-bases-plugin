@@ -598,6 +598,174 @@
 	line-height: 28px;
 }
 
+/* ── Formula editor panel ────────────────────────────────────────────────── */
+
+.nb-formula-panel {
+	width: 300px;
+	padding: 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.nb-formula-panel-header {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 2px;
+}
+
+.nb-formula-back {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border-radius: var(--radius-s);
+	color: var(--text-muted);
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.nb-formula-back:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.nb-formula-panel-title {
+	font-size: var(--font-ui-small);
+	font-weight: 600;
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.nb-formula-textarea {
+	width: 100%;
+	min-height: 70px;
+	padding: 8px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.5;
+	resize: vertical;
+	box-sizing: border-box;
+	outline: none;
+	transition: border-color 150ms;
+}
+
+.nb-formula-textarea:focus {
+	border-color: var(--interactive-accent);
+}
+
+.nb-formula-textarea--error {
+	border-color: var(--color-red);
+}
+
+.nb-formula-textarea--ok {
+	border-color: var(--color-green);
+}
+
+.nb-formula-feedback {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	font-size: var(--font-ui-smaller);
+	line-height: 1.3;
+}
+
+.nb-formula-feedback--error {
+	color: var(--color-red);
+}
+
+.nb-formula-feedback--ok {
+	color: var(--color-green);
+}
+
+.nb-formula-cols-hint {
+	border-top: 1px solid var(--background-modifier-border);
+	padding-top: 6px;
+}
+
+.nb-formula-cols-label {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	display: block;
+	margin-bottom: 4px;
+}
+
+.nb-formula-cols-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.nb-formula-col-chip {
+	display: inline-block;
+	padding: 1px 6px;
+	background: var(--background-modifier-hover);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	font-size: 11px;
+	font-family: var(--font-monospace);
+	color: var(--text-accent);
+	cursor: pointer;
+	user-select: none;
+}
+
+.nb-formula-col-chip:hover {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.nb-formula-actions {
+	display: flex;
+	gap: 6px;
+	justify-content: flex-end;
+}
+
+.nb-formula-save {
+	padding: 4px 12px;
+	border-radius: var(--radius-s);
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+	font-weight: 500;
+}
+
+.nb-formula-save:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.nb-formula-save:not(:disabled):hover {
+	background: var(--interactive-accent-hover);
+}
+
+.nb-formula-cancel {
+	padding: 4px 10px;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-muted);
+	border: 1px solid var(--background-modifier-border);
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+}
+
+.nb-formula-cancel:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
 /* ── Inputs de edição ────────────────────────────────────────────────────── */
 
 .nb-cell-input {

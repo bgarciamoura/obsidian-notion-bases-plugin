@@ -29,6 +29,7 @@ import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import { ColumnSchema, DatabaseConfig, FilterOperator, NoteRow, DEFAULT_DATABASE_CONFIG } from '../types'
+import { evaluateFormulas } from '../formula-engine'
 import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
@@ -289,7 +290,10 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 			await manager.writeConfig(dbFile, cfg)
 		}
 
-		const noteRows = notes.map(f => manager.getNoteData(f, cfg.schema))
+		const noteRows = evaluateFormulas(
+			notes.map(f => manager.getNoteData(f, cfg.schema)),
+			cfg.schema
+		)
 
 		// Garantir que a linha recém-criada apareça no final
 		if (lastCreatedPath.current) {
