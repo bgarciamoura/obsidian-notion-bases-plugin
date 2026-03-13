@@ -213,7 +213,13 @@ function SortablePill({ filter, isActive, onToggle, onRemove, btnRef }: {
 				{...attributes}
 				className="nb-pill-drag-handle"
 				title="Arrastar para reordenar"
-			>⠿</span>
+			>
+				<svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor">
+					<circle cx="2" cy="2.5" r="1.2"/><circle cx="6" cy="2.5" r="1.2"/>
+					<circle cx="2" cy="7" r="1.2"/><circle cx="6" cy="7" r="1.2"/>
+					<circle cx="2" cy="11.5" r="1.2"/><circle cx="6" cy="11.5" r="1.2"/>
+				</svg>
+			</span>
 			<button
 				ref={btnRef}
 				className={`nb-filter-pill ${isActive ? 'nb-filter-pill--active' : ''}`}

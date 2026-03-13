@@ -788,18 +788,25 @@
 .nb-filter-pill-sortable {
 	display: inline-flex;
 	align-items: center;
-	gap: 2px;
 }
 
 .nb-pill-drag-handle {
 	display: inline-flex;
 	align-items: center;
-	padding: 0 2px;
-	color: var(--text-faint);
+	justify-content: center;
+	width: 14px;
+	height: 100%;
+	color: var(--text-muted);
 	cursor: grab;
-	font-size: 12px;
-	line-height: 1;
+	opacity: 0;
+	transition: opacity 120ms;
 	user-select: none;
+	flex-shrink: 0;
+	outline: none;
+}
+
+.nb-filter-pill-sortable:hover .nb-pill-drag-handle {
+	opacity: 1;
 }
 
 .nb-pill-drag-handle:active {
