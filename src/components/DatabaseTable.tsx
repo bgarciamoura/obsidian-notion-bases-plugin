@@ -25,6 +25,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { TFile } from 'obsidian'
 import { ReactNode, useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import { ColumnSchema, DatabaseConfig, FilterOperator, NoteRow, DEFAULT_DATABASE_CONFIG } from '../types'
@@ -148,7 +149,9 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
 	const [openFilterPill, setOpenFilterPill] = useState<string | null>(null)
-	const filterPillRefs = useRef<Record<string, HTMLDivElement | null>>({})
+	const filterPillRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+	const pillDropdownRef = useRef<HTMLDivElement | null>(null)
+	const [pillDropdownPos, setPillDropdownPos] = useState<{ top: number; left: number } | null>(null)
 	const [openOperatorPicker, setOpenOperatorPicker] = useState<string | null>(null)
 	const operatorPickerRefs = useRef<Record<string, HTMLDivElement | null>>({})
 	const filtersInitialized = useRef(false)
@@ -462,15 +465,26 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		return () => document.removeEventListener('mousedown', handler)
 	}, [filterMenuOpen])
 
+	// ── Posição do dropdown de pill (portal) ──────────────────────────────────
+
+	useEffect(() => {
+		if (!openFilterPill) { setPillDropdownPos(null); return }
+		const btn = filterPillRefs.current[openFilterPill]
+		if (!btn) return
+		const rect = btn.getBoundingClientRect()
+		setPillDropdownPos({ top: rect.bottom + 6, left: rect.left })
+	}, [openFilterPill])
+
 	// ── Fechar pill de filtro ao clicar fora ──────────────────────────────────
 
 	useEffect(() => {
 		if (!openFilterPill) return
 		const handler = (e: MouseEvent) => {
-			const pillEl = filterPillRefs.current[openFilterPill]
-			if (pillEl && !pillEl.contains(e.target as Node)) {
-				setOpenFilterPill(null)
-			}
+			const btn = filterPillRefs.current[openFilterPill]
+			const dropdown = pillDropdownRef.current
+			const clickedBtn = btn && btn.contains(e.target as Node)
+			const clickedDropdown = dropdown && dropdown.contains(e.target as Node)
+			if (!clickedBtn && !clickedDropdown) setOpenFilterPill(null)
 		}
 		document.addEventListener('mousedown', handler)
 		return () => document.removeEventListener('mousedown', handler)
@@ -728,77 +742,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 					)}
 				</div>
 
-				{/* Pills de filtros ativos */}
-				{activeFilters.map(filter => (
-					<div
-						key={filter.id}
-						className={`nb-filter-pill-wrapper${shouldCollapse && searchExpanded ? ' nb-filter-pill-wrapper--hidden' : ''}`}
-						ref={el => { filterPillRefs.current[filter.id] = el }}
-					>
-						<button
-							className={`nb-filter-pill ${openFilterPill === filter.id ? 'nb-filter-pill--active' : '' }`}
-							onClick={() => setOpenFilterPill(v => v === filter.id ? null : filter.id)}
-						>
-							<span className="nb-filter-pill-icon">{filter.icon}</span>
-							<span className="nb-filter-pill-name">{filter.columnName}</span>
-							<span
-								className="nb-filter-pill-remove"
-								onClick={e => { e.stopPropagation(); removeFilter(filter.id) }}
-								title="Remover filtro"
-							>×</span>
-						</button>
-
-						{openFilterPill === filter.id && (
-							<div className="nb-filter-pill-dropdown">
-								<div className="nb-filter-query-row">
-									<span className="nb-filter-query-name">{filter.columnName}</span>
-									<div
-										className="nb-filter-op-wrapper"
-										ref={el => { operatorPickerRefs.current[filter.id] = el }}
-									>
-										<button
-											className={`nb-filter-op-btn ${openOperatorPicker === filter.id ? 'nb-filter-op-btn--open' : '' }`}
-											onClick={e => { e.stopPropagation(); setOpenOperatorPicker(v => v === filter.id ? null : filter.id) }}
-										>
-											{OPERATOR_LABELS[filter.operator]}
-											<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-										</button>
-										{openOperatorPicker === filter.id && (
-											<div className="nb-filter-op-dropdown">
-												{FILTER_OPERATORS.map(op => (
-													<button
-														key={op}
-														className={`nb-menu-item ${filter.operator === op ? 'nb-menu-item--active' : ''}`}
-														onClick={e => { e.stopPropagation(); updateFilter(filter.id, op, filter.value); setOpenOperatorPicker(null) }}
-													>
-														{OPERATOR_LABELS[op]}
-													</button>
-												))}
-											</div>
-										)}
-									</div>
-									<button
-										className="nb-filter-query-clear"
-										onClick={e => { e.stopPropagation(); removeFilter(filter.id) }}
-										title="Remover filtro"
-									>×</button>
-								</div>
-								{filter.operator !== 'is_empty' && filter.operator !== 'is_not_empty' && (
-									<input
-										className="nb-filter-value-input"
-										type="text"
-										placeholder="Digite um valor..."
-										value={filter.value}
-										autoFocus
-										onChange={e => updateFilter(filter.id, filter.operator, e.target.value)}
-									/>
-								)}
-							</div>
-						)}
-					</div>
-				))}
-
-				<span className="nb-row-count">
+<span className="nb-row-count">
 					{tableRows.length} {tableRows.length === 1 ? 'item' : 'itens'}
 				</span>
 
@@ -849,7 +793,85 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 				</div>
 			</div>
 
-			{/* Tabela */}
+	
+
+		{/* Linha de pills de filtros ativos */}
+		{activeFilters.length > 0 && !(shouldCollapse && searchExpanded) && (
+			<div className="nb-pills-row">
+				{activeFilters.map(filter => (
+					<button
+						key={filter.id}
+						ref={el => { filterPillRefs.current[filter.id] = el }}
+						className={`nb-filter-pill ${openFilterPill === filter.id ? 'nb-filter-pill--active' : ''}`}
+						onClick={() => setOpenFilterPill(v => v === filter.id ? null : filter.id)}
+					>
+						<span className="nb-filter-pill-icon">{filter.icon}</span>
+						<span className="nb-filter-pill-name">{filter.columnName}</span>
+						<span
+							className="nb-filter-pill-remove"
+							onClick={e => { e.stopPropagation(); removeFilter(filter.id) }}
+							title="Remover filtro"
+						>×</span>
+					</button>
+				))}
+			</div>
+		)}
+
+		{/* Dropdown portal para pill aberta */}
+		{(() => {
+			const filter = activeFilters.find(f => f.id === openFilterPill)
+			if (!filter || !pillDropdownPos) return null
+			return createPortal(
+				<div ref={pillDropdownRef} className="nb-filter-pill-dropdown" style={{ position: 'fixed', top: pillDropdownPos.top, left: pillDropdownPos.left, zIndex: 1000 }}>
+					<div className="nb-filter-query-row">
+						<span className="nb-filter-query-name">{filter.columnName}</span>
+						<div
+							className="nb-filter-op-wrapper"
+							ref={el => { operatorPickerRefs.current[filter.id] = el }}
+						>
+							<button
+								className={`nb-filter-op-btn ${openOperatorPicker === filter.id ? 'nb-filter-op-btn--open' : ''}`}
+								onClick={e => { e.stopPropagation(); setOpenOperatorPicker(v => v === filter.id ? null : filter.id) }}
+							>
+								{OPERATOR_LABELS[filter.operator]}
+								<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+							</button>
+							{openOperatorPicker === filter.id && (
+								<div className="nb-filter-op-dropdown">
+									{FILTER_OPERATORS.map(op => (
+										<button
+											key={op}
+											className={`nb-menu-item ${filter.operator === op ? 'nb-menu-item--active' : ''}`}
+											onClick={e => { e.stopPropagation(); updateFilter(filter.id, op, filter.value); setOpenOperatorPicker(null) }}
+										>
+											{OPERATOR_LABELS[op]}
+										</button>
+									))}
+								</div>
+							)}
+						</div>
+						<button
+							className="nb-filter-query-clear"
+							onClick={e => { e.stopPropagation(); removeFilter(filter.id) }}
+							title="Remover filtro"
+						>×</button>
+					</div>
+					{filter.operator !== 'is_empty' && filter.operator !== 'is_not_empty' && (
+						<input
+							className="nb-filter-value-input"
+							type="text"
+							placeholder="Digite um valor..."
+							value={filter.value}
+							autoFocus
+							onChange={e => updateFilter(filter.id, filter.operator, e.target.value)}
+						/>
+					)}
+				</div>,
+				document.body
+			)
+		})()}
+
+		{/* Tabela */}
 			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema }}>
 			<div className="nb-table-wrapper">
 				<table className="nb-table">
