@@ -34,9 +34,14 @@
 	flex-shrink: 0;
 }
 
+.nb-search-container {
+	position: relative;
+	flex-shrink: 0;
+}
+
 .nb-search {
-	flex: 1;
-	max-width: 240px;
+	display: block;
+	width: 200px;
 	padding: 4px 8px;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-s);
@@ -44,10 +49,50 @@
 	color: var(--text-normal);
 	font-size: var(--font-ui-small);
 	outline: none;
+	transition: width 350ms cubic-bezier(.4,0,.2,1), opacity 250ms ease;
 }
 
 .nb-search:focus {
 	border-color: var(--interactive-accent);
+}
+
+/* Estado colapsado: input encolhe para o tamanho do ícone */
+.nb-search-container--collapsed .nb-search {
+	width: 38px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* Botão ícone de lupa — fica em cima do input via absolute */
+.nb-search-icon-btn {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 38px;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: transparent !important;
+	box-shadow: none !important;
+	cursor: pointer;
+	color: var(--text-muted);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 200ms 200ms ease; /* atraso para aparecer depois do input sumir */
+}
+
+/* Ícone visível apenas no estado colapsado */
+.nb-search-container--collapsed .nb-search-icon-btn {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.nb-search-icon-btn:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover) !important;
 }
 
 .nb-row-count {
@@ -727,6 +772,15 @@
 
 .nb-filter-pill-wrapper {
 	position: relative;
+	max-width: 300px;
+	overflow: hidden;
+	transition: max-width 300ms cubic-bezier(.4,0,.2,1), opacity 200ms ease;
+}
+
+.nb-filter-pill-wrapper--hidden {
+	max-width: 0;
+	opacity: 0;
+	pointer-events: none;
 }
 
 .nb-filter-pill {

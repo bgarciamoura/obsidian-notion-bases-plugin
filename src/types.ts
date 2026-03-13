@@ -57,6 +57,7 @@ export interface ViewConfig {
 	sorts: SortConfig[]
 	hiddenColumns: string[]
 	columnWidths: Record<string, number>
+	activePillIds?: string[]
 }
 
 // ── Database config (stored in _database.md frontmatter) ───────────────────

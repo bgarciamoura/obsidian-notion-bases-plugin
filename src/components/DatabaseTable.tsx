@@ -33,6 +33,16 @@ import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
 
+// ── Helpers estáticos ────────────────────────────────────────────────────────
+
+function getColumnIconStatic(type: string): string {
+	const icons: Record<string, string> = {
+		title: '📄', text: 'Aa', number: '#', select: '◉',
+		multiselect: '◈', date: '📅', checkbox: '☑', formula: 'ƒ',
+	}
+	return icons[type] ?? '·'
+}
+
 // ── Cabeçalho de coluna arrastável ───────────────────────────────────────────
 
 function SortableTh({ id, size, children }: { id: string; size: number; children: ReactNode }) {
@@ -97,6 +107,9 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const [activeFilters, setActiveFilters] = useState<{ columnId: string; columnName: string; icon: string }[]>([])
 	const [openFilterPill, setOpenFilterPill] = useState<string | null>(null)
 	const filterPillRefs = useRef<Record<string, HTMLDivElement | null>>({})
+	const [searchExpanded, setSearchExpanded] = useState(false)
+	const searchInputRef = useRef<HTMLInputElement>(null)
+	const searchInactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -124,6 +137,18 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 			const idx = noteRows.findIndex(r => r._file.path === lastCreatedPath.current)
 			if (idx !== -1) noteRows.push(...noteRows.splice(idx, 1))
 			lastCreatedPath.current = null
+		}
+
+		// Restaurar pills de filtro persistidas
+		const pillIds = cfg.views[0]?.activePillIds ?? []
+		if (pillIds.length > 0) {
+			const restored = pillIds.flatMap(id => {
+				if (id === '_title') return [{ columnId: '_title', columnName: 'Nome', icon: '📄' }]
+				const col = cfg.schema.find(c => c.id === id)
+				if (!col) return []
+				return [{ columnId: col.id, columnName: col.name, icon: getColumnIconStatic(col.type) }]
+			})
+			setActiveFilters(restored)
 		}
 
 		setConfig(cfg)
@@ -398,23 +423,70 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 
 	// ── Filtros ───────────────────────────────────────────────────────────────
 
-	const getColumnIcon = (type: string) => {
-		const icons: Record<string, string> = {
-			title: '📄', text: 'Aa', number: '#', select: '◉',
-			multiselect: '◈', date: '📅', checkbox: '☑', formula: 'ƒ',
+	const getColumnIcon = getColumnIconStatic
+
+	const saveActivePills = useCallback(async (filters: { columnId: string }[]) => {
+		if (!dbFile) return
+		const newConfig = {
+			...config,
+			views: config.views.map((v, i) =>
+				i === 0 ? { ...v, activePillIds: filters.map(f => f.columnId) } : v
+			),
 		}
-		return icons[type] ?? '·'
-	}
+		await manager.writeConfig(dbFile, newConfig)
+	}, [dbFile, config, manager])
 
 	const addFilter = (columnId: string, columnName: string, icon: string) => {
 		if (activeFilters.some(f => f.columnId === columnId)) return
-		setActiveFilters(prev => [...prev, { columnId, columnName, icon }])
+		const next = [...activeFilters, { columnId, columnName, icon }]
+		setActiveFilters(next)
+		saveActivePills(next)
 		setFilterMenuOpen(false)
 	}
 
 	const removeFilter = (columnId: string) => {
-		setActiveFilters(prev => prev.filter(f => f.columnId !== columnId))
+		const next = activeFilters.filter(f => f.columnId !== columnId)
+		setActiveFilters(next)
+		saveActivePills(next)
 		if (openFilterPill === columnId) setOpenFilterPill(null)
+	}
+
+	// ── Busca colapsável ──────────────────────────────────────────────────────
+
+	const shouldCollapse = activeFilters.length >= 3 || activeFilters.some(f => f.columnName.length > 10)
+
+	useEffect(() => {
+		if (!shouldCollapse) {
+			setSearchExpanded(false)
+			if (searchInactivityTimer.current) clearTimeout(searchInactivityTimer.current)
+		}
+	}, [shouldCollapse])
+
+	useEffect(() => {
+		return () => { if (searchInactivityTimer.current) clearTimeout(searchInactivityTimer.current) }
+	}, [])
+
+	const clearSearchTimer = () => {
+		if (searchInactivityTimer.current) {
+			clearTimeout(searchInactivityTimer.current)
+			searchInactivityTimer.current = null
+		}
+	}
+
+	const startSearchTimer = () => {
+		clearSearchTimer()
+		searchInactivityTimer.current = setTimeout(() => setSearchExpanded(false), 6000)
+	}
+
+	const expandSearch = () => {
+		setSearchExpanded(true)
+		startSearchTimer()
+		requestAnimationFrame(() => searchInputRef.current?.focus())
+	}
+
+	const collapseSearch = () => {
+		clearSearchTimer()
+		setSearchExpanded(false)
 	}
 
 	// ── Toggle visibilidade de um campo ──────────────────────────────────────
@@ -474,13 +546,25 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		<div className="nb-container">
 			{/* Toolbar */}
 			<div className="nb-toolbar">
-				<input
-					className="nb-search"
-					type="text"
-					placeholder="Buscar..."
-					value={globalFilter}
-					onChange={e => setGlobalFilter(e.target.value)}
-				/>
+				<div className={`nb-search-container${shouldCollapse ? (searchExpanded ? ' nb-search-container--expanded' : ' nb-search-container--collapsed') : ''}`}>
+					{shouldCollapse && (
+						<button className="nb-search-icon-btn" onClick={expandSearch} title="Buscar">
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+								<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+							</svg>
+						</button>
+					)}
+					<input
+						ref={searchInputRef}
+						className="nb-search"
+						type="text"
+						placeholder="Buscar..."
+						value={globalFilter}
+						onChange={e => { setGlobalFilter(e.target.value); if (shouldCollapse && searchExpanded) startSearchTimer() }}
+						onKeyDown={e => { if (e.key === 'Enter' && shouldCollapse && searchExpanded) collapseSearch() }}
+						onBlur={() => { if (shouldCollapse && searchExpanded) collapseSearch() }}
+					/>
+				</div>
 
 				{/* Botão Campos */}
 				<div className="nb-fields-menu-wrapper" ref={fieldsMenuRef}>
@@ -572,7 +656,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 				{activeFilters.map(filter => (
 					<div
 						key={filter.columnId}
-						className="nb-filter-pill-wrapper"
+						className={`nb-filter-pill-wrapper${shouldCollapse && searchExpanded ? ' nb-filter-pill-wrapper--hidden' : ''}`}
 						ref={el => { filterPillRefs.current[filter.columnId] = el }}
 					>
 						<button
