@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { TFile } from 'obsidian'
 import { ColumnSchema, ColumnType } from '../types'
 import { validateFormulaSyntax } from '../formula-engine'
+import { useApp } from '../context'
+import { DatabaseManager } from '../database-manager'
 
 const TYPE_ICONS: Record<ColumnType, string> = {
 	title:       '📄',
@@ -11,6 +15,7 @@ const TYPE_ICONS: Record<ColumnType, string> = {
 	date:        '📅',
 	checkbox:    '☑',
 	formula:     'ƒ',
+	lookup:      '↗',
 }
 
 const TYPE_LABELS: Record<ColumnType, string> = {
@@ -22,6 +27,7 @@ const TYPE_LABELS: Record<ColumnType, string> = {
 	date:        'Data',
 	checkbox:    'Checkbox',
 	formula:     'Fórmula',
+	lookup:      'Lookup',
 }
 
 interface ColumnHeaderProps {
@@ -29,26 +35,47 @@ interface ColumnHeaderProps {
 	schema: ColumnSchema[]
 	onUpdateSchema: (schema: ColumnSchema[]) => Promise<void>
 	onRenameColumn: (oldId: string, newName: string) => Promise<void>
+	manager: DatabaseManager
+	dbFile: TFile | null
 }
 
-export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: ColumnHeaderProps) {
+export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, manager, dbFile }: ColumnHeaderProps) {
+	const app = useApp()
 	const [menuOpen, setMenuOpen] = useState(false)
 	const [renaming, setRenaming] = useState(false)
 	const [nameValue, setNameValue] = useState(col.name)
 	const [editingFormula, setEditingFormula] = useState(false)
 	const [formulaValue, setFormulaValue] = useState(col.formula ?? '')
 	const [formulaError, setFormulaError] = useState<string | null>(null)
+	const [panelPos, setPanelPos] = useState<{ x: number; y: number } | null>(null)
 	const menuRef = useRef<HTMLDivElement>(null)
 	const inputRef = useRef<HTMLInputElement>(null)
 	const formulaRef = useRef<HTMLTextAreaElement>(null)
+	const dragOffset = useRef<{ x: number; y: number } | null>(null)
+	const panelRef = useRef<HTMLDivElement>(null)
+
+	// Lookup state
+	const [editingLookup, setEditingLookup] = useState(false)
+	const [lookupPanelPos, setLookupPanelPos] = useState<{ x: number; y: number } | null>(null)
+	const [lookupDbPath, setLookupDbPath] = useState(col.refDatabasePath ?? '')
+	const [lookupRefColId, setLookupRefColId] = useState(col.refColumnId ?? '')
+	const [lookupMatchColId, setLookupMatchColId] = useState(col.refMatchColumnId ?? '')
+	const [availableDbs, setAvailableDbs] = useState<Array<{ path: string; name: string }>>([])
+	const [refDbSchema, setRefDbSchema] = useState<ColumnSchema[]>([])
+	const lookupPanelRef = useRef<HTMLDivElement>(null)
+	const lookupDragOffset = useRef<{ x: number; y: number } | null>(null)
 
 	// Fechar menu ao clicar fora
 	useEffect(() => {
 		if (!menuOpen) return
 		const handler = (e: MouseEvent) => {
-			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+			const target = e.target as Node
+			const inMenu = menuRef.current?.contains(target)
+			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target)
+			if (!inMenu && !inPanel) {
 				setMenuOpen(false)
 				setEditingFormula(false)
+				setEditingLookup(false)
 			}
 		}
 		document.addEventListener('mousedown', handler)
@@ -74,16 +101,94 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 		input.select()
 	}, [renaming])
 
-	// Focar textarea ao abrir editor de fórmula
+	// Focar textarea ao abrir editor de fórmula e posicionar painel
 	useEffect(() => {
 		if (!editingFormula) return
+		if (menuRef.current) {
+			const rect = menuRef.current.getBoundingClientRect()
+			const panelWidth = 320
+			const panelHeight = 420
+			let x = rect.left
+			let y = rect.bottom + 4
+			if (x + panelWidth > window.innerWidth) x = window.innerWidth - panelWidth - 8
+			if (y + panelHeight > window.innerHeight) y = rect.top - panelHeight - 4
+			setPanelPos({ x, y })
+		}
 		setTimeout(() => formulaRef.current?.focus(), 50)
+	}, [editingFormula])
+
+	// Drag logic para o painel de fórmula
+	useEffect(() => {
+		if (!editingFormula) return
+		const onMove = (e: MouseEvent) => {
+			if (!dragOffset.current) return
+			setPanelPos({
+				x: e.clientX - dragOffset.current.x,
+				y: e.clientY - dragOffset.current.y,
+			})
+		}
+		const onUp = () => { dragOffset.current = null }
+		document.addEventListener('mousemove', onMove)
+		document.addEventListener('mouseup', onUp)
+		return () => {
+			document.removeEventListener('mousemove', onMove)
+			document.removeEventListener('mouseup', onUp)
+		}
 	}, [editingFormula])
 
 	// Validar fórmula em tempo real
 	useEffect(() => {
 		setFormulaError(validateFormulaSyntax(formulaValue))
 	}, [formulaValue])
+
+	// Load databases and position panel when lookup opens
+	useEffect(() => {
+		if (!editingLookup) return
+		const dbs = manager.getAllDatabases()
+			.filter(f => f.path !== dbFile?.path)
+			.map(f => ({ path: f.path, name: f.parent?.name ?? f.basename }))
+		setAvailableDbs(dbs)
+		if (menuRef.current) {
+			const rect = menuRef.current.getBoundingClientRect()
+			const panelWidth = 320
+			const panelHeight = 380
+			let x = rect.left
+			let y = rect.bottom + 4
+			if (x + panelWidth > window.innerWidth) x = window.innerWidth - panelWidth - 8
+			if (y + panelHeight > window.innerHeight) y = rect.top - panelHeight - 4
+			setLookupPanelPos({ x, y })
+		}
+	}, [editingLookup, manager, dbFile])
+
+	// Load ref schema when db path changes
+	useEffect(() => {
+		if (!lookupDbPath) { setRefDbSchema([]); return }
+		const refDbFile = app.vault.getFileByPath(lookupDbPath)
+		if (!refDbFile) { setRefDbSchema([]); return }
+		manager.readConfig(refDbFile).then(cfg => setRefDbSchema(cfg.schema))
+	}, [lookupDbPath, app, manager])
+
+	// Sync lookup state with col when not editing
+	useEffect(() => {
+		if (!editingLookup) {
+			setLookupDbPath(col.refDatabasePath ?? '')
+			setLookupRefColId(col.refColumnId ?? '')
+			setLookupMatchColId(col.refMatchColumnId ?? '')
+		}
+	}, [col.refDatabasePath, col.refColumnId, col.refMatchColumnId, editingLookup])
+
+	// Drag for lookup panel
+	useEffect(() => {
+		if (!editingLookup) return
+		const onMove = (e: MouseEvent) => {
+			if (!lookupDragOffset.current) return
+			setLookupPanelPos({ x: e.clientX - lookupDragOffset.current.x, y: e.clientY - lookupDragOffset.current.y })
+		}
+		const onUp = () => { lookupDragOffset.current = null }
+		document.addEventListener('mousemove', onMove)
+		document.addEventListener('mouseup', onUp)
+		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+	}, [editingLookup])
 
 	const updateCol = async (changes: Partial<ColumnSchema>) => {
 		const newSchema = schema.map(s => s.id === col.id ? { ...s, ...changes } : s)
@@ -114,6 +219,8 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 		await updateCol({ type })
 		if (type === 'formula') {
 			setEditingFormula(true)
+		} else if (type === 'lookup') {
+			setEditingLookup(true)
 		} else {
 			setMenuOpen(false)
 		}
@@ -124,6 +231,37 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 		await updateCol({ formula: formulaValue.trim() || undefined })
 		setEditingFormula(false)
 		setMenuOpen(false)
+	}
+
+	const handleCloseFormula = () => {
+		setEditingFormula(false)
+		setMenuOpen(false)
+	}
+
+	const handleTitleBarMouseDown = (e: React.MouseEvent) => {
+		if (!panelPos) return
+		dragOffset.current = {
+			x: e.clientX - panelPos.x,
+			y: e.clientY - panelPos.y,
+		}
+		e.preventDefault()
+	}
+
+	const handleSaveLookup = async () => {
+		await updateCol({ refDatabasePath: lookupDbPath, refColumnId: lookupRefColId, refMatchColumnId: lookupMatchColId })
+		setEditingLookup(false)
+		setMenuOpen(false)
+	}
+
+	const handleCloseLookup = () => {
+		setEditingLookup(false)
+		setMenuOpen(false)
+	}
+
+	const handleLookupTitleBarMouseDown = (e: React.MouseEvent) => {
+		if (!lookupPanelPos) return
+		lookupDragOffset.current = { x: e.clientX - lookupPanelPos.x, y: e.clientY - lookupPanelPos.y }
+		e.preventDefault()
 	}
 
 	const [refOpen, setRefOpen] = useState(false)
@@ -173,131 +311,72 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 		]},
 	]
 
-	return (
-		<div className="nb-column-header" ref={menuRef}>
-			{/* Label da coluna */}
-			{renaming ? (
-				<input
-					ref={inputRef}
-					className="nb-header-rename-input"
-					value={nameValue}
-					onChange={e => setNameValue(e.target.value)}
-					onBlur={handleRename}
+	const formulaPanel = editingFormula && panelPos ? createPortal(
+		<div
+			ref={panelRef}
+			className="nb-formula-floating-panel"
+			style={{ top: panelPos.y, left: panelPos.x }}
+		>
+			{/* Barra de título arrastável */}
+			<div
+				className="nb-formula-titlebar"
+				onMouseDown={handleTitleBarMouseDown}
+			>
+				<span className="nb-formula-titlebar-icon">ƒ</span>
+				<span className="nb-formula-titlebar-title">Fórmula: {col.name}</span>
+				<button className="nb-formula-close" onClick={handleCloseFormula} title="Fechar">×</button>
+			</div>
+
+			{/* Conteúdo do painel */}
+			<div className="nb-formula-body">
+				<textarea
+					ref={formulaRef}
+					className={`nb-formula-textarea${formulaError ? ' nb-formula-textarea--error' : formulaValue.trim() ? ' nb-formula-textarea--ok' : ''}`}
+					value={formulaValue}
+					onChange={e => setFormulaValue(e.target.value)}
+					placeholder={'Ex: IF(status = "feito", 1, 0)'}
+					rows={3}
+					spellCheck={false}
 					onKeyDown={e => {
-						if (e.key === 'Enter') handleRename()
-						if (e.key === 'Escape') { setRenaming(false); setMenuOpen(false) }
+						if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); handleSaveFormula() }
+						if (e.key === 'Escape') handleCloseFormula()
 					}}
-					onClick={e => e.stopPropagation()}
 				/>
-			) : (
-				<button
-					className="nb-header-label"
-					onClick={() => { setMenuOpen(v => !v); setEditingFormula(false) }}
-					title={col.name}
-				>
-					<span className="nb-header-icon">{TYPE_ICONS[col.type]}</span>
-					<span className="nb-header-name">{col.name}</span>
-				</button>
-			)}
 
-			{/* Menu dropdown */}
-			{menuOpen && !editingFormula && (
-				<div className="nb-column-menu">
-					<button className="nb-menu-item" onClick={() => { setMenuOpen(false); setRenaming(true) }}>
-						<span className="nb-menu-item-icon">✏️</span>
-						<span>Renomear</span>
-					</button>
-
-					{col.type === 'formula' && (
-						<button className="nb-menu-item" onClick={() => setEditingFormula(true)}>
-							<span className="nb-menu-item-icon">ƒ</span>
-							<span>Editar fórmula</span>
-						</button>
-					)}
-
-					<div className="nb-menu-separator" />
-					<div className="nb-menu-label">Tipo de campo</div>
-					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'formula'] as ColumnType[]).map(type => (
-						<button
-							key={type}
-							className={`nb-menu-item nb-menu-type-item ${col.type === type ? 'nb-menu-item--active' : ''}`}
-							onClick={() => handleTypeChange(type)}
-						>
-							<span className="nb-menu-item-icon">{TYPE_ICONS[type]}</span>
-							<span>{TYPE_LABELS[type]}</span>
-						</button>
-					))}
-
-					<div className="nb-menu-separator" />
-					<button className="nb-menu-item" onClick={handleHide}>
-						<span className="nb-menu-item-icon">👁</span>
-						<span>Ocultar campo</span>
-					</button>
-					<button className="nb-menu-item nb-menu-item--danger" onClick={handleDelete}>
-						<span className="nb-menu-item-icon">🗑</span>
-						<span>Excluir campo</span>
-					</button>
-				</div>
-			)}
-
-			{/* Editor de fórmula */}
-			{menuOpen && editingFormula && (
-				<div className="nb-column-menu nb-formula-panel">
-					<div className="nb-formula-panel-header">
-						<button className="nb-formula-back" onClick={() => setEditingFormula(false)}>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-						</button>
-						<span className="nb-formula-panel-title">Fórmula: {col.name}</span>
+				{formulaError && (
+					<div className="nb-formula-feedback nb-formula-feedback--error">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+						{formulaError}
 					</div>
+				)}
+				{!formulaError && formulaValue.trim() && (
+					<div className="nb-formula-feedback nb-formula-feedback--ok">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+						Sintaxe válida
+					</div>
+				)}
 
-					<textarea
-						ref={formulaRef}
-						className={`nb-formula-textarea${formulaError ? ' nb-formula-textarea--error' : formulaValue.trim() ? ' nb-formula-textarea--ok' : ''}`}
-						value={formulaValue}
-						onChange={e => setFormulaValue(e.target.value)}
-						placeholder={'Ex: IF(status = "feito", 1, 0)'}
-						rows={3}
-						spellCheck={false}
-						onKeyDown={e => {
-							if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); handleSaveFormula() }
-							if (e.key === 'Escape') setEditingFormula(false)
-						}}
-					/>
-
-					{formulaError && (
-						<div className="nb-formula-feedback nb-formula-feedback--error">
-							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-							{formulaError}
+				{otherCols.length > 0 && (
+					<div className="nb-formula-cols-hint">
+						<span className="nb-formula-cols-label">Colunas disponíveis:</span>
+						<div className="nb-formula-cols-list">
+							{otherCols.map(c => (
+								<code
+									key={c.id}
+									className="nb-formula-col-chip"
+									title={`ID: ${c.id}`}
+									onClick={() => {
+										const name = /\s/.test(c.name) ? `[${c.name}]` : c.name
+										setFormulaValue(v => v + name)
+										formulaRef.current?.focus()
+									}}
+								>{c.name}</code>
+							))}
 						</div>
-					)}
-					{!formulaError && formulaValue.trim() && (
-						<div className="nb-formula-feedback nb-formula-feedback--ok">
-							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-							Sintaxe válida
-						</div>
-					)}
+					</div>
+				)}
 
-					{otherCols.length > 0 && (
-						<div className="nb-formula-cols-hint">
-							<span className="nb-formula-cols-label">Colunas disponíveis:</span>
-							<div className="nb-formula-cols-list">
-								{otherCols.map(c => (
-									<code
-										key={c.id}
-										className="nb-formula-col-chip"
-										title={`ID: ${c.id}`}
-										onClick={() => {
-											const name = /\s/.test(c.name) ? `[${c.name}]` : c.name
-											setFormulaValue(v => v + name)
-											formulaRef.current?.focus()
-										}}
-									>{c.name}</code>
-								))}
-							</div>
-						</div>
-					)}
-
-					{/* Referência de funções */}
+				{/* Referência de funções */}
 				<div className="nb-formula-ref">
 					<button className="nb-formula-ref-toggle" onClick={() => setRefOpen(v => !v)}>
 						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: refOpen ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }}><polyline points="9 18 15 12 9 6"/></svg>
@@ -325,16 +404,136 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 				</div>
 
 				<div className="nb-formula-actions">
+					<button
+						className="nb-formula-save"
+						disabled={!!formulaError}
+						onClick={handleSaveFormula}
+						title="Salvar (Ctrl+Enter)"
+					>Salvar</button>
+					<button className="nb-formula-cancel" onClick={handleCloseFormula}>Cancelar</button>
+				</div>
+			</div>
+		</div>,
+		document.body
+	) : null
+
+	const lookupPanel = editingLookup && lookupPanelPos ? createPortal(
+		<div ref={lookupPanelRef} className="nb-formula-floating-panel" style={{ top: lookupPanelPos.y, left: lookupPanelPos.x }}>
+			<div className="nb-formula-titlebar" onMouseDown={handleLookupTitleBarMouseDown}>
+				<span className="nb-formula-titlebar-icon">↗</span>
+				<span className="nb-formula-titlebar-title">Lookup: {col.name}</span>
+				<button className="nb-formula-close" onClick={handleCloseLookup} title="Fechar">×</button>
+			</div>
+			<div className="nb-formula-body">
+				<div className="nb-lookup-section">
+					<label className="nb-lookup-label">1. Tabela de referência</label>
+					<select className="nb-lookup-select" value={lookupDbPath} onChange={e => { setLookupDbPath(e.target.value); setLookupRefColId('') }}>
+						<option value="">Selecionar tabela...</option>
+						{availableDbs.map(db => <option key={db.path} value={db.path}>{db.name}</option>)}
+					</select>
+				</div>
+				<div className="nb-lookup-section">
+					<label className="nb-lookup-label">2. Coluna a exibir</label>
+					<select className="nb-lookup-select" value={lookupRefColId} onChange={e => setLookupRefColId(e.target.value)} disabled={!lookupDbPath || refDbSchema.length === 0}>
+						<option value="">Selecionar coluna...</option>
+						{refDbSchema.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+					</select>
+				</div>
+				<div className="nb-lookup-section">
+					<label className="nb-lookup-label">3. Coluna de junção (nesta tabela)</label>
+					<select className="nb-lookup-select" value={lookupMatchColId} onChange={e => setLookupMatchColId(e.target.value)}>
+						<option value="">Selecionar coluna...</option>
+						<option value="_title">📄 Nome do arquivo (junção por título)</option>
+						{schema.filter(c => c.id !== col.id && c.type !== 'formula' && c.type !== 'lookup').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+					</select>
+					<p className="nb-lookup-hint">O valor desta coluna deve ser igual ao nome do arquivo da nota na tabela referenciada (ex: "A" para encontrar "A.md")</p>
+				</div>
+				<div className="nb-formula-actions">
+					<button className="nb-formula-save" disabled={!lookupDbPath || !lookupRefColId || !lookupMatchColId} onClick={handleSaveLookup}>Salvar</button>
+					<button className="nb-formula-cancel" onClick={handleCloseLookup}>Cancelar</button>
+				</div>
+			</div>
+		</div>,
+		document.body
+	) : null
+
+	return (
+		<div className="nb-column-header" ref={menuRef}>
+			{/* Label da coluna */}
+			{renaming ? (
+				<input
+					ref={inputRef}
+					className="nb-header-rename-input"
+					value={nameValue}
+					onChange={e => setNameValue(e.target.value)}
+					onBlur={handleRename}
+					onKeyDown={e => {
+						if (e.key === 'Enter') handleRename()
+						if (e.key === 'Escape') { setRenaming(false); setMenuOpen(false) }
+					}}
+					onClick={e => e.stopPropagation()}
+				/>
+			) : (
+				<button
+					className="nb-header-label"
+					onClick={() => { setMenuOpen(v => !v); setEditingFormula(false); setEditingLookup(false) }}
+					title={col.name}
+				>
+					<span className="nb-header-icon">{TYPE_ICONS[col.type]}</span>
+					<span className="nb-header-name">{col.name}</span>
+				</button>
+			)}
+
+			{/* Menu dropdown */}
+			{menuOpen && !editingFormula && !editingLookup && (
+				<div className="nb-column-menu">
+					<button className="nb-menu-item" onClick={() => { setMenuOpen(false); setRenaming(true) }}>
+						<span className="nb-menu-item-icon">✏️</span>
+						<span>Renomear</span>
+					</button>
+
+					{col.type === 'formula' && (
+						<button className="nb-menu-item" onClick={() => setEditingFormula(true)}>
+							<span className="nb-menu-item-icon">ƒ</span>
+							<span>Editar fórmula</span>
+						</button>
+					)}
+
+					{col.type === 'lookup' && (
+						<button className="nb-menu-item" onClick={() => setEditingLookup(true)}>
+							<span className="nb-menu-item-icon">↗</span>
+							<span>Configurar lookup</span>
+						</button>
+					)}
+
+					<div className="nb-menu-separator" />
+					<div className="nb-menu-label">Tipo de campo</div>
+					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'formula', 'lookup'] as ColumnType[]).map(type => (
 						<button
-							className="nb-formula-save"
-							disabled={!!formulaError}
-							onClick={handleSaveFormula}
-							title="Salvar (Ctrl+Enter)"
-						>Salvar</button>
-						<button className="nb-formula-cancel" onClick={() => setEditingFormula(false)}>Cancelar</button>
-					</div>
+							key={type}
+							className={`nb-menu-item nb-menu-type-item ${col.type === type ? 'nb-menu-item--active' : ''}`}
+							onClick={() => handleTypeChange(type)}
+						>
+							<span className="nb-menu-item-icon">{TYPE_ICONS[type]}</span>
+							<span>{TYPE_LABELS[type]}</span>
+						</button>
+					))}
+
+					<div className="nb-menu-separator" />
+					<button className="nb-menu-item" onClick={handleHide}>
+						<span className="nb-menu-item-icon">👁</span>
+						<span>Ocultar campo</span>
+					</button>
+					<button className="nb-menu-item nb-menu-item--danger" onClick={handleDelete}>
+						<span className="nb-menu-item-icon">🗑</span>
+						<span>Excluir campo</span>
+					</button>
 				</div>
 			)}
+
+			{/* Painel de fórmula flutuante via portal */}
+			{formulaPanel}
+			{lookupPanel}
 		</div>
 	)
 }

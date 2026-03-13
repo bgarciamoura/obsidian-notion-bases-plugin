@@ -39,7 +39,7 @@ import { FolderPickerModal } from '../folder-picker-modal'
 function getColumnIconStatic(type: string): string {
 	const icons: Record<string, string> = {
 		title: '📄', text: 'Aa', number: '#', select: '◉',
-		multiselect: '◈', date: '📅', checkbox: '☑', formula: 'ƒ',
+		multiselect: '◈', date: '📅', checkbox: '☑', formula: 'ƒ', lookup: '↗',
 	}
 	return icons[type] ?? '·'
 }
@@ -290,8 +290,11 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 			await manager.writeConfig(dbFile, cfg)
 		}
 
-		const noteRows = evaluateFormulas(
-			notes.map(f => manager.getNoteData(f, cfg.schema)),
+		const noteRows = await manager.resolveLookupsForRows(
+			evaluateFormulas(
+				notes.map(f => manager.getNoteData(f, cfg.schema)),
+				cfg.schema
+			),
 			cfg.schema
 		)
 
@@ -445,14 +448,16 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 				id: col.id,
 				accessorFn: row => row[col.id],
 				size: config.views[0]?.columnWidths[col.id] ?? (col.width ?? 150),
-				enableColumnFilter: col.type !== 'formula',
-				enableSorting: col.type !== 'formula',
+				enableColumnFilter: col.type !== 'formula' && col.type !== 'lookup',
+				enableSorting: col.type !== 'formula' && col.type !== 'lookup',
 				header: () => (
 					<ColumnHeader
 						col={col}
 						schema={config.schema}
 						onUpdateSchema={updateSchema}
 						onRenameColumn={renameColumn}
+						manager={manager}
+						dbFile={dbFile}
 					/>
 				),
 				cell: info => (
@@ -813,7 +818,8 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 										col.type === 'multiselect' ? '◈' :
 										col.type === 'date' ? '📅' :
 										col.type === 'checkbox' ? '☑' :
-										col.type === 'formula' ? 'ƒ' : '·'
+										col.type === 'lookup' ? '↗' :
+									col.type === 'formula' ? 'ƒ' : '·'
 									}</span>
 									<span className="nb-field-name">{col.name}</span>
 								</label>

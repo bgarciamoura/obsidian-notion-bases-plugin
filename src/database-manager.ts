@@ -73,7 +73,7 @@ export class DatabaseManager {
 		}
 
 		for (const col of schema) {
-			if (col.type === 'formula') continue
+			if (col.type === 'formula' || col.type === 'lookup') continue
 			row[col.id] = fm[col.id] ?? null
 		}
 
@@ -107,6 +107,45 @@ export class DatabaseManager {
 			path = `${base} ${i++}.md`
 		}
 		return this.app.vault.create(path, '---\n---\n')
+	}
+
+	// ── Lookup helpers ─────────────────────────────────────────────────────
+
+	getAllDatabases(): TFile[] {
+		return this.app.vault.getMarkdownFiles().filter(f => this.isDatabaseFile(f))
+	}
+
+	async resolveLookupsForRows(rows: NoteRow[], schema: ColumnSchema[]): Promise<NoteRow[]> {
+		const lookupCols = schema.filter(c =>
+			c.type === 'lookup' && c.refDatabasePath && c.refColumnId && c.refMatchColumnId
+		)
+		if (lookupCols.length === 0) return rows
+
+		const refDataCache = new Map<string, NoteRow[]>()
+		for (const col of lookupCols) {
+			const path = col.refDatabasePath!
+			if (!refDataCache.has(path)) {
+				const refDbFile = this.app.vault.getFileByPath(path)
+				if (!refDbFile) { refDataCache.set(path, []); continue }
+				const refConfig = await this.readConfig(refDbFile)
+				const refNotes = this.getNotesInDatabase(refDbFile)
+				const refRows = refNotes.map(f => this.getNoteData(f, refConfig.schema))
+				refDataCache.set(path, refRows)
+			}
+		}
+
+		return rows.map(row => {
+			const result = { ...row }
+			for (const col of lookupCols) {
+				const refRows = refDataCache.get(col.refDatabasePath!) ?? []
+				const rawMatch = col.refMatchColumnId === '_title' ? row._title : row[col.refMatchColumnId!]
+				const matchValue = String(rawMatch ?? '')
+				if (!matchValue) { result[col.id] = null; continue }
+				const refRow = refRows.find(r => r._title === matchValue)
+				result[col.id] = refRow ? (refRow[col.refColumnId!] ?? null) : null
+			}
+			return result
+		})
 	}
 
 	// ── Operações em lote ──────────────────────────────────────────────────

@@ -598,49 +598,76 @@
 	line-height: 28px;
 }
 
-/* ── Formula editor panel ────────────────────────────────────────────────── */
+/* ── Formula editor floating panel ───────────────────────────────────────── */
 
-.nb-formula-panel {
-	width: 300px;
-	padding: 10px;
+.nb-formula-floating-panel {
+	position: fixed;
+	z-index: 9999;
+	width: 320px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.14);
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	overflow: hidden;
 }
 
-.nb-formula-panel-header {
+.nb-formula-titlebar {
 	display: flex;
 	align-items: center;
 	gap: 6px;
-	margin-bottom: 2px;
+	padding: 8px 10px;
+	background: var(--background-secondary);
+	border-bottom: 1px solid var(--background-modifier-border);
+	cursor: move;
+	user-select: none;
 }
 
-.nb-formula-back {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 22px;
-	height: 22px;
-	border-radius: var(--radius-s);
-	color: var(--text-muted);
-	background: transparent;
-	border: none;
-	cursor: pointer;
+.nb-formula-titlebar-icon {
+	font-size: 13px;
+	color: var(--text-accent);
 	flex-shrink: 0;
 }
 
-.nb-formula-back:hover {
-	background: var(--background-modifier-hover);
-	color: var(--text-normal);
-}
-
-.nb-formula-panel-title {
+.nb-formula-titlebar-title {
+	flex: 1;
 	font-size: var(--font-ui-small);
 	font-weight: 600;
 	color: var(--text-normal);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+.nb-formula-close {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	border-radius: var(--radius-s);
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	font-size: 16px;
+	line-height: 1;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.nb-formula-close:hover {
+	background: var(--background-modifier-error);
+	color: var(--text-on-accent);
+}
+
+.nb-formula-body {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 10px;
+	overflow-y: auto;
+	max-height: calc(100vh - 120px);
 }
 
 .nb-formula-textarea {
@@ -1218,4 +1245,46 @@
 	left: auto;
 	right: 0;
 	min-width: 200px;
+}
+
+/* ── Lookup config panel ─────────────────────────────────────────────────── */
+
+.nb-lookup-section {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.nb-lookup-label {
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	color: var(--text-muted);
+}
+
+.nb-lookup-select {
+	width: 100%;
+	padding: 6px 8px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+}
+
+.nb-lookup-select:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.nb-lookup-hint {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+	margin: 0;
+	font-style: italic;
+	line-height: 1.4;
+}
+
+.nb-cell-lookup {
+	color: var(--text-accent);
 }

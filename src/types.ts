@@ -12,6 +12,7 @@ export type ColumnType =
 	| 'date'
 	| 'checkbox'
 	| 'formula'
+	| 'lookup'
 
 export interface SelectOption {
 	value: string
@@ -26,6 +27,9 @@ export interface ColumnSchema {
 	width?: number
 	options?: SelectOption[]  // select / multiselect
 	formula?: string          // formula
+	refDatabasePath?: string  // lookup
+	refColumnId?: string      // lookup
+	refMatchColumnId?: string // lookup
 }
 
 // ── View / filter / sort ────────────────────────────────────────────────────

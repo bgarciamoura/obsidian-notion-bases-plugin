@@ -39,7 +39,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 	const isEditing = editingCell?.rowIndex === rowIndex && editingCell?.columnId === columnId
 
 	const startEditing = () => {
-		if (col.type === 'formula' || col.type === 'checkbox') return
+		if (col.type === 'formula' || col.type === 'lookup' || col.type === 'checkbox') return
 		setEditingCell({ rowIndex, columnId })
 	}
 
@@ -123,6 +123,9 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 
 		case 'formula':
 			return <FormulaCell value={value} col={col} />
+
+		case 'lookup':
+			return <LookupCell value={value} col={col} />
 
 		default:
 			return <span className="nb-cell-text">{String(value ?? '')}</span>
@@ -463,6 +466,17 @@ function FormulaCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 	const display = value === null || value === undefined ? '—' : String(value)
 	return (
 		<div className="nb-cell-formula" title={`Fórmula: ${col.formula ?? ''}`}>
+			{display}
+		</div>
+	)
+}
+
+// ── LookupCell ───────────────────────────────────────────────────────────────
+
+function LookupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
+	const display = value === null || value === undefined ? '—' : String(value)
+	return (
+		<div className="nb-cell-formula nb-cell-lookup" title={`Lookup de ${col.refDatabasePath ?? ''}`}>
 			{display}
 		</div>
 	)
