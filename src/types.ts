@@ -20,6 +20,13 @@ export interface SelectOption {
 	color?: string
 }
 
+export interface NumberFormat {
+	decimals: number
+	thousandsSeparator: boolean
+	prefix?: string
+	suffix?: string
+}
+
 export interface ColumnSchema {
 	id: string
 	name: string
@@ -31,6 +38,7 @@ export interface ColumnSchema {
 	refDatabasePath?: string  // lookup
 	refColumnId?: string      // lookup
 	refMatchColumnId?: string // lookup
+	numberFormat?: NumberFormat
 }
 
 // ── View / filter / sort ────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { TFile } from 'obsidian'
-import { ColumnSchema, NoteRow, SelectOption } from '../../types'
+import { ColumnSchema, NoteRow, NumberFormat, SelectOption } from '../../types'
 import { useApp } from '../../context'
 
 interface CellProps {
@@ -31,6 +31,21 @@ export function useCellContext(): CellContextType {
 	const ctx = useContext(CellContext)
 	if (!ctx) throw new Error('CellContext não encontrado')
 	return ctx
+}
+
+// ── Number format helper ─────────────────────────────────────────────────────
+
+function formatNumber(value: number, fmt: NumberFormat | undefined): string {
+	if (!fmt) return String(value)
+	const opts: Intl.NumberFormatOptions = {
+		minimumFractionDigits: fmt.decimals,
+		maximumFractionDigits: fmt.decimals,
+		useGrouping: fmt.thousandsSeparator,
+	}
+	let result = new Intl.NumberFormat('pt-BR', opts).format(value)
+	if (fmt.prefix) result = `${fmt.prefix} ${result}`
+	if (fmt.suffix) result = `${result} ${fmt.suffix}`
+	return result
 }
 
 // ── Componente principal ─────────────────────────────────────────────────────
@@ -77,6 +92,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 					onStartEdit={startEditing}
 					onCommit={v => updateCell(rowIndex, columnId, v)}
 					onCancel={() => setEditingCell(null)}
+					format={col.numberFormat}
 				/>
 			)
 
@@ -226,12 +242,13 @@ function TextCell({ value, isEditing, onStartEdit, onCommit, onCancel, onOpen }:
 
 // ── NumberCell ───────────────────────────────────────────────────────────────
 
-function NumberCell({ value, isEditing, onStartEdit, onCommit, onCancel }: {
+function NumberCell({ value, isEditing, onStartEdit, onCommit, onCancel, format }: {
 	value: number | null
 	isEditing: boolean
 	onStartEdit: () => void
 	onCommit: (v: number | null) => void
 	onCancel: () => void
+	format?: NumberFormat
 }) {
 	const inputRef = useRef<HTMLInputElement>(null)
 	const [draft, setDraft] = useState(value?.toString() ?? '')
@@ -246,7 +263,7 @@ function NumberCell({ value, isEditing, onStartEdit, onCommit, onCancel }: {
 	if (!isEditing) {
 		return (
 			<div className="nb-cell-text nb-cell-clickable nb-cell-number" onDoubleClick={onStartEdit}>
-				{value !== null && value !== undefined ? value : <span className="nb-cell-empty">—</span>}
+				{value !== null && value !== undefined ? formatNumber(value, format) : <span className="nb-cell-empty">—</span>}
 			</div>
 		)
 	}

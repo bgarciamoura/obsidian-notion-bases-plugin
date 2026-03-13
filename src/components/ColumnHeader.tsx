@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { TFile } from 'obsidian'
-import { ColumnSchema, ColumnType } from '../types'
+import { ColumnSchema, ColumnType, NumberFormat } from '../types'
 import { validateFormulaSyntax } from '../formula-engine'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
@@ -67,17 +67,28 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 	const lookupPanelRef = useRef<HTMLDivElement>(null)
 	const lookupDragOffset = useRef<{ x: number; y: number } | null>(null)
 
+	// Number format state
+	const [editingNumberFmt, setEditingNumberFmt] = useState(false)
+	const [fmtPanelPos, setFmtPanelPos] = useState<{ x: number; y: number } | null>(null)
+	const [fmtDecimals, setFmtDecimals] = useState(col.numberFormat?.decimals ?? 2)
+	const [fmtThousands, setFmtThousands] = useState(col.numberFormat?.thousandsSeparator ?? false)
+	const [fmtPrefix, setFmtPrefix] = useState(col.numberFormat?.prefix ?? '')
+	const [fmtSuffix, setFmtSuffix] = useState(col.numberFormat?.suffix ?? '')
+	const fmtPanelRef = useRef<HTMLDivElement>(null)
+	const fmtDragOffset = useRef<{ x: number; y: number } | null>(null)
+
 	// Fechar menu ao clicar fora
 	useEffect(() => {
 		if (!menuOpen) return
 		const handler = (e: MouseEvent) => {
 			const target = e.target as Node
 			const inMenu = menuRef.current?.contains(target)
-			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target)
+			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target) || fmtPanelRef.current?.contains(target)
 			if (!inMenu && !inPanel) {
 				setMenuOpen(false)
 				setEditingFormula(false)
 				setEditingLookup(false)
+				setEditingNumberFmt(false)
 			}
 		}
 		document.addEventListener('mousedown', handler)
@@ -192,6 +203,42 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
 	}, [editingLookup])
 
+	// Position panel when number format opens
+	useEffect(() => {
+		if (!editingNumberFmt) return
+		if (menuRef.current) {
+			const rect = menuRef.current.getBoundingClientRect()
+			const panelWidth = 300; const panelHeight = 300
+			let x = rect.left; let y = rect.bottom + 4
+			if (x + panelWidth > window.innerWidth) x = window.innerWidth - panelWidth - 8
+			if (y + panelHeight > window.innerHeight) y = rect.top - panelHeight - 4
+			setFmtPanelPos({ x, y })
+		}
+	}, [editingNumberFmt])
+
+	// Sync state with col when not editing
+	useEffect(() => {
+		if (!editingNumberFmt) {
+			setFmtDecimals(col.numberFormat?.decimals ?? 2)
+			setFmtThousands(col.numberFormat?.thousandsSeparator ?? false)
+			setFmtPrefix(col.numberFormat?.prefix ?? '')
+			setFmtSuffix(col.numberFormat?.suffix ?? '')
+		}
+	}, [col.numberFormat, editingNumberFmt])
+
+	// Drag for number format panel
+	useEffect(() => {
+		if (!editingNumberFmt) return
+		const onMove = (e: MouseEvent) => {
+			if (!fmtDragOffset.current) return
+			setFmtPanelPos({ x: e.clientX - fmtDragOffset.current.x, y: e.clientY - fmtDragOffset.current.y })
+		}
+		const onUp = () => { fmtDragOffset.current = null }
+		document.addEventListener('mousemove', onMove)
+		document.addEventListener('mouseup', onUp)
+		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+	}, [editingNumberFmt])
+
 	const updateCol = async (changes: Partial<ColumnSchema>) => {
 		const newSchema = schema.map(s => s.id === col.id ? { ...s, ...changes } : s)
 		await onUpdateSchema(newSchema)
@@ -270,6 +317,29 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 		e.preventDefault()
 	}
 
+	const handleSaveNumberFmt = async () => {
+		const fmt: NumberFormat = {
+			decimals: fmtDecimals,
+			thousandsSeparator: fmtThousands,
+			...(fmtPrefix.trim() ? { prefix: fmtPrefix.trim() } : {}),
+			...(fmtSuffix.trim() ? { suffix: fmtSuffix.trim() } : {}),
+		}
+		await updateCol({ numberFormat: fmt })
+		setEditingNumberFmt(false)
+		setMenuOpen(false)
+	}
+
+	const handleCloseNumberFmt = () => {
+		setEditingNumberFmt(false)
+		setMenuOpen(false)
+	}
+
+	const handleFmtTitleBarMouseDown = (e: React.MouseEvent) => {
+		if (!fmtPanelPos) return
+		fmtDragOffset.current = { x: e.clientX - fmtPanelPos.x, y: e.clientY - fmtPanelPos.y }
+		e.preventDefault()
+	}
+
 	const [refOpen, setRefOpen] = useState(false)
 	const otherCols = schema.filter(c => c.id !== col.id && c.type !== 'formula')
 
@@ -316,6 +386,19 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 			{ fn: 'VALUE(v)',           desc: 'Converte para número' },
 		]},
 	]
+
+	const fmtPreview = (() => {
+		const sample = 1234.5678
+		const opts: Intl.NumberFormatOptions = {
+			minimumFractionDigits: fmtDecimals,
+			maximumFractionDigits: fmtDecimals,
+			useGrouping: fmtThousands,
+		}
+		let result = new Intl.NumberFormat('pt-BR', opts).format(sample)
+		if (fmtPrefix.trim()) result = `${fmtPrefix.trim()} ${result}`
+		if (fmtSuffix.trim()) result = `${result} ${fmtSuffix.trim()}`
+		return result
+	})()
 
 	const formulaPanel = editingFormula && panelPos ? createPortal(
 		<div
@@ -423,6 +506,62 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 		document.body
 	) : null
 
+	const numberFmtPanel = editingNumberFmt && fmtPanelPos ? createPortal(
+		<div ref={fmtPanelRef} className="nb-formula-floating-panel" style={{ top: fmtPanelPos.y, left: fmtPanelPos.x }}>
+			<div className="nb-formula-titlebar" onMouseDown={handleFmtTitleBarMouseDown}>
+				<span className="nb-formula-titlebar-icon">#</span>
+				<span className="nb-formula-titlebar-title">Formatar: {col.name}</span>
+				<button className="nb-formula-close" onClick={handleCloseNumberFmt} title="Fechar">×</button>
+			</div>
+			<div className="nb-formula-body">
+				<div className="nb-numfmt-preview">{fmtPreview}</div>
+				<div className="nb-lookup-section">
+					<label className="nb-lookup-label">Casas decimais</label>
+					<select className="nb-lookup-select" value={fmtDecimals} onChange={e => setFmtDecimals(Number(e.target.value))}>
+						{[0,1,2,3,4,5,6].map(n => <option key={n} value={n}>{n}</option>)}
+					</select>
+				</div>
+				<div className="nb-numfmt-checkbox-row">
+					<input
+						type="checkbox"
+						id="nb-fmt-thousands"
+						checked={fmtThousands}
+						onChange={e => setFmtThousands(e.target.checked)}
+						className="nb-cell-checkbox"
+					/>
+					<label htmlFor="nb-fmt-thousands" className="nb-lookup-label" style={{ cursor: 'pointer' }}>
+						Separador de milhar
+					</label>
+				</div>
+				<div className="nb-lookup-section">
+					<label className="nb-lookup-label">Prefixo</label>
+					<input
+						type="text"
+						className="nb-numfmt-text-input"
+						value={fmtPrefix}
+						onChange={e => setFmtPrefix(e.target.value)}
+						placeholder="Ex: R$, $, €"
+					/>
+				</div>
+				<div className="nb-lookup-section">
+					<label className="nb-lookup-label">Sufixo</label>
+					<input
+						type="text"
+						className="nb-numfmt-text-input"
+						value={fmtSuffix}
+						onChange={e => setFmtSuffix(e.target.value)}
+						placeholder="Ex: %, kg, km"
+					/>
+				</div>
+				<div className="nb-formula-actions">
+					<button className="nb-formula-save" onClick={handleSaveNumberFmt}>Salvar</button>
+					<button className="nb-formula-cancel" onClick={handleCloseNumberFmt}>Cancelar</button>
+				</div>
+			</div>
+		</div>,
+		document.body
+	) : null
+
 	const lookupPanel = editingLookup && lookupPanelPos ? createPortal(
 		<div ref={lookupPanelRef} className="nb-formula-floating-panel" style={{ top: lookupPanelPos.y, left: lookupPanelPos.x }}>
 			<div className="nb-formula-titlebar" onMouseDown={handleLookupTitleBarMouseDown}>
@@ -485,7 +624,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 			) : (
 				<button
 					className="nb-header-label"
-					onClick={() => { setMenuOpen(v => !v); setEditingFormula(false); setEditingLookup(false) }}
+					onClick={() => { setMenuOpen(v => !v); setEditingFormula(false); setEditingLookup(false); setEditingNumberFmt(false) }}
 					title={col.name}
 				>
 					<span className="nb-header-icon">{TYPE_ICONS[col.type]}</span>
@@ -494,7 +633,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 			)}
 
 			{/* Menu dropdown */}
-			{menuOpen && !editingFormula && !editingLookup && (
+			{menuOpen && !editingFormula && !editingLookup && !editingNumberFmt && (
 				<div className="nb-column-menu">
 					<button className="nb-menu-item" onClick={() => { setMenuOpen(false); setRenaming(true) }}>
 						<span className="nb-menu-item-icon">✏️</span>
@@ -519,6 +658,13 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 						<button className="nb-menu-item" onClick={() => setEditingLookup(true)}>
 							<span className="nb-menu-item-icon">🔗</span>
 							<span>Configurar relação</span>
+						</button>
+					)}
+
+					{col.type === 'number' && (
+						<button className="nb-menu-item" onClick={() => setEditingNumberFmt(true)}>
+							<span className="nb-menu-item-icon">#</span>
+							<span>Formatar número</span>
 						</button>
 					)}
 
@@ -550,6 +696,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 			{/* Painel de fórmula flutuante via portal */}
 			{formulaPanel}
 			{lookupPanel}
+			{numberFmtPanel}
 		</div>
 	)
 }

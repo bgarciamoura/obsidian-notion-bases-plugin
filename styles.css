@@ -1326,3 +1326,40 @@
 	color: var(--text-faint);
 	text-align: center;
 }
+
+/* ── Number format panel ─────────────────────────────────────────────────── */
+
+.nb-numfmt-preview {
+	padding: 10px 12px;
+	background: var(--background-secondary);
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	font-family: var(--font-monospace);
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--text-normal);
+	text-align: center;
+	letter-spacing: 0.02em;
+}
+
+.nb-numfmt-checkbox-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.nb-numfmt-text-input {
+	width: 100%;
+	padding: 6px 8px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	box-sizing: border-box;
+}
+
+.nb-numfmt-text-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
