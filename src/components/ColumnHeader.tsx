@@ -15,6 +15,7 @@ const TYPE_ICONS: Record<ColumnType, string> = {
 	date:        '📅',
 	checkbox:    '☑',
 	formula:     'ƒ',
+	relation:    '🔗',
 	lookup:      '↗',
 }
 
@@ -27,6 +28,7 @@ const TYPE_LABELS: Record<ColumnType, string> = {
 	date:        'Data',
 	checkbox:    'Checkbox',
 	formula:     'Fórmula',
+	relation:    'Relação',
 	lookup:      'Lookup',
 }
 
@@ -219,7 +221,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 		await updateCol({ type })
 		if (type === 'formula') {
 			setEditingFormula(true)
-		} else if (type === 'lookup') {
+		} else if (type === 'lookup' || type === 'relation') {
 			setEditingLookup(true)
 		} else {
 			setMenuOpen(false)
@@ -248,7 +250,11 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 	}
 
 	const handleSaveLookup = async () => {
-		await updateCol({ refDatabasePath: lookupDbPath, refColumnId: lookupRefColId, refMatchColumnId: lookupMatchColId })
+		await updateCol({
+			refDatabasePath: lookupDbPath,
+			refColumnId: lookupRefColId,
+			...(col.type === 'lookup' ? { refMatchColumnId: lookupMatchColId } : {}),
+		})
 		setEditingLookup(false)
 		setMenuOpen(false)
 	}
@@ -420,8 +426,8 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 	const lookupPanel = editingLookup && lookupPanelPos ? createPortal(
 		<div ref={lookupPanelRef} className="nb-formula-floating-panel" style={{ top: lookupPanelPos.y, left: lookupPanelPos.x }}>
 			<div className="nb-formula-titlebar" onMouseDown={handleLookupTitleBarMouseDown}>
-				<span className="nb-formula-titlebar-icon">↗</span>
-				<span className="nb-formula-titlebar-title">Lookup: {col.name}</span>
+				<span className="nb-formula-titlebar-icon">{col.type === 'relation' ? '🔗' : '↗'}</span>
+				<span className="nb-formula-titlebar-title">{col.type === 'relation' ? 'Relação' : 'Lookup'}: {col.name}</span>
 				<button className="nb-formula-close" onClick={handleCloseLookup} title="Fechar">×</button>
 			</div>
 			<div className="nb-formula-body">
@@ -433,23 +439,26 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 					</select>
 				</div>
 				<div className="nb-lookup-section">
-					<label className="nb-lookup-label">2. Coluna a exibir</label>
-					<select className="nb-lookup-select" value={lookupRefColId} onChange={e => setLookupRefColId(e.target.value)} disabled={!lookupDbPath || refDbSchema.length === 0}>
+					<label className="nb-lookup-label">2. {col.type === 'relation' ? 'Campo de origem dos valores' : 'Coluna a exibir'}</label>
+					<select className="nb-lookup-select" value={lookupRefColId} onChange={e => setLookupRefColId(e.target.value)} disabled={!lookupDbPath}>
 						<option value="">Selecionar coluna...</option>
+						<option value="_title">📄 Nome do arquivo</option>
 						{refDbSchema.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 					</select>
 				</div>
-				<div className="nb-lookup-section">
-					<label className="nb-lookup-label">3. Coluna de junção (nesta tabela)</label>
-					<select className="nb-lookup-select" value={lookupMatchColId} onChange={e => setLookupMatchColId(e.target.value)}>
-						<option value="">Selecionar coluna...</option>
-						<option value="_title">📄 Nome do arquivo (junção por título)</option>
-						{schema.filter(c => c.id !== col.id && c.type !== 'formula' && c.type !== 'lookup').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-					</select>
-					<p className="nb-lookup-hint">O valor desta coluna deve ser igual ao nome do arquivo da nota na tabela referenciada (ex: "A" para encontrar "A.md")</p>
-				</div>
+				{col.type === 'lookup' && (
+					<div className="nb-lookup-section">
+						<label className="nb-lookup-label">3. Coluna de junção (nesta tabela)</label>
+						<select className="nb-lookup-select" value={lookupMatchColId} onChange={e => setLookupMatchColId(e.target.value)}>
+							<option value="">Selecionar coluna...</option>
+							<option value="_title">📄 Nome do arquivo (junção por título)</option>
+							{schema.filter(c => c.id !== col.id && c.type !== 'formula' && c.type !== 'lookup').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+						</select>
+						<p className="nb-lookup-hint">O valor desta coluna deve ser igual ao nome do arquivo da nota na tabela referenciada (ex: "A" para encontrar "A.md")</p>
+					</div>
+				)}
 				<div className="nb-formula-actions">
-					<button className="nb-formula-save" disabled={!lookupDbPath || !lookupRefColId || !lookupMatchColId} onClick={handleSaveLookup}>Salvar</button>
+					<button className="nb-formula-save" disabled={!lookupDbPath || !lookupRefColId || (col.type === 'lookup' && !lookupMatchColId)} onClick={handleSaveLookup}>Salvar</button>
 					<button className="nb-formula-cancel" onClick={handleCloseLookup}>Cancelar</button>
 				</div>
 			</div>
@@ -506,9 +515,16 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 						</button>
 					)}
 
+					{col.type === 'relation' && (
+						<button className="nb-menu-item" onClick={() => setEditingLookup(true)}>
+							<span className="nb-menu-item-icon">🔗</span>
+							<span>Configurar relação</span>
+						</button>
+					)}
+
 					<div className="nb-menu-separator" />
 					<div className="nb-menu-label">Tipo de campo</div>
-					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'formula', 'lookup'] as ColumnType[]).map(type => (
+					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'formula', 'relation', 'lookup'] as ColumnType[]).map(type => (
 						<button
 							key={type}
 							className={`nb-menu-item nb-menu-type-item ${col.type === type ? 'nb-menu-item--active' : ''}`}

@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { TFile } from 'obsidian'
 import { ColumnSchema, NoteRow, SelectOption } from '../../types'
 import { useApp } from '../../context'
@@ -21,6 +22,7 @@ interface CellContextType {
 	setEditingCell: (cell: { rowIndex: number; columnId: string } | null) => void
 	updateCell: (rowIndex: number, columnId: string, value: unknown) => Promise<void>
 	schema: ColumnSchema[]
+	relationOptions: Map<string, string[]>
 }
 
 export const CellContext = createContext<CellContextType | null>(null)
@@ -34,7 +36,7 @@ export function useCellContext(): CellContextType {
 // ── Componente principal ─────────────────────────────────────────────────────
 
 export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps) {
-	const { editingCell, setEditingCell, updateCell } = useCellContext()
+	const { editingCell, setEditingCell, updateCell, relationOptions } = useCellContext()
 	const app = useApp()
 	const isEditing = editingCell?.rowIndex === rowIndex && editingCell?.columnId === columnId
 
@@ -118,6 +120,18 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 				<CheckboxCell
 					value={Boolean(value)}
 					onCommit={v => updateCell(rowIndex, columnId, v)}
+				/>
+			)
+
+		case 'relation':
+			return (
+				<RelationCell
+					value={value as string | null}
+					options={relationOptions.get(columnId) ?? []}
+					isEditing={isEditing}
+					onStartEdit={startEditing}
+					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCancel={() => setEditingCell(null)}
 				/>
 			)
 
@@ -478,6 +492,87 @@ function LookupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 	return (
 		<div className="nb-cell-formula nb-cell-lookup" title={`Lookup de ${col.refDatabasePath ?? ''}`}>
 			{display}
+		</div>
+	)
+}
+
+// ── RelationCell ─────────────────────────────────────────────────────────────
+
+function RelationCell({ value, options, isEditing, onStartEdit, onCommit, onCancel }: {
+	value: string | null
+	options: string[]
+	isEditing: boolean
+	onStartEdit: () => void
+	onCommit: (v: string | null) => void
+	onCancel: () => void
+}) {
+	const wrapperRef = useRef<HTMLDivElement>(null)
+	const dropdownRef = useRef<HTMLDivElement>(null)
+	const [search, setSearch] = useState('')
+	const inputRef = useRef<HTMLInputElement>(null)
+	const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null)
+
+	useEffect(() => {
+		if (!isEditing) return
+		const handler = (e: MouseEvent) => {
+			const inWrapper = wrapperRef.current?.contains(e.target as Node)
+			const inDropdown = dropdownRef.current?.contains(e.target as Node)
+			if (!inWrapper && !inDropdown) onCancel()
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [isEditing, onCancel])
+
+	useEffect(() => {
+		if (!isEditing) return
+		setSearch('')
+		if (wrapperRef.current) {
+			const rect = wrapperRef.current.getBoundingClientRect()
+			setDropPos({ top: rect.bottom, left: rect.left, width: rect.width })
+		}
+		setTimeout(() => inputRef.current?.focus(), 0)
+	}, [isEditing])
+
+	const filtered = options.filter(o => o.toLowerCase().includes(search.toLowerCase()))
+
+	const dropdown = isEditing && dropPos ? createPortal(
+		<div
+			ref={dropdownRef}
+			className="nb-select-dropdown nb-relation-dropdown"
+			style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, minWidth: dropPos.width, zIndex: 9999 }}
+		>
+			<input
+				ref={inputRef}
+				className="nb-relation-search"
+				placeholder="Buscar..."
+				value={search}
+				onChange={e => setSearch(e.target.value)}
+				onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
+			/>
+			<button className="nb-select-option nb-select-clear" onClick={() => onCommit(null)}>Limpar</button>
+			{filtered.map(opt => (
+				<button
+					key={opt}
+					className={`nb-select-option ${value === opt ? 'nb-select-option--active' : ''}`}
+					onClick={() => onCommit(opt)}
+				>
+					<span className="nb-relation-badge">{opt}</span>
+				</button>
+			))}
+			{filtered.length === 0 && <div className="nb-relation-empty">Nenhum resultado</div>}
+		</div>,
+		document.body
+	) : null
+
+	return (
+		<div className="nb-cell-select-wrapper" ref={wrapperRef}>
+			<div className="nb-cell-clickable" onClick={onStartEdit}>
+				{value
+					? <span className="nb-relation-badge">{value}</span>
+					: <span className="nb-cell-empty">—</span>
+				}
+			</div>
+			{dropdown}
 		</div>
 	)
 }

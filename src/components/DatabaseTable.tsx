@@ -39,7 +39,7 @@ import { FolderPickerModal } from '../folder-picker-modal'
 function getColumnIconStatic(type: string): string {
 	const icons: Record<string, string> = {
 		title: '📄', text: 'Aa', number: '#', select: '◉',
-		multiselect: '◈', date: '📅', checkbox: '☑', formula: 'ƒ', lookup: '↗',
+		multiselect: '◈', date: '📅', checkbox: '☑', formula: 'ƒ', relation: '🔗', lookup: '↗',
 	}
 	return icons[type] ?? '·'
 }
@@ -251,6 +251,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const [globalFilter, setGlobalFilter] = useState('')
 	const [editingCell, setEditingCell] = useState<{ rowIndex: number; columnId: string } | null>(null)
 	const [loading, setLoading] = useState(true)
+	const [relationOptions, setRelationOptions] = useState<Map<string, string[]>>(new Map())
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
@@ -320,10 +321,30 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 			}
 		}
 
+		// Load relation options
+		const relOpts = new Map<string, string[]>()
+		for (const col of cfg.schema.filter(c => c.type === 'relation' && c.refDatabasePath && c.refColumnId)) {
+			const refDbFile = app.vault.getFileByPath(col.refDatabasePath!)
+			if (!refDbFile) continue
+			const refConfig = await manager.readConfig(refDbFile)
+			const refNotes = manager.getNotesInDatabase(refDbFile)
+			const values = new Set<string>()
+			for (const note of refNotes) {
+				const row = manager.getNoteData(note, refConfig.schema)
+				const val = col.refColumnId === '_title' ? row._title : row[col.refColumnId!]
+				if (val !== null && val !== undefined) {
+					const s = String(val).trim()
+					if (s) values.add(s)
+				}
+			}
+			relOpts.set(col.id, Array.from(values).sort())
+		}
+		setRelationOptions(relOpts)
+
 		setConfig(cfg)
 		setRows(noteRows)
 		setLoading(false)
-	}, [dbFile, manager])
+	}, [dbFile, manager, app])
 
 	useEffect(() => { filtersInitialized.current = false }, [dbFile])
 
@@ -448,8 +469,8 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 				id: col.id,
 				accessorFn: row => row[col.id],
 				size: config.views[0]?.columnWidths[col.id] ?? (col.width ?? 150),
-				enableColumnFilter: col.type !== 'formula' && col.type !== 'lookup',
-				enableSorting: col.type !== 'formula' && col.type !== 'lookup',
+				enableColumnFilter: col.type !== 'formula' && col.type !== 'lookup' && col.type !== 'relation',
+				enableSorting: col.type !== 'formula' && col.type !== 'lookup' && col.type !== 'relation',
 				header: () => (
 					<ColumnHeader
 						col={col}
@@ -819,6 +840,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 										col.type === 'date' ? '📅' :
 										col.type === 'checkbox' ? '☑' :
 										col.type === 'lookup' ? '↗' :
+										col.type === 'relation' ? '🔗' :
 									col.type === 'formula' ? 'ƒ' : '·'
 									}</span>
 									<span className="nb-field-name">{col.name}</span>
@@ -1006,7 +1028,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		})()}
 
 		{/* Tabela */}
-			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema }}>
+			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema, relationOptions }}>
 			<div className="nb-table-wrapper">
 				<table className="nb-table">
 					<thead className="nb-thead">

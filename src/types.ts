@@ -12,6 +12,7 @@ export type ColumnType =
 	| 'date'
 	| 'checkbox'
 	| 'formula'
+	| 'relation'
 	| 'lookup'
 
 export interface SelectOption {

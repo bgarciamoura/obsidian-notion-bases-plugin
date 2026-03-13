@@ -950,6 +950,7 @@
 .nb-select-option {
 	display: flex;
 	align-items: center;
+	justify-content: flex-start;
 	gap: 6px;
 	width: 100%;
 	padding: 5px 8px;
@@ -1287,4 +1288,41 @@
 
 .nb-cell-lookup {
 	color: var(--text-accent);
+}
+
+/* ── Relation cell ─────────────────────────────────────────────────────────── */
+
+.nb-relation-badge {
+	display: inline-block;
+	padding: 1px 8px;
+	border-radius: 10px;
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller);
+	font-weight: 500;
+}
+
+.nb-relation-dropdown {
+	min-width: 180px;
+	max-height: 240px;
+	overflow-y: auto;
+}
+
+.nb-relation-search {
+	width: 100%;
+	padding: 5px 8px;
+	border: none;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: transparent;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	outline: none;
+	box-sizing: border-box;
+}
+
+.nb-relation-empty {
+	padding: 8px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+	text-align: center;
 }
