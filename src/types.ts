@@ -33,6 +33,8 @@ export interface ColumnSchema {
 export type FilterOperator =
 	| 'contains'
 	| 'not_contains'
+	| 'starts_with'
+	| 'ends_with'
 	| 'is'
 	| 'is_not'
 	| 'is_empty'
@@ -57,7 +59,7 @@ export interface ViewConfig {
 	sorts: SortConfig[]
 	hiddenColumns: string[]
 	columnWidths: Record<string, number>
-	activePillIds?: string[]
+	activePills?: { columnId: string; operator: FilterOperator; value: string }[]
 }
 
 // ── Database config (stored in _database.md frontmatter) ───────────────────

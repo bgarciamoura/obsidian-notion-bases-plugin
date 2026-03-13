@@ -6,7 +6,6 @@ import {
 	flexRender,
 	ColumnDef,
 	SortingState,
-	ColumnFiltersState,
 	RowSelectionState,
 } from '@tanstack/react-table'
 import {
@@ -28,7 +27,7 @@ import { TFile } from 'obsidian'
 import { ReactNode, useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
-import { ColumnSchema, DatabaseConfig, NoteRow, DEFAULT_DATABASE_CONFIG } from '../types'
+import { ColumnSchema, DatabaseConfig, FilterOperator, NoteRow, DEFAULT_DATABASE_CONFIG } from '../types'
 import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
@@ -41,6 +40,49 @@ function getColumnIconStatic(type: string): string {
 		multiselect: '◈', date: '📅', checkbox: '☑', formula: 'ƒ',
 	}
 	return icons[type] ?? '·'
+}
+
+interface ActiveFilter {
+	columnId: string
+	columnName: string
+	icon: string
+	operator: FilterOperator
+	value: string
+}
+
+const FILTER_OPERATORS: FilterOperator[] = [
+	'is', 'is_not', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_empty', 'is_not_empty',
+]
+
+const OPERATOR_LABELS: Record<FilterOperator, string> = {
+	is: 'É',
+	is_not: 'Não é',
+	contains: 'Contém',
+	not_contains: 'Não contém',
+	starts_with: 'Começa com',
+	ends_with: 'Termina com',
+	is_empty: 'Está vazio',
+	is_not_empty: 'Não está vazio',
+}
+
+function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
+	if (f.operator !== 'is_empty' && f.operator !== 'is_not_empty' && f.value === '') return true
+	const raw = f.columnId === '_title' ? row._title : row[f.columnId]
+	const cell = Array.isArray(raw)
+		? (raw as string[]).join(', ').toLowerCase()
+		: String(raw ?? '').toLowerCase()
+	const v = f.value.toLowerCase()
+	switch (f.operator) {
+		case 'is': return cell === v
+		case 'is_not': return cell !== v
+		case 'contains': return cell.includes(v)
+		case 'not_contains': return !cell.includes(v)
+		case 'starts_with': return cell.startsWith(v)
+		case 'ends_with': return cell.endsWith(v)
+		case 'is_empty': return raw === null || raw === undefined || cell === ''
+		case 'is_not_empty': return raw !== null && raw !== undefined && cell !== ''
+		default: return true
+	}
 }
 
 // ── Cabeçalho de coluna arrastável ───────────────────────────────────────────
@@ -92,7 +134,6 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const [config, setConfig] = useState<DatabaseConfig>(DEFAULT_DATABASE_CONFIG)
 	const [rows, setRows] = useState<NoteRow[]>([])
 	const [sorting, setSorting] = useState<SortingState>([])
-	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 	const [globalFilter, setGlobalFilter] = useState('')
 	const [editingCell, setEditingCell] = useState<{ rowIndex: number; columnId: string } | null>(null)
 	const [loading, setLoading] = useState(true)
@@ -104,9 +145,12 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const lastCreatedPath = useRef<string | null>(null)
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 	const filterMenuRef = useRef<HTMLDivElement>(null)
-	const [activeFilters, setActiveFilters] = useState<{ columnId: string; columnName: string; icon: string }[]>([])
+	const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
 	const [openFilterPill, setOpenFilterPill] = useState<string | null>(null)
 	const filterPillRefs = useRef<Record<string, HTMLDivElement | null>>({})
+	const [openOperatorPicker, setOpenOperatorPicker] = useState<string | null>(null)
+	const operatorPickerRefs = useRef<Record<string, HTMLDivElement | null>>({})
+	const filtersInitialized = useRef(false)
 	const [searchExpanded, setSearchExpanded] = useState(false)
 	const searchInputRef = useRef<HTMLInputElement>(null)
 	const searchInactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -139,22 +183,27 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 			lastCreatedPath.current = null
 		}
 
-		// Restaurar pills de filtro persistidas
-		const pillIds = cfg.views[0]?.activePillIds ?? []
-		if (pillIds.length > 0) {
-			const restored = pillIds.flatMap(id => {
-				if (id === '_title') return [{ columnId: '_title', columnName: 'Nome', icon: '📄' }]
-				const col = cfg.schema.find(c => c.id === id)
-				if (!col) return []
-				return [{ columnId: col.id, columnName: col.name, icon: getColumnIconStatic(col.type) }]
-			})
-			setActiveFilters(restored)
+		// Restaurar pills (apenas na primeira carga por arquivo)
+		if (!filtersInitialized.current) {
+			filtersInitialized.current = true
+			const pills = cfg.views[0]?.activePills ?? []
+			if (pills.length > 0) {
+				const restored = pills.flatMap(p => {
+					if (p.columnId === '_title') return [{ columnId: '_title', columnName: 'Nome', icon: '📄', operator: p.operator, value: p.value }]
+					const col = cfg.schema.find(sc => sc.id === p.columnId)
+					if (!col) return []
+					return [{ columnId: col.id, columnName: col.name, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value }]
+				})
+				setActiveFilters(restored as ActiveFilter[])
+			}
 		}
 
 		setConfig(cfg)
 		setRows(noteRows)
 		setLoading(false)
 	}, [dbFile, manager])
+
+	useEffect(() => { filtersInitialized.current = false }, [dbFile])
 
 	useEffect(() => {
 		loadData()
@@ -295,7 +344,6 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 						columnId={col.id}
 					/>
 				),
-				filterFn: col.type === 'multiselect' ? 'arrIncludesSome' : 'includesString',
 			})
 		}
 
@@ -304,12 +352,18 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 
 	// ── Instância da tabela ──────────────────────────────────────────────────
 
+	const filteredRows = useMemo(
+		() => activeFilters.length === 0
+			? rows
+			: rows.filter(row => activeFilters.every(f => matchesFilter(row, f))),
+		[rows, activeFilters]
+	)
+
 	const table = useReactTable({
-		data: rows,
+		data: filteredRows,
 		columns,
-		state: { sorting, columnFilters, globalFilter, rowSelection },
+		state: { sorting, globalFilter, rowSelection },
 		onSortingChange: setSorting,
-		onColumnFiltersChange: setColumnFilters,
 		onGlobalFilterChange: setGlobalFilter,
 		onRowSelectionChange: setRowSelection,
 		enableRowSelection: true,
@@ -421,7 +475,19 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		return () => document.removeEventListener('mousedown', handler)
 	}, [openFilterPill])
 
-	// ── Filtros ───────────────────────────────────────────────────────────────
+	// ── Fechar operator picker ao clicar fora ────────────────────────────
+
+	useEffect(() => {
+		if (!openOperatorPicker) return
+		const handler = (e: MouseEvent) => {
+			const el = operatorPickerRefs.current[openOperatorPicker]
+			if (el && !el.contains(e.target as Node)) setOpenOperatorPicker(null)
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [openOperatorPicker])
+
+		// ── Filtros ───────────────────────────────────────────────────────────────
 
 	const getColumnIcon = getColumnIconStatic
 
@@ -430,7 +496,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		const newConfig = {
 			...config,
 			views: config.views.map((v, i) =>
-				i === 0 ? { ...v, activePillIds: filters.map(f => f.columnId) } : v
+				i === 0 ? { ...v, activePills: (filters as ActiveFilter[]).map(f => ({ columnId: f.columnId, operator: f.operator, value: f.value })) } : v
 			),
 		}
 		await manager.writeConfig(dbFile, newConfig)
@@ -438,7 +504,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 
 	const addFilter = (columnId: string, columnName: string, icon: string) => {
 		if (activeFilters.some(f => f.columnId === columnId)) return
-		const next = [...activeFilters, { columnId, columnName, icon }]
+		const next: ActiveFilter[] = [...activeFilters, { columnId, columnName, icon, operator: 'contains' as FilterOperator, value: '' }]
 		setActiveFilters(next)
 		saveActivePills(next)
 		setFilterMenuOpen(false)
@@ -449,6 +515,15 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		setActiveFilters(next)
 		saveActivePills(next)
 		if (openFilterPill === columnId) setOpenFilterPill(null)
+		if (openOperatorPicker === columnId) setOpenOperatorPicker(null)
+	}
+
+	const updateFilter = (columnId: string, operator: FilterOperator, value: string) => {
+		const next = activeFilters.map(f =>
+			f.columnId === columnId ? { ...f, operator, value } : f
+		)
+		setActiveFilters(next)
+		saveActivePills(next)
 	}
 
 	// ── Busca colapsável ──────────────────────────────────────────────────────
@@ -674,8 +749,44 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 
 						{openFilterPill === filter.columnId && (
 							<div className="nb-filter-pill-dropdown">
-								<div className="nb-menu-label">Filtro: {filter.columnName}</div>
-								<div className="nb-filter-pill-placeholder">Em breve</div>
+								<div className="nb-filter-query-row">
+									<span className="nb-filter-query-name">{filter.columnName}</span>
+									<div
+										className="nb-filter-op-wrapper"
+										ref={el => { operatorPickerRefs.current[filter.columnId] = el }}
+									>
+										<button
+											className={`nb-filter-op-btn ${openOperatorPicker === filter.columnId ? 'nb-filter-op-btn--open' : ''}`}
+											onClick={e => { e.stopPropagation(); setOpenOperatorPicker(v => v === filter.columnId ? null : filter.columnId) }}
+										>
+											{OPERATOR_LABELS[filter.operator]}
+											<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+										</button>
+										{openOperatorPicker === filter.columnId && (
+											<div className="nb-filter-op-dropdown">
+												{FILTER_OPERATORS.map(op => (
+													<button
+														key={op}
+														className={`nb-menu-item ${filter.operator === op ? 'nb-menu-item--active' : ''}`}
+														onClick={e => { e.stopPropagation(); updateFilter(filter.columnId, op, filter.value); setOpenOperatorPicker(null) }}
+													>
+														{OPERATOR_LABELS[op]}
+													</button>
+												))}
+											</div>
+										)}
+									</div>
+								</div>
+								{filter.operator !== 'is_empty' && filter.operator !== 'is_not_empty' && (
+									<input
+										className="nb-filter-value-input"
+										type="text"
+										placeholder="Digite um valor..."
+										value={filter.value}
+										autoFocus
+										onChange={e => updateFilter(filter.columnId, filter.operator, e.target.value)}
+									/>
+								)}
 							</div>
 						)}
 					</div>
