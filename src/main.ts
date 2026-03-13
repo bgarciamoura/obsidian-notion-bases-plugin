@@ -3,6 +3,7 @@ import { DATABASE_VIEW_TYPE, DatabaseView } from './database-view'
 import { DatabaseManager } from './database-manager'
 import { DEFAULT_SETTINGS, NotionBasesSettings, NotionBasesSettingTab } from './settings'
 import { DatabasePickerModal } from './database-picker-modal'
+import { registerDatabaseEmbed } from './database-embed'
 
 export default class NotionBasesPlugin extends Plugin {
 	settings: NotionBasesSettings
@@ -84,6 +85,9 @@ export default class NotionBasesPlugin extends Plugin {
 				}
 			})
 		)
+
+		// Embed de database em notas via ```nb-database
+		registerDatabaseEmbed(this)
 
 		// Settings tab
 		this.addSettingTab(new NotionBasesSettingTab(this.app, this))

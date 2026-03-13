@@ -1,90 +1,116 @@
-# Obsidian Sample Plugin
+# Notion Bases
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+**Turn any folder in your vault into a powerful database — right inside Obsidian.**
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+Notion Bases brings the database experience you love from Notion directly into your vault. Every note in a folder becomes a row. Every frontmatter field becomes a column. No external tools, no syncing, no lock-in — your data stays in plain Markdown files, forever yours.
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+---
 
-## First time developing plugins?
+## What it does
 
-Quick starting guide for new plugin devs:
+Notion Bases reads your notes' frontmatter and presents them as a fully interactive database table. You can filter, sort, group, and edit your data without ever leaving Obsidian. When you edit a cell, it writes directly to the note's frontmatter. When you add a row, it creates a new `.md` file in the folder.
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+---
 
-## Releasing new releases
+## Features
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+### Table view
+- **Rich column types** — Title, Text, Number, Select, Multi-select, Checkbox, Date, URL, Formula, Relation, Lookup
+- **Inline editing** — click any cell to edit; changes are saved directly to the note's frontmatter
+- **Filters** — add filter pills per column with type-aware operators (`contains`, `is`, `>`, `<`, `is checked`, and more)
+- **Sorting** — click the sort button on any column header to sort ascending or descending
+- **Column reordering** — drag columns to reorder them
+- **Column pinning** — pin columns to the left so they stay visible when scrolling horizontally
+- **Hide/show fields** — choose which columns are visible without deleting them
+- **Number formatting** — format number columns with prefixes, suffixes, decimals and thousand separators (Excel-style)
+- **Row selection** — select multiple rows to delete, duplicate or move them in bulk
+- **Formula columns** — compute values from other columns using a built-in formula engine
+- **Relation columns** — link rows to notes in another database folder
+- **Lookup columns** — pull a field value from a related database
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+### Database embed
+Embed any database inside a regular note using a simple code block:
 
-## Adding your plugin to the community plugin list
-
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+````markdown
+```nb-database
+path: Projects
 ```
+````
 
-If you have multiple URLs, you can also do:
+The embed has its own independent view — filters, column order and visibility are saved separately from the main database, so you can create custom perspectives for different contexts.
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+### Smart schema inference
+Open a folder that already has notes with frontmatter — Notion Bases will automatically infer the schema and column types from the existing data.
+
+### Open rows as notes
+Click the title of any row to open the underlying note. The full Obsidian experience remains intact.
+
+---
+
+## Getting started
+
+### 1. Install
+Search for **Notion Bases** in **Settings → Community plugins → Browse** and click Install.
+
+### 2. Create a database
+Use the command palette (`Ctrl/Cmd + P`) and run **"Create new database in current folder"**. This creates a `_database.md` file in the active folder, which marks it as a database.
+
+### 3. Open a database
+Click the table icon in the ribbon, or run **"Open database for this folder"** from the command palette. A database tab will open showing all notes in that folder as rows.
+
+### 4. Add columns
+Click **+** at the right end of the header row to add a new column. Choose the column type and start editing.
+
+### 5. Embed in a note
+In any note, add a code block with the database path:
+
+````markdown
+```nb-database
+path: Projects
 ```
+````
 
-## API Documentation
+---
 
-See https://docs.obsidian.md
+## Column types
+
+| Type | Description |
+|------|-------------|
+| `title` | The note's filename — always the first column |
+| `text` | Plain text |
+| `number` | Numeric value with optional formatting |
+| `select` | Single option from a defined list |
+| `multiselect` | Multiple options from a defined list |
+| `checkbox` | Boolean true/false |
+| `date` | Date value |
+| `formula` | Computed value using other column values |
+| `relation` | Link to a note in another database |
+| `lookup` | Pull a field from a related database |
+
+---
+
+## How data is stored
+
+Every piece of data lives in your vault as plain Markdown:
+
+- **Rows** are `.md` files in the database folder
+- **Column values** are frontmatter fields in each note
+- **Database schema and view config** are stored in the `_database.md` frontmatter
+- **Embed view configs** are stored locally in the plugin's `data.json`
+
+No proprietary format. No external database. Open any file in any text editor and your data is right there.
+
+---
+
+## Installation (manual)
+
+1. Download `main.js`, `manifest.json` and `styles.css` from the [latest release](../../releases/latest)
+2. Copy the three files to `<your-vault>/.obsidian/plugins/notion-bases/`
+3. Reload Obsidian and enable the plugin in **Settings → Community plugins**
+
+---
+
+## Requirements
+
+- Obsidian `1.4.0` or later
+- Works on desktop and mobile

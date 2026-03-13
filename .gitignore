@@ -24,3 +24,9 @@ data.json
 # Claude Code
 CLAUDE.md
 .claude/
+
+# Hot Reload plugin
+.hotreload
+
+# Local task tracking
+TODO.md
