@@ -384,6 +384,7 @@
 }
 
 .nb-header-title:hover .nb-sort-btn,
+.nb-th:hover .nb-sort-btn,
 .nb-sort-btn--sorted {
 	opacity: 1;
 }
@@ -569,6 +570,7 @@
 	border: none;
 	cursor: pointer;
 	padding: 2px 3px;
+	margin-right: 4px;
 	font-size: 11px;
 	color: var(--text-muted);
 	border-radius: 3px;

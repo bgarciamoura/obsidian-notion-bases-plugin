@@ -204,7 +204,7 @@ function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 
 // ── Cabeçalho de coluna arrastável ───────────────────────────────────────────
 
-function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, onTogglePin }: {
+function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, onTogglePin, sorted, onToggleSort }: {
 	id: string
 	size: number
 	children: ReactNode
@@ -212,6 +212,8 @@ function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, on
 	isLastPinned?: boolean
 	isPinned?: boolean
 	onTogglePin?: () => void
+	sorted?: false | "asc" | "desc"
+	onToggleSort?: () => void
 }) {
 	const {
 		attributes,
@@ -251,6 +253,16 @@ function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, on
 					title="Arrastar para reordenar"
 				>⠿</span>
 				{children}
+				{onToggleSort && (
+					<button
+						className={sorted ? "nb-sort-btn nb-sort-btn--sorted" : "nb-sort-btn"}
+						onClick={e => { e.stopPropagation(); onToggleSort() }}
+						title={sorted === "asc" ? "Ordenar Z→A" : sorted === "desc" ? "Remover ordenação" : "Ordenar A→Z"}
+					>
+						<span className={sorted === "asc" ? "nb-sort-chevron--active" : "nb-sort-chevron"}>⌃</span>
+						<span className={sorted === "desc" ? "nb-sort-chevron--active" : "nb-sort-chevron"}>⌄</span>
+					</button>
+				)}
 				<span className="nb-col-drag-spacer" aria-hidden="true" />
 				{onTogglePin && (
 					<button
@@ -1226,6 +1238,8 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 														isLastPinned={sticky?.isLast}
 														isPinned={pinnedColumnId === header.id}
 														onTogglePin={() => handleTogglePin(header.id)}
+					sorted={header.column.getCanSort() ? header.column.getIsSorted() : undefined}
+					onToggleSort={header.column.getCanSort() ? () => header.column.toggleSorting(header.column.getIsSorted() === "asc") : undefined}
 													>
 														{flexRender(header.column.columnDef.header, header.getContext())}
 													</SortableTh>
