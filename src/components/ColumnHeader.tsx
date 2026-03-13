@@ -126,7 +126,52 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 		setMenuOpen(false)
 	}
 
+	const [refOpen, setRefOpen] = useState(false)
 	const otherCols = schema.filter(c => c.id !== col.id && c.type !== 'formula')
+
+	const FORMULA_REF = [
+		{ group: 'Lógica', items: [
+			{ fn: 'IF(cond, a, b)',          desc: 'Se cond for verdadeiro retorna a, senão b' },
+			{ fn: 'IFS(c1, v1, c2, v2…)',   desc: 'Testa condições em sequência' },
+			{ fn: 'AND(a, b, …)',            desc: 'Verdadeiro se todos forem verdadeiros' },
+			{ fn: 'OR(a, b, …)',             desc: 'Verdadeiro se algum for verdadeiro' },
+			{ fn: 'NOT(a)',                  desc: 'Inverte o valor lógico' },
+		]},
+		{ group: 'Comparadores', items: [
+			{ fn: '= <> != > < >= <=', desc: 'Compara dois valores; use com IF' },
+		]},
+		{ group: 'Agregadores', items: [
+			{ fn: 'SUM(col)',   desc: 'Soma todos os valores da coluna' },
+			{ fn: 'AVG(col)',   desc: 'Média dos valores da coluna' },
+			{ fn: 'COUNT(col)', desc: 'Conta valores não vazios da coluna' },
+			{ fn: 'MIN(col)',   desc: 'Menor valor da coluna' },
+			{ fn: 'MAX(col)',   desc: 'Maior valor da coluna' },
+		]},
+		{ group: 'Texto', items: [
+			{ fn: 'CONCAT(a, b, …)',       desc: 'Concatena textos (ou use &)' },
+			{ fn: 'LEN(texto)',             desc: 'Número de caracteres' },
+			{ fn: 'UPPER / LOWER(texto)',   desc: 'Maiúsculas / minúsculas' },
+			{ fn: 'TRIM(texto)',            desc: 'Remove espaços nas bordas' },
+			{ fn: 'LEFT(texto, n)',         desc: 'Primeiros n caracteres' },
+			{ fn: 'RIGHT(texto, n)',        desc: 'Últimos n caracteres' },
+			{ fn: 'MID(texto, início, n)',  desc: 'Substring a partir de início' },
+			{ fn: 'SUBSTITUTE(t, de, para)', desc: 'Substitui ocorrências' },
+		]},
+		{ group: 'Matemática', items: [
+			{ fn: 'ROUND(n, d)',  desc: 'Arredonda n com d casas decimais' },
+			{ fn: 'FLOOR / CEIL(n)', desc: 'Arredonda para baixo / cima' },
+			{ fn: 'ABS(n)',       desc: 'Valor absoluto' },
+			{ fn: 'MOD(n, d)',    desc: 'Resto da divisão' },
+			{ fn: 'POWER(b, e)',  desc: 'Base elevado ao expoente' },
+			{ fn: 'SQRT(n)',      desc: 'Raiz quadrada' },
+		]},
+		{ group: 'Utilitários', items: [
+			{ fn: 'ISNULL(v)',         desc: 'Verdadeiro se v for vazio ou nulo' },
+			{ fn: 'COALESCE(a, b, …)', desc: 'Primeiro valor não vazio' },
+			{ fn: 'TEXT(v)',            desc: 'Converte para texto' },
+			{ fn: 'VALUE(v)',           desc: 'Converte para número' },
+		]},
+	]
 
 	return (
 		<div className="nb-column-header" ref={menuRef}>
@@ -252,7 +297,34 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn }: Co
 						</div>
 					)}
 
-					<div className="nb-formula-actions">
+					{/* Referência de funções */}
+				<div className="nb-formula-ref">
+					<button className="nb-formula-ref-toggle" onClick={() => setRefOpen(v => !v)}>
+						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: refOpen ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }}><polyline points="9 18 15 12 9 6"/></svg>
+						Referência de funções
+					</button>
+					{refOpen && (
+						<div className="nb-formula-ref-body">
+							{FORMULA_REF.map(group => (
+								<div key={group.group} className="nb-formula-ref-group">
+									<div className="nb-formula-ref-group-title">{group.group}</div>
+									<table className="nb-formula-ref-table">
+										<tbody>
+											{group.items.map(item => (
+												<tr key={item.fn}>
+													<td className="nb-formula-ref-fn"><code>{item.fn}</code></td>
+													<td className="nb-formula-ref-desc">{item.desc}</td>
+												</tr>
+											))}
+										</tbody>
+									</table>
+								</div>
+							))}
+						</div>
+					)}
+				</div>
+
+				<div className="nb-formula-actions">
 						<button
 							className="nb-formula-save"
 							disabled={!!formulaError}
