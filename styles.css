@@ -537,8 +537,7 @@
 	width: 100%;
 	height: 100%;
 	padding: 6px;
-	background: transparent !important;
-	box-shadow: none !important;
+	background: none;
 	border: none;
 	color: var(--text-muted);
 	font-size: 16px;
@@ -546,6 +545,12 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
+}
+
+/* Especificidade maior que button:not(.clickable-icon) do Obsidian */
+.nb-th-add-col .nb-add-col-btn {
+	background: none;
+	box-shadow: none;
 }
 
 .nb-add-col-btn:hover {
