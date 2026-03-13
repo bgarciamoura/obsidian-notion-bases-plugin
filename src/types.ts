@@ -37,6 +37,12 @@ export type FilterOperator =
 	| 'ends_with'
 	| 'is'
 	| 'is_not'
+	| 'gt'
+	| 'lt'
+	| 'gte'
+	| 'lte'
+	| 'is_checked'
+	| 'is_unchecked'
 	| 'is_empty'
 	| 'is_not_empty'
 

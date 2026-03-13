@@ -47,14 +47,37 @@ interface ActiveFilter {
 	id: string
 	columnId: string
 	columnName: string
+	columnType: string
 	icon: string
 	operator: FilterOperator
 	value: string
 }
 
-const FILTER_OPERATORS: FilterOperator[] = [
-	'is', 'is_not', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_empty', 'is_not_empty',
-]
+const TEXT_OPERATORS: FilterOperator[] = ['contains', 'not_contains', 'starts_with', 'ends_with', 'is', 'is_not', 'is_empty', 'is_not_empty']
+const NUMBER_OPERATORS: FilterOperator[] = ['is', 'is_not', 'gt', 'gte', 'lt', 'lte', 'is_empty', 'is_not_empty']
+const DATE_OPERATORS: FilterOperator[] = ['is', 'is_not', 'gt', 'gte', 'lt', 'lte', 'is_empty', 'is_not_empty']
+const SELECT_OPERATORS: FilterOperator[] = ['is', 'is_not', 'is_empty', 'is_not_empty']
+const CHECKBOX_OPERATORS: FilterOperator[] = ['is_checked', 'is_unchecked', 'is_empty', 'is_not_empty']
+
+function getOperatorsForType(type: string): FilterOperator[] {
+	switch (type) {
+		case 'number': return NUMBER_OPERATORS
+		case 'date': return DATE_OPERATORS
+		case 'select': return SELECT_OPERATORS
+		case 'multiselect': return SELECT_OPERATORS
+		case 'checkbox': return CHECKBOX_OPERATORS
+		default: return TEXT_OPERATORS
+	}
+}
+
+function getDefaultOperator(type: string): FilterOperator {
+	switch (type) {
+		case 'number': case 'date': return 'is'
+		case 'checkbox': return 'is_checked'
+		case 'select': case 'multiselect': return 'is'
+		default: return 'contains'
+	}
+}
 
 const OPERATOR_LABELS: Record<FilterOperator, string> = {
 	is: 'É',
@@ -63,13 +86,58 @@ const OPERATOR_LABELS: Record<FilterOperator, string> = {
 	not_contains: 'Não contém',
 	starts_with: 'Começa com',
 	ends_with: 'Termina com',
+	gt: 'Maior que',
+	gte: 'Maior ou igual',
+	lt: 'Menor que',
+	lte: 'Menor ou igual',
+	is_checked: 'Está marcado',
+	is_unchecked: 'Não está marcado',
 	is_empty: 'Está vazio',
 	is_not_empty: 'Não está vazio',
 }
 
+const NO_VALUE_OPERATORS = new Set<FilterOperator>(['is_empty', 'is_not_empty', 'is_checked', 'is_unchecked'])
+
 function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
-	if (f.operator !== 'is_empty' && f.operator !== 'is_not_empty' && f.value === '') return true
+	const noValue = NO_VALUE_OPERATORS.has(f.operator)
+	if (!noValue && f.value === '') return true
 	const raw = f.columnId === '_title' ? row._title : row[f.columnId]
+
+	if (f.operator === 'is_empty') return raw === null || raw === undefined || String(raw ?? '').trim() === ''
+	if (f.operator === 'is_not_empty') return raw !== null && raw !== undefined && String(raw ?? '').trim() !== ''
+	if (f.operator === 'is_checked') return raw === true || raw === 'true'
+	if (f.operator === 'is_unchecked') return raw !== true && raw !== 'true'
+
+	if (f.columnType === 'number') {
+		const n = parseFloat(String(raw ?? ''))
+		const v = parseFloat(f.value)
+		if (isNaN(n) || isNaN(v)) return false
+		switch (f.operator) {
+			case 'is': return n === v
+			case 'is_not': return n !== v
+			case 'gt': return n > v
+			case 'gte': return n >= v
+			case 'lt': return n < v
+			case 'lte': return n <= v
+			default: return true
+		}
+	}
+
+	if (f.columnType === 'date') {
+		const d = new Date(String(raw ?? '')).getTime()
+		const v = new Date(f.value).getTime()
+		if (isNaN(d) || isNaN(v)) return false
+		switch (f.operator) {
+			case 'is': return d === v
+			case 'is_not': return d !== v
+			case 'gt': return d > v
+			case 'gte': return d >= v
+			case 'lt': return d < v
+			case 'lte': return d <= v
+			default: return true
+		}
+	}
+
 	const cell = Array.isArray(raw)
 		? (raw as string[]).join(', ').toLowerCase()
 		: String(raw ?? '').toLowerCase()
@@ -81,8 +149,6 @@ function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 		case 'not_contains': return !cell.includes(v)
 		case 'starts_with': return cell.startsWith(v)
 		case 'ends_with': return cell.endsWith(v)
-		case 'is_empty': return raw === null || raw === undefined || cell === ''
-		case 'is_not_empty': return raw !== null && raw !== undefined && cell !== ''
 		default: return true
 	}
 }
@@ -123,6 +189,45 @@ function SortableTh({ id, size, children }: { id: string; size: number; children
 				<span className="nb-col-drag-spacer" aria-hidden="true" />
 			</div>
 		</th>
+	)
+}
+
+function SortablePill({ filter, isActive, onToggle, onRemove, btnRef }: {
+	filter: ActiveFilter
+	isActive: boolean
+	onToggle: () => void
+	onRemove: () => void
+	btnRef: (el: HTMLButtonElement | null) => void
+}) {
+	const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: filter.id })
+
+	return (
+		<div
+			ref={setNodeRef}
+			style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+			className="nb-filter-pill-sortable"
+		>
+			<span
+				ref={setActivatorNodeRef}
+				{...listeners}
+				{...attributes}
+				className="nb-pill-drag-handle"
+				title="Arrastar para reordenar"
+			>⠿</span>
+			<button
+				ref={btnRef}
+				className={`nb-filter-pill ${isActive ? 'nb-filter-pill--active' : ''}`}
+				onClick={onToggle}
+			>
+				<span className="nb-filter-pill-icon">{filter.icon}</span>
+				<span className="nb-filter-pill-name">{filter.columnName}</span>
+				<span
+					className="nb-filter-pill-remove"
+					onClick={e => { e.stopPropagation(); onRemove() }}
+					title="Remover filtro"
+				>×</span>
+			</button>
+		</div>
 	)
 }
 
@@ -193,10 +298,10 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 			const pills = cfg.views[0]?.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', icon: '📄', operator: p.operator, value: p.value }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
-					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value }]
+					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value }]
 				})
 				setActiveFilters(restored as ActiveFilter[])
 			}
@@ -517,9 +622,19 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		await manager.writeConfig(dbFile, newConfig)
 	}, [dbFile, config, manager])
 
-	const addFilter = (columnId: string, columnName: string, icon: string) => {
+	const handlePillDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event
+		if (!over || active.id === over.id) return
+		const oldIndex = activeFilters.findIndex(f => f.id === active.id)
+		const newIndex = activeFilters.findIndex(f => f.id === over.id)
+		const next = arrayMove(activeFilters, oldIndex, newIndex)
+		setActiveFilters(next)
+		saveActivePills(next)
+	}
+
+	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
 		const filterId = crypto.randomUUID()
-		const next: ActiveFilter[] = [...activeFilters, { id: filterId, columnId, columnName, icon, operator: 'contains' as FilterOperator, value: '' }]
+		const next: ActiveFilter[] = [...activeFilters, { id: filterId, columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '' }]
 		setActiveFilters(next)
 		saveActivePills(next)
 		setFilterMenuOpen(false)
@@ -766,7 +881,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 							<div className="nb-fields-dropdown-label">Filtrar por</div>
 							<button
 								className="nb-menu-item"
-								onClick={() => addFilter('_title', 'Nome', '📄')}
+								onClick={() => addFilter('_title', 'Nome', '📄', 'title')}
 								
 							>
 								<span className="nb-menu-item-icon">📄</span>
@@ -776,7 +891,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 								<button
 									key={col.id}
 									className="nb-menu-item"
-									onClick={() => addFilter(col.id, col.name, getColumnIcon(col.type))}
+									onClick={() => addFilter(col.id, col.name, getColumnIcon(col.type), col.type)}
 									
 								>
 									<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
@@ -838,11 +953,11 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 							</button>
 							{openOperatorPicker === filter.id && (
 								<div className="nb-filter-op-dropdown">
-									{FILTER_OPERATORS.map(op => (
+									{getOperatorsForType(filter.columnType).map((op: FilterOperator) => (
 										<button
 											key={op}
 											className={`nb-menu-item ${filter.operator === op ? 'nb-menu-item--active' : ''}`}
-											onClick={e => { e.stopPropagation(); updateFilter(filter.id, op, filter.value); setOpenOperatorPicker(null) }}
+											onClick={e => { e.stopPropagation(); updateFilter(filter.id, op, ''); setOpenOperatorPicker(null) }}
 										>
 											{OPERATOR_LABELS[op]}
 										</button>
@@ -856,11 +971,11 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 							title="Remover filtro"
 						>×</button>
 					</div>
-					{filter.operator !== 'is_empty' && filter.operator !== 'is_not_empty' && (
+					{!NO_VALUE_OPERATORS.has(filter.operator) && (
 						<input
 							className="nb-filter-value-input"
-							type="text"
-							placeholder="Digite um valor..."
+							type={filter.columnType === 'number' ? 'number' : filter.columnType === 'date' ? 'date' : 'text'}
+							placeholder={filter.columnType === 'number' ? 'Número...' : filter.columnType === 'date' ? '' : 'Valor...'}
 							value={filter.value}
 							autoFocus
 							onChange={e => updateFilter(filter.id, filter.operator, e.target.value)}

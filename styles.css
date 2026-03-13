@@ -785,6 +785,27 @@
 	display: none;
 }
 
+.nb-filter-pill-sortable {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.nb-pill-drag-handle {
+	display: inline-flex;
+	align-items: center;
+	padding: 0 2px;
+	color: var(--text-faint);
+	cursor: grab;
+	font-size: 12px;
+	line-height: 1;
+	user-select: none;
+}
+
+.nb-pill-drag-handle:active {
+	cursor: grabbing;
+}
+
 .nb-filter-pill {
 	display: inline-flex;
 	align-items: center;
