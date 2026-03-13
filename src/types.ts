@@ -79,6 +79,7 @@ export interface ViewConfig {
 	hiddenColumns: string[]
 	columnWidths: Record<string, number>
 	activePills?: { id: string; columnId: string; operator: FilterOperator; value: string }[]
+	pinnedColumnId?: string | null
 }
 
 // ── Database config (stored in _database.md frontmatter) ───────────────────
@@ -95,6 +96,7 @@ export const DEFAULT_VIEW: ViewConfig = {
 	sorts: [],
 	hiddenColumns: [],
 	columnWidths: {},
+	pinnedColumnId: null,
 }
 
 export const DEFAULT_DATABASE_CONFIG: DatabaseConfig = {

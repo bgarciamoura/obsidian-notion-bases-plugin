@@ -537,6 +537,62 @@
 	border-right: none;
 }
 
+/* ── Sticky columns ──────────────────────────────────────────────────────── */
+
+.nb-th--sticky {
+	position: sticky;
+	background: var(--background-primary);
+	z-index: 3;
+}
+
+.nb-td--sticky {
+	position: sticky;
+	background: var(--background-primary);
+	z-index: 1;
+}
+
+.nb-th--sticky-last,
+.nb-td--sticky-last {
+	border-right: 2px solid var(--color-accent) !important;
+}
+
+/* ── Pin button ──────────────────────────────────────────────────────────── */
+
+.nb-pin-btn {
+	opacity: 0;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 2px 3px;
+	font-size: 11px;
+	color: var(--text-muted);
+	border-radius: 3px;
+	flex-shrink: 0;
+	transition: opacity 0.15s, color 0.15s;
+	line-height: 1;
+}
+
+.nb-th:hover .nb-pin-btn,
+.nb-pin-btn--active {
+	opacity: 1;
+}
+
+.nb-pin-btn--active {
+	color: var(--color-accent);
+}
+
+.nb-pin-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nb-th-inner-title {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0 6px;
+	height: 100%;
+}
+
 /* ── Células genéricas ───────────────────────────────────────────────────── */
 
 .nb-cell-text {

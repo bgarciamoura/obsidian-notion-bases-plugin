@@ -314,19 +314,58 @@ function SelectCell({ value, options, isEditing, onStartEdit, onCommit, onCancel
 	onCommit: (v: string | null) => void
 	onCancel: () => void
 }) {
-	const menuRef = useRef<HTMLDivElement>(null)
+	const wrapperRef = useRef<HTMLDivElement>(null)
+	const dropdownRef = useRef<HTMLDivElement>(null)
+	const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null)
 
 	useEffect(() => {
 		if (!isEditing) return
 		const handler = (e: MouseEvent) => {
-			if (menuRef.current && !menuRef.current.contains(e.target as Node)) onCancel()
+			const inWrapper = wrapperRef.current?.contains(e.target as Node)
+			const inDropdown = dropdownRef.current?.contains(e.target as Node)
+			if (!inWrapper && !inDropdown) onCancel()
 		}
 		document.addEventListener('mousedown', handler)
 		return () => document.removeEventListener('mousedown', handler)
 	}, [isEditing, onCancel])
 
+	useEffect(() => {
+		if (!isEditing) return
+		if (wrapperRef.current) {
+			const rect = wrapperRef.current.getBoundingClientRect()
+			setDropPos({ top: rect.bottom, left: rect.left, width: rect.width })
+		}
+	}, [isEditing])
+
+	const dropdown = isEditing && dropPos ? createPortal(
+		<div
+			ref={dropdownRef}
+			className="nb-select-dropdown"
+			style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, minWidth: dropPos.width, zIndex: 9999 }}
+		>
+			<button className="nb-select-option nb-select-clear" onClick={() => onCommit(null)}>
+				Limpar
+			</button>
+			{options.map(opt => (
+				<button
+					key={opt.value}
+					className={`nb-select-option ${value === opt.value ? 'nb-select-option--active' : ''}`}
+					onClick={() => onCommit(opt.value)}
+				>
+					<span
+						className="nb-select-badge"
+						style={{ background: getOptionColor(options, opt.value) }}
+					>
+						{opt.value}
+					</span>
+				</button>
+			))}
+		</div>,
+		document.body
+	) : null
+
 	return (
-		<div className="nb-cell-select-wrapper" ref={menuRef}>
+		<div className="nb-cell-select-wrapper" ref={wrapperRef}>
 			<div className="nb-cell-clickable" onClick={onStartEdit}>
 				{value ? (
 					<span
@@ -339,28 +378,7 @@ function SelectCell({ value, options, isEditing, onStartEdit, onCommit, onCancel
 					<span className="nb-cell-empty">—</span>
 				)}
 			</div>
-
-			{isEditing && (
-				<div className="nb-select-dropdown">
-					<button className="nb-select-option nb-select-clear" onClick={() => onCommit(null)}>
-						Limpar
-					</button>
-					{options.map(opt => (
-						<button
-							key={opt.value}
-							className={`nb-select-option ${value === opt.value ? 'nb-select-option--active' : ''}`}
-							onClick={() => onCommit(opt.value)}
-						>
-							<span
-								className="nb-select-badge"
-								style={{ background: getOptionColor(options, opt.value) }}
-							>
-								{opt.value}
-							</span>
-						</button>
-					))}
-				</div>
-			)}
+			{dropdown}
 		</div>
 	)
 }
@@ -375,16 +393,28 @@ function MultiSelectCell({ value, options, isEditing, onStartEdit, onCommit, onC
 	onCommit: (v: string[]) => void
 	onCancel: () => void
 }) {
-	const menuRef = useRef<HTMLDivElement>(null)
+	const wrapperRef = useRef<HTMLDivElement>(null)
+	const dropdownRef = useRef<HTMLDivElement>(null)
+	const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null)
 
 	useEffect(() => {
 		if (!isEditing) return
 		const handler = (e: MouseEvent) => {
-			if (menuRef.current && !menuRef.current.contains(e.target as Node)) onCancel()
+			const inWrapper = wrapperRef.current?.contains(e.target as Node)
+			const inDropdown = dropdownRef.current?.contains(e.target as Node)
+			if (!inWrapper && !inDropdown) onCancel()
 		}
 		document.addEventListener('mousedown', handler)
 		return () => document.removeEventListener('mousedown', handler)
 	}, [isEditing, onCancel])
+
+	useEffect(() => {
+		if (!isEditing) return
+		if (wrapperRef.current) {
+			const rect = wrapperRef.current.getBoundingClientRect()
+			setDropPos({ top: rect.bottom, left: rect.left, width: rect.width })
+		}
+	}, [isEditing])
 
 	const toggle = (opt: string) => {
 		const next = value.includes(opt)
@@ -393,8 +423,33 @@ function MultiSelectCell({ value, options, isEditing, onStartEdit, onCommit, onC
 		onCommit(next)
 	}
 
+	const dropdown = isEditing && dropPos ? createPortal(
+		<div
+			ref={dropdownRef}
+			className="nb-select-dropdown"
+			style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, minWidth: dropPos.width, zIndex: 9999 }}
+		>
+			{options.map(opt => (
+				<button
+					key={opt.value}
+					className={`nb-select-option ${value.includes(opt.value) ? 'nb-select-option--active' : ''}`}
+					onClick={() => toggle(opt.value)}
+				>
+					<span className={`nb-checkbox-indicator ${value.includes(opt.value) ? 'nb-checkbox-indicator--checked' : ''}`} />
+					<span
+						className="nb-select-badge"
+						style={{ background: getOptionColor(options, opt.value) }}
+					>
+						{opt.value}
+					</span>
+				</button>
+			))}
+		</div>,
+		document.body
+	) : null
+
 	return (
-		<div className="nb-cell-select-wrapper" ref={menuRef}>
+		<div className="nb-cell-select-wrapper" ref={wrapperRef}>
 			<div className="nb-cell-clickable nb-cell-multiselect" onClick={onStartEdit}>
 				{value.length > 0
 					? value.map(v => (
@@ -409,26 +464,7 @@ function MultiSelectCell({ value, options, isEditing, onStartEdit, onCommit, onC
 					: <span className="nb-cell-empty">—</span>
 				}
 			</div>
-
-			{isEditing && (
-				<div className="nb-select-dropdown">
-					{options.map(opt => (
-						<button
-							key={opt.value}
-							className={`nb-select-option ${value.includes(opt.value) ? 'nb-select-option--active' : ''}`}
-							onClick={() => toggle(opt.value)}
-						>
-							<span className={`nb-checkbox-indicator ${value.includes(opt.value) ? 'nb-checkbox-indicator--checked' : ''}`} />
-							<span
-								className="nb-select-badge"
-								style={{ background: getOptionColor(options, opt.value) }}
-							>
-								{opt.value}
-							</span>
-						</button>
-					))}
-				</div>
-			)}
+			{dropdown}
 		</div>
 	)
 }

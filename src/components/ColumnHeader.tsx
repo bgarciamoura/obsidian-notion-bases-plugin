@@ -37,11 +37,12 @@ interface ColumnHeaderProps {
 	schema: ColumnSchema[]
 	onUpdateSchema: (schema: ColumnSchema[]) => Promise<void>
 	onRenameColumn: (oldId: string, newName: string) => Promise<void>
+	onChangeType: (newType: ColumnType) => Promise<boolean>
 	manager: DatabaseManager
 	dbFile: TFile | null
 }
 
-export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, manager, dbFile }: ColumnHeaderProps) {
+export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onChangeType, manager, dbFile }: ColumnHeaderProps) {
 	const app = useApp()
 	const [menuOpen, setMenuOpen] = useState(false)
 	const [renaming, setRenaming] = useState(false)
@@ -265,6 +266,8 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 	}
 
 	const handleTypeChange = async (type: ColumnType) => {
+		const allowed = await onChangeType(type)
+		if (!allowed) return
 		await updateCol({ type })
 		if (type === 'formula') {
 			setEditingFormula(true)

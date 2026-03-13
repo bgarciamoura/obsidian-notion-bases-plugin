@@ -23,16 +23,64 @@ import {
 	useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { TFile } from 'obsidian'
+import { TFile, Notice } from 'obsidian'
 import { ReactNode, useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
-import { ColumnSchema, DatabaseConfig, FilterOperator, NoteRow, DEFAULT_DATABASE_CONFIG } from '../types'
+import { ColumnSchema, ColumnType, DatabaseConfig, FilterOperator, NoteRow, DEFAULT_DATABASE_CONFIG } from '../types'
 import { evaluateFormulas } from '../formula-engine'
 import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
+
+// ── Validação de compatibilidade de tipos ────────────────────────────────────
+
+function validateTypeChange(rows: NoteRow[], columnId: string, fromType: ColumnType, toType: ColumnType): string | null {
+	if (fromType === toType) return null
+	const skipTypes: ColumnType[] = ['formula', 'lookup', 'relation']
+	if (skipTypes.includes(toType) || skipTypes.includes(fromType)) return null
+
+	const values = rows
+		.map(r => r[columnId])
+		.filter(v => v !== null && v !== undefined && v !== '')
+
+	if (toType === 'number') {
+		const bad = values.filter(v => {
+			const s = String(v).trim()
+			return s !== '' && (isNaN(Number(s)) || !isFinite(Number(s)))
+		})
+		if (bad.length > 0)
+			return `${bad.length} célula(s) contêm valores não numéricos (ex: "${String(bad[0])}")`
+	}
+
+	if (toType === 'date') {
+		const bad = values.filter(v => {
+			const s = String(v).trim()
+			return s !== '' && isNaN(new Date(s).getTime())
+		})
+		if (bad.length > 0)
+			return `${bad.length} célula(s) contêm valores que não são datas válidas (ex: "${String(bad[0])}")`
+	}
+
+	if (toType === 'checkbox') {
+		const validBool = new Set(['true', 'false', '1', '0', 'yes', 'no', 'sim', 'não', 'nao'])
+		const bad = values.filter(v => {
+			if (typeof v === 'boolean') return false
+			return !validBool.has(String(v).toLowerCase().trim())
+		})
+		if (bad.length > 0)
+			return `${bad.length} célula(s) contêm valores incompatíveis com checkbox (ex: "${String(bad[0])}")`
+	}
+
+	if (fromType === 'multiselect' && toType === 'select') {
+		const multi = values.filter(v => Array.isArray(v) && (v as unknown[]).length > 1)
+		if (multi.length > 0)
+			return `${multi.length} linha(s) têm múltiplos valores selecionados. Remova os extras antes de mudar para seleção única.`
+	}
+
+	return null
+}
 
 // ── Helpers estáticos ────────────────────────────────────────────────────────
 
@@ -156,7 +204,15 @@ function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 
 // ── Cabeçalho de coluna arrastável ───────────────────────────────────────────
 
-function SortableTh({ id, size, children }: { id: string; size: number; children: ReactNode }) {
+function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, onTogglePin }: {
+	id: string
+	size: number
+	children: ReactNode
+	stickyLeft?: number
+	isLastPinned?: boolean
+	isPinned?: boolean
+	onTogglePin?: () => void
+}) {
 	const {
 		attributes,
 		listeners,
@@ -167,15 +223,23 @@ function SortableTh({ id, size, children }: { id: string; size: number; children
 		isDragging,
 	} = useSortable({ id })
 
+	const isSticky = stickyLeft !== undefined
+
 	return (
 		<th
 			ref={setNodeRef}
-			className={`nb-th${isDragging ? ' nb-th--dragging' : ''}`}
+			className={[
+				'nb-th',
+				isDragging ? 'nb-th--dragging' : '',
+				isSticky ? 'nb-th--sticky' : '',
+				isLastPinned ? 'nb-th--sticky-last' : '',
+			].filter(Boolean).join(' ')}
 			style={{
 				width: size,
 				transform: CSS.Transform.toString(transform),
 				transition,
-				zIndex: isDragging ? 1 : undefined,
+				zIndex: isDragging ? 10 : isSticky ? 3 : undefined,
+				...(isSticky ? { left: stickyLeft } : {}),
 			}}
 		>
 			<div className="nb-th-inner">
@@ -188,6 +252,15 @@ function SortableTh({ id, size, children }: { id: string; size: number; children
 				>⠿</span>
 				{children}
 				<span className="nb-col-drag-spacer" aria-hidden="true" />
+				{onTogglePin && (
+					<button
+						className={`nb-pin-btn${isPinned ? ' nb-pin-btn--active' : ''}`}
+						onClick={e => { e.stopPropagation(); onTogglePin() }}
+						title={isPinned ? 'Desafixar colunas' : 'Fixar colunas até aqui'}
+					>
+						📌
+					</button>
+				)}
 			</div>
 		</th>
 	)
@@ -258,6 +331,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
 	const actionsMenuRef = useRef<HTMLDivElement>(null)
 	const lastCreatedPath = useRef<string | null>(null)
+	const [pinnedColumnId, setPinnedColumnId] = useState<string | null>(null)
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
@@ -341,6 +415,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		}
 		setRelationOptions(relOpts)
 
+		setPinnedColumnId(cfg.views[0]?.pinnedColumnId ?? null)
 		setConfig(cfg)
 		setRows(noteRows)
 		setLoading(false)
@@ -393,6 +468,51 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		setConfig(newConfig)
 		await manager.writeConfig(dbFile, newConfig)
 	}, [dbFile, config, manager])
+
+	// ── Validar e trocar tipo de coluna ─────────────────────────────────────
+
+	const handleChangeColumnType = useCallback(async (colId: string, newType: ColumnType): Promise<boolean> => {
+		const col = config.schema.find(c => c.id === colId)
+		if (!col) return true
+		const error = validateTypeChange(rows, colId, col.type, newType)
+		if (error) {
+			new Notice(`Não é possível mudar o tipo: ${error}`, 6000)
+			return false
+		}
+		return true
+	}, [config.schema, rows])
+
+	// ── Pin de colunas ───────────────────────────────────────────────────────
+
+	const handleTogglePin = useCallback(async (columnId: string) => {
+		if (!dbFile) return
+		const next = pinnedColumnId === columnId ? null : columnId
+		setPinnedColumnId(next)
+		const newConfig = {
+			...config,
+			views: config.views.map((v, i) => i === 0 ? { ...v, pinnedColumnId: next } : v),
+		}
+		setConfig(newConfig)
+		await manager.writeConfig(dbFile, newConfig)
+	}, [dbFile, config, manager, pinnedColumnId])
+
+	const stickyMap = useMemo(() => {
+		const map = new Map<string, { left: number; isLast: boolean }>()
+		const SELECT_W = 40
+		const TITLE_W = config.views[0]?.columnWidths['_title'] ?? 260
+		map.set('_select', { left: 0, isLast: false })
+		if (!pinnedColumnId) return map
+		map.set('_title', { left: SELECT_W, isLast: pinnedColumnId === '_title' })
+		if (pinnedColumnId === '_title') return map
+		let cumLeft = SELECT_W + TITLE_W
+		for (const col of config.schema.filter(c => c.visible)) {
+			const colW = config.views[0]?.columnWidths[col.id] ?? (col.width ?? 150)
+			map.set(col.id, { left: cumLeft, isLast: col.id === pinnedColumnId })
+			cumLeft += colW
+			if (col.id === pinnedColumnId) break
+		}
+		return map
+	}, [pinnedColumnId, config])
 
 	// ── Renomear coluna (id + nome + chave do frontmatter nas notas) ──────────
 
@@ -477,6 +597,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 						schema={config.schema}
 						onUpdateSchema={updateSchema}
 						onRenameColumn={renameColumn}
+						onChangeType={newType => handleChangeColumnType(col.id, newType)}
 						manager={manager}
 						dbFile={dbFile}
 					/>
@@ -493,7 +614,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		}
 
 		return cols
-	}, [config, updateSchema])
+	}, [config, updateSchema, renameColumn, handleChangeColumnType, manager, dbFile])
 
 	// ── Instância da tabela ──────────────────────────────────────────────────
 
@@ -1048,41 +1169,68 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 										strategy={horizontalListSortingStrategy}
 									>
 										<tr className="nb-header-row">
-											{group.headers.map(header =>
-												header.id === '_select' ? (
-													<th
-														key={header.id}
-														className="nb-th nb-th-select"
-														style={{ width: header.getSize() }}
-													>
-														<div className="nb-cell-checkbox-wrapper">
-															<input
-																type="checkbox"
-																className="nb-cell-checkbox"
-																checked={table.getIsAllRowsSelected()}
-																ref={el => { if (el) el.indeterminate = table.getIsSomeRowsSelected() }}
-																onChange={table.getToggleAllRowsSelectedHandler()}
-															/>
-														</div>
-													</th>
-												) : header.id === '_title' ? (
-													<th
-														key={header.id}
-														className="nb-th"
-														style={{ width: header.getSize() }}
-													>
-														{flexRender(header.column.columnDef.header, header.getContext())}
-													</th>
-												) : (
+											{group.headers.map(header => {
+												const sticky = stickyMap.get(header.id)
+												if (header.id === '_select') {
+													return (
+														<th
+															key={header.id}
+															className="nb-th nb-th-select nb-th--sticky"
+															style={{ width: header.getSize(), left: 0, zIndex: 3 }}
+														>
+															<div className="nb-cell-checkbox-wrapper">
+																<input
+																	type="checkbox"
+																	className="nb-cell-checkbox"
+																	checked={table.getIsAllRowsSelected()}
+																	ref={el => { if (el) el.indeterminate = table.getIsSomeRowsSelected() }}
+																	onChange={table.getToggleAllRowsSelectedHandler()}
+																/>
+															</div>
+														</th>
+													)
+												}
+												if (header.id === '_title') {
+													return (
+														<th
+															key={header.id}
+															className={[
+																'nb-th',
+																sticky ? 'nb-th--sticky' : '',
+																sticky?.isLast ? 'nb-th--sticky-last' : '',
+															].filter(Boolean).join(' ')}
+															style={{
+																width: header.getSize(),
+																...(sticky ? { left: sticky.left, zIndex: 3 } : {}),
+															}}
+														>
+															<div className="nb-th-inner-title">
+																<div style={{ flex: 1 }}>
+																	{flexRender(header.column.columnDef.header, header.getContext())}
+																</div>
+																<button
+																	className={`nb-pin-btn${pinnedColumnId === '_title' ? ' nb-pin-btn--active' : ''}`}
+																	onClick={() => handleTogglePin('_title')}
+																	title={pinnedColumnId === '_title' ? 'Desafixar colunas' : 'Fixar colunas até aqui'}
+																>📌</button>
+															</div>
+														</th>
+													)
+												}
+												return (
 													<SortableTh
 														key={header.id}
 														id={header.id}
 														size={header.getSize()}
+														stickyLeft={sticky?.left}
+														isLastPinned={sticky?.isLast}
+														isPinned={pinnedColumnId === header.id}
+														onTogglePin={() => handleTogglePin(header.id)}
 													>
 														{flexRender(header.column.columnDef.header, header.getContext())}
 													</SortableTh>
 												)
-											)}
+											})}
 											<th className="nb-th nb-th-add-col">
 												<button className="nb-add-col-btn" onClick={handleAddColumn} title="Adicionar campo">
 													+
@@ -1112,16 +1260,26 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 									className="nb-row"
 									onClick={() => setEditingCell(null)}
 								>
-									{row.getVisibleCells().map(cell => (
-										<td
-											key={cell.id}
-											className="nb-td"
-											style={{ width: cell.column.getSize() }}
-											onClick={e => e.stopPropagation()}
-										>
-											{flexRender(cell.column.columnDef.cell, cell.getContext())}
-										</td>
-									))}
+									{row.getVisibleCells().map(cell => {
+										const sticky = stickyMap.get(cell.column.id)
+										return (
+											<td
+												key={cell.id}
+												className={[
+													'nb-td',
+													sticky ? 'nb-td--sticky' : '',
+													sticky?.isLast ? 'nb-td--sticky-last' : '',
+												].filter(Boolean).join(' ')}
+												style={{
+													width: cell.column.getSize(),
+													...(sticky ? { left: sticky.left, zIndex: 1 } : {}),
+												}}
+												onClick={e => e.stopPropagation()}
+											>
+												{flexRender(cell.column.columnDef.cell, cell.getContext())}
+											</td>
+										)
+									})}
 									<td className="nb-td nb-td-empty" />
 								</tr>
 							))
