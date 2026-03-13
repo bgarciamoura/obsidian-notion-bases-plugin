@@ -431,12 +431,16 @@
 	gap: 1px;
 }
 
-.nb-menu-item {
+.nb-fields-dropdown .nb-menu-item,
+.nb-column-menu .nb-menu-item,
+.nb-filter-op-dropdown .nb-menu-item,
+.nb-filter-pill-dropdown .nb-menu-item {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 	padding: 5px 8px;
-	background: none;
+	background: transparent;
+	box-shadow: none;
 	border: none;
 	border-radius: var(--radius-s);
 	color: var(--text-normal);
@@ -447,15 +451,22 @@
 	width: 100%;
 }
 
-.nb-menu-item:hover {
+.nb-fields-dropdown .nb-menu-item:hover,
+.nb-column-menu .nb-menu-item:hover,
+.nb-filter-op-dropdown .nb-menu-item:hover,
+.nb-filter-pill-dropdown .nb-menu-item:hover {
 	background: var(--background-modifier-hover);
 }
 
-.nb-menu-item--active {
+.nb-fields-dropdown .nb-menu-item--active,
+.nb-column-menu .nb-menu-item--active,
+.nb-filter-op-dropdown .nb-menu-item--active,
+.nb-filter-pill-dropdown .nb-menu-item--active {
 	background: var(--background-modifier-active-hover);
 }
 
-.nb-menu-item--danger {
+.nb-fields-dropdown .nb-menu-item--danger,
+.nb-column-menu .nb-menu-item--danger {
 	color: var(--text-error);
 }
 
@@ -470,7 +481,10 @@
 	text-align: center;
 }
 
-.nb-menu-item:disabled {
+.nb-fields-dropdown .nb-menu-item:disabled,
+.nb-column-menu .nb-menu-item:disabled,
+.nb-filter-op-dropdown .nb-menu-item:disabled,
+.nb-filter-pill-dropdown .nb-menu-item:disabled {
 	opacity: 0.4;
 	cursor: not-allowed;
 }
@@ -1010,14 +1024,15 @@
 	padding: 4px;
 }
 
-.nb-select-option {
+.nb-select-dropdown .nb-select-option {
 	display: flex;
 	align-items: center;
 	justify-content: flex-start;
 	gap: 6px;
 	width: 100%;
 	padding: 5px 8px;
-	background: none;
+	background: transparent;
+	box-shadow: none;
 	border: none;
 	border-radius: var(--radius-s);
 	cursor: pointer;
@@ -1026,11 +1041,11 @@
 	color: var(--text-normal);
 }
 
-.nb-select-option:hover {
+.nb-select-dropdown .nb-select-option:hover {
 	background: var(--background-modifier-hover);
 }
 
-.nb-select-option--active {
+.nb-select-dropdown .nb-select-option--active {
 	background: var(--background-modifier-active-hover);
 }
 
@@ -1298,7 +1313,10 @@
 	border-color: var(--interactive-accent);
 }
 
-.nb-menu-item--active {
+.nb-fields-dropdown .nb-menu-item--active,
+.nb-column-menu .nb-menu-item--active,
+.nb-filter-op-dropdown .nb-menu-item--active,
+.nb-filter-pill-dropdown .nb-menu-item--active {
 	background: var(--background-modifier-active-hover);
 	color: var(--interactive-accent);
 }
