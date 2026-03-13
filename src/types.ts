@@ -59,7 +59,7 @@ export interface ViewConfig {
 	sorts: SortConfig[]
 	hiddenColumns: string[]
 	columnWidths: Record<string, number>
-	activePills?: { columnId: string; operator: FilterOperator; value: string }[]
+	activePills?: { id: string; columnId: string; operator: FilterOperator; value: string }[]
 }
 
 // ── Database config (stored in _database.md frontmatter) ───────────────────

@@ -43,6 +43,7 @@ function getColumnIconStatic(type: string): string {
 }
 
 interface ActiveFilter {
+	id: string
 	columnId: string
 	columnName: string
 	icon: string
@@ -189,10 +190,10 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 			const pills = cfg.views[0]?.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ columnId: '_title', columnName: 'Nome', icon: '📄', operator: p.operator, value: p.value }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', icon: '📄', operator: p.operator, value: p.value }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
-					return [{ columnId: col.id, columnName: col.name, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value }]
+					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value }]
 				})
 				setActiveFilters(restored as ActiveFilter[])
 			}
@@ -496,31 +497,31 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		const newConfig = {
 			...config,
 			views: config.views.map((v, i) =>
-				i === 0 ? { ...v, activePills: (filters as ActiveFilter[]).map(f => ({ columnId: f.columnId, operator: f.operator, value: f.value })) } : v
+				i === 0 ? { ...v, activePills: (filters as ActiveFilter[]).map(f => ({ id: f.id, columnId: f.columnId, operator: f.operator, value: f.value })) } : v
 			),
 		}
 		await manager.writeConfig(dbFile, newConfig)
 	}, [dbFile, config, manager])
 
 	const addFilter = (columnId: string, columnName: string, icon: string) => {
-		if (activeFilters.some(f => f.columnId === columnId)) return
-		const next: ActiveFilter[] = [...activeFilters, { columnId, columnName, icon, operator: 'contains' as FilterOperator, value: '' }]
+		const filterId = crypto.randomUUID()
+		const next: ActiveFilter[] = [...activeFilters, { id: filterId, columnId, columnName, icon, operator: 'contains' as FilterOperator, value: '' }]
 		setActiveFilters(next)
 		saveActivePills(next)
 		setFilterMenuOpen(false)
 	}
 
-	const removeFilter = (columnId: string) => {
-		const next = activeFilters.filter(f => f.columnId !== columnId)
+	const removeFilter = (filterId: string) => {
+		const next = activeFilters.filter(f => f.id !== filterId)
 		setActiveFilters(next)
 		saveActivePills(next)
-		if (openFilterPill === columnId) setOpenFilterPill(null)
-		if (openOperatorPicker === columnId) setOpenOperatorPicker(null)
+		if (openFilterPill === filterId) setOpenFilterPill(null)
+		if (openOperatorPicker === filterId) setOpenOperatorPicker(null)
 	}
 
-	const updateFilter = (columnId: string, operator: FilterOperator, value: string) => {
+	const updateFilter = (filterId: string, operator: FilterOperator, value: string) => {
 		const next = activeFilters.map(f =>
-			f.columnId === columnId ? { ...f, operator, value } : f
+			f.id === filterId ? { ...f, operator, value } : f
 		)
 		setActiveFilters(next)
 		saveActivePills(next)
@@ -730,45 +731,45 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 				{/* Pills de filtros ativos */}
 				{activeFilters.map(filter => (
 					<div
-						key={filter.columnId}
+						key={filter.id}
 						className={`nb-filter-pill-wrapper${shouldCollapse && searchExpanded ? ' nb-filter-pill-wrapper--hidden' : ''}`}
-						ref={el => { filterPillRefs.current[filter.columnId] = el }}
+						ref={el => { filterPillRefs.current[filter.id] = el }}
 					>
 						<button
-							className={`nb-filter-pill ${openFilterPill === filter.columnId ? 'nb-filter-pill--active' : ''}`}
-							onClick={() => setOpenFilterPill(v => v === filter.columnId ? null : filter.columnId)}
+							className={`nb-filter-pill ${openFilterPill === filter.id ? 'nb-filter-pill--active' : '' }`}
+							onClick={() => setOpenFilterPill(v => v === filter.id ? null : filter.id)}
 						>
 							<span className="nb-filter-pill-icon">{filter.icon}</span>
 							<span className="nb-filter-pill-name">{filter.columnName}</span>
 							<span
 								className="nb-filter-pill-remove"
-								onClick={e => { e.stopPropagation(); removeFilter(filter.columnId) }}
+								onClick={e => { e.stopPropagation(); removeFilter(filter.id) }}
 								title="Remover filtro"
 							>×</span>
 						</button>
 
-						{openFilterPill === filter.columnId && (
+						{openFilterPill === filter.id && (
 							<div className="nb-filter-pill-dropdown">
 								<div className="nb-filter-query-row">
 									<span className="nb-filter-query-name">{filter.columnName}</span>
 									<div
 										className="nb-filter-op-wrapper"
-										ref={el => { operatorPickerRefs.current[filter.columnId] = el }}
+										ref={el => { operatorPickerRefs.current[filter.id] = el }}
 									>
 										<button
-											className={`nb-filter-op-btn ${openOperatorPicker === filter.columnId ? 'nb-filter-op-btn--open' : ''}`}
-											onClick={e => { e.stopPropagation(); setOpenOperatorPicker(v => v === filter.columnId ? null : filter.columnId) }}
+											className={`nb-filter-op-btn ${openOperatorPicker === filter.id ? 'nb-filter-op-btn--open' : '' }`}
+											onClick={e => { e.stopPropagation(); setOpenOperatorPicker(v => v === filter.id ? null : filter.id) }}
 										>
 											{OPERATOR_LABELS[filter.operator]}
 											<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
 										</button>
-										{openOperatorPicker === filter.columnId && (
+										{openOperatorPicker === filter.id && (
 											<div className="nb-filter-op-dropdown">
 												{FILTER_OPERATORS.map(op => (
 													<button
 														key={op}
 														className={`nb-menu-item ${filter.operator === op ? 'nb-menu-item--active' : ''}`}
-														onClick={e => { e.stopPropagation(); updateFilter(filter.columnId, op, filter.value); setOpenOperatorPicker(null) }}
+														onClick={e => { e.stopPropagation(); updateFilter(filter.id, op, filter.value); setOpenOperatorPicker(null) }}
 													>
 														{OPERATOR_LABELS[op]}
 													</button>
@@ -778,7 +779,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 									</div>
 									<button
 										className="nb-filter-query-clear"
-										onClick={e => { e.stopPropagation(); removeFilter(filter.columnId) }}
+										onClick={e => { e.stopPropagation(); removeFilter(filter.id) }}
 										title="Remover filtro"
 									>×</button>
 								</div>
@@ -789,7 +790,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 										placeholder="Digite um valor..."
 										value={filter.value}
 										autoFocus
-										onChange={e => updateFilter(filter.columnId, filter.operator, e.target.value)}
+										onChange={e => updateFilter(filter.id, filter.operator, e.target.value)}
 									/>
 								)}
 							</div>
@@ -822,7 +823,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 							<button
 								className="nb-menu-item"
 								onClick={() => addFilter('_title', 'Nome', '📄')}
-								disabled={activeFilters.some(f => f.columnId === '_title')}
+								
 							>
 								<span className="nb-menu-item-icon">📄</span>
 								<span>Nome</span>
@@ -832,7 +833,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 									key={col.id}
 									className="nb-menu-item"
 									onClick={() => addFilter(col.id, col.name, getColumnIcon(col.type))}
-									disabled={activeFilters.some(f => f.columnId === col.id)}
+									
 								>
 									<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
 									<span>{col.name}</span>
