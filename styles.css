@@ -224,7 +224,8 @@
 .nb-table {
 	width: max-content;
 	min-width: 100%;
-	border-collapse: collapse;
+	border-collapse: separate;
+	border-spacing: 0;
 	table-layout: fixed;
 }
 
@@ -238,7 +239,7 @@
 }
 
 .nb-header-row {
-	border-bottom: 2px solid var(--background-modifier-border);
+	/* border-bottom movida para .nb-th (border-separate ignora border em <tr>) */
 }
 
 .nb-th {
@@ -248,6 +249,7 @@
 	font-size: var(--font-ui-smaller);
 	color: var(--text-muted);
 	border-right: 1px solid var(--background-modifier-border);
+	border-bottom: 2px solid var(--background-modifier-border);
 	position: relative;
 	user-select: none;
 	/* overflow: visible é obrigatório para o dropdown não ser clipado */
@@ -517,20 +519,23 @@
 /* ── Linhas ──────────────────────────────────────────────────────────────── */
 
 .nb-row {
-	border-bottom: 1px solid var(--background-modifier-border);
+	/* border-bottom movida para .nb-td (border-separate ignora border em <tr>) */
 }
 
-.nb-row:hover {
+.nb-row:hover .nb-td,
+.nb-row:hover .nb-td--sticky {
 	background: var(--background-modifier-hover);
 }
 
 .nb-td {
 	padding: 0;
 	border-right: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid var(--background-modifier-border);
 	height: 36px;
 	max-height: 36px;
 	overflow: hidden;
 	vertical-align: middle;
+	background: var(--background-primary);
 }
 
 .nb-td-empty {
@@ -541,7 +546,7 @@
 
 .nb-th--sticky {
 	position: sticky;
-	background: var(--background-primary);
+	background: var(--background-secondary);
 	z-index: 3;
 }
 
