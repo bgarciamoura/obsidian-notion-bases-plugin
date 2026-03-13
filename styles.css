@@ -15,6 +15,27 @@
 	font-size: var(--font-ui-small);
 }
 
+/* ── Embed inline em notas ───────────────────────────────────────────────── */
+
+.nb-embed-container {
+	display: flex;
+	flex-direction: column;
+	height: 400px;
+	overflow: hidden;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-family: var(--font-interface);
+	font-size: var(--font-ui-small);
+}
+
+.nb-embed-error {
+	padding: 12px;
+	color: var(--text-error);
+	font-size: var(--font-ui-small);
+}
+
 .nb-container {
 	display: flex;
 	flex-direction: column;

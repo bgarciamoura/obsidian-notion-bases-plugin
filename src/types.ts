@@ -80,6 +80,7 @@ export interface ViewConfig {
 	columnWidths: Record<string, number>
 	activePills?: { id: string; columnId: string; operator: FilterOperator; value: string }[]
 	pinnedColumnId?: string | null
+	columnOrder?: string[]
 }
 
 // ── Database config (stored in _database.md frontmatter) ───────────────────

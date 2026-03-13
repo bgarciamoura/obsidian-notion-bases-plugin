@@ -1,14 +1,17 @@
 import { App, PluginSettingTab, Setting } from 'obsidian'
 import NotionBasesPlugin from './main'
+import { ViewConfig } from './types'
 
 export interface NotionBasesSettings {
 	databaseFileName: string
 	defaultRowHeight: number
+	embedViews: Record<string, ViewConfig>
 }
 
 export const DEFAULT_SETTINGS: NotionBasesSettings = {
 	databaseFileName: '_database.md',
 	defaultRowHeight: 36,
+	embedViews: {},
 }
 
 export class NotionBasesSettingTab extends PluginSettingTab {

@@ -28,7 +28,7 @@ import { ReactNode, useState, useMemo, useEffect, useCallback, useRef } from 're
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
-import { ColumnSchema, ColumnType, DatabaseConfig, FilterOperator, NoteRow, DEFAULT_DATABASE_CONFIG } from '../types'
+import { ColumnSchema, ColumnType, DatabaseConfig, FilterOperator, NoteRow, ViewConfig, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW } from '../types'
 import { evaluateFormulas } from '../formula-engine'
 import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
@@ -326,9 +326,11 @@ function SortablePill({ filter, isActive, onToggle, onRemove, btnRef }: {
 interface DatabaseTableProps {
 	dbFile: TFile | null
 	manager: DatabaseManager
+	externalView?: ViewConfig
+	onViewChange?: (view: ViewConfig) => Promise<void>
 }
 
-export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
+export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: DatabaseTableProps) {
 	const app = useApp()
 	const [config, setConfig] = useState<DatabaseConfig>(DEFAULT_DATABASE_CONFIG)
 	const [rows, setRows] = useState<NoteRow[]>([])
@@ -361,6 +363,36 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
 	)
+
+	// Estado local da view do embed — inicializado com externalView e atualizado a cada mudança
+	const [localEmbedView, setLocalEmbedView] = useState<ViewConfig | undefined>(externalView)
+	useEffect(() => { if (externalView) setLocalEmbedView(externalView) }, [externalView?.id])
+
+	// View ativa: embed usa estado local; database usa config.views[0]
+	const activeView: ViewConfig = (externalView ? localEmbedView : undefined) ?? config.views[0] ?? DEFAULT_VIEW
+
+	// Schema ordenado: no embed usa columnOrder da view; no database usa a ordem do schema
+	const orderedSchema = useMemo(() => {
+		const order = externalView ? activeView.columnOrder : undefined
+		if (!order || order.length === 0) return config.schema
+		const map = new Map(config.schema.map(c => [c.id, c]))
+		const sorted = order.flatMap(id => map.has(id) ? [map.get(id)!] : [])
+		const rest = config.schema.filter(c => !order.includes(c.id))
+		return [...sorted, ...rest]
+	}, [externalView, activeView.columnOrder, config.schema])
+
+	// Salva view: embed atualiza estado local + persiste via callback; database escreve no frontmatter
+	const saveView = useCallback(async (updatedView: ViewConfig) => {
+		if (onViewChange) {
+			setLocalEmbedView(updatedView)
+			await onViewChange(updatedView)
+		} else {
+			if (!dbFile) return
+			const newConfig = { ...config, views: config.views.map((v, i) => i === 0 ? updatedView : v) }
+			setConfig(newConfig)
+			await manager.writeConfig(dbFile, newConfig)
+		}
+	}, [onViewChange, config, dbFile, manager])
 
 	// ── Carregar config e linhas ─────────────────────────────────────────────
 
@@ -395,7 +427,8 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		// Restaurar pills (apenas na primeira carga por arquivo)
 		if (!filtersInitialized.current) {
 			filtersInitialized.current = true
-			const pills = cfg.views[0]?.activePills ?? []
+			const sourceView = externalView ?? cfg.views[0]
+			const pills = sourceView?.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
 					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value }]
@@ -427,7 +460,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		}
 		setRelationOptions(relOpts)
 
-		setPinnedColumnId(cfg.views[0]?.pinnedColumnId ?? null)
+		setPinnedColumnId((externalView ?? cfg.views[0])?.pinnedColumnId ?? null)
 		setConfig(cfg)
 		setRows(noteRows)
 		setLoading(false)
@@ -497,28 +530,22 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	// ── Pin de colunas ───────────────────────────────────────────────────────
 
 	const handleTogglePin = useCallback(async (columnId: string) => {
-		if (!dbFile) return
 		const next = pinnedColumnId === columnId ? null : columnId
 		setPinnedColumnId(next)
-		const newConfig = {
-			...config,
-			views: config.views.map((v, i) => i === 0 ? { ...v, pinnedColumnId: next } : v),
-		}
-		setConfig(newConfig)
-		await manager.writeConfig(dbFile, newConfig)
-	}, [dbFile, config, manager, pinnedColumnId])
+		await saveView({ ...activeView, pinnedColumnId: next })
+	}, [pinnedColumnId, saveView, activeView])
 
 	const stickyMap = useMemo(() => {
 		const map = new Map<string, { left: number; isLast: boolean }>()
 		const SELECT_W = 40
-		const TITLE_W = config.views[0]?.columnWidths['_title'] ?? 260
+		const TITLE_W = activeView.columnWidths['_title'] ?? 260
 		map.set('_select', { left: 0, isLast: false })
 		if (!pinnedColumnId) return map
 		map.set('_title', { left: SELECT_W, isLast: pinnedColumnId === '_title' })
 		if (pinnedColumnId === '_title') return map
 		let cumLeft = SELECT_W + TITLE_W
 		for (const col of config.schema.filter(c => c.visible)) {
-			const colW = config.views[0]?.columnWidths[col.id] ?? (col.width ?? 150)
+			const colW = activeView.columnWidths[col.id] ?? (col.width ?? 150)
 			map.set(col.id, { left: cumLeft, isLast: col.id === pinnedColumnId })
 			cumLeft += colW
 			if (col.id === pinnedColumnId) break
@@ -562,7 +589,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		cols.push({
 			id: '_title',
 			accessorFn: row => row._title,
-			size: config.views[0]?.columnWidths['_title'] ?? 260,
+			size: activeView.columnWidths['_title'] ?? 260,
 			enableColumnFilter: true,
 			enableSorting: true,
 			sortingFn: 'text',
@@ -595,12 +622,14 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		})
 
 		// Colunas do schema
-		const visibleSchema = config.schema.filter(col => col.visible)
+		const visibleSchema = orderedSchema.filter(col =>
+			col.visible && !activeView.hiddenColumns.includes(col.id)
+		)
 		for (const col of visibleSchema) {
 			cols.push({
 				id: col.id,
 				accessorFn: row => row[col.id],
-				size: config.views[0]?.columnWidths[col.id] ?? (col.width ?? 150),
+				size: activeView.columnWidths[col.id] ?? (col.width ?? 150),
 				enableColumnFilter: col.type !== 'formula' && col.type !== 'lookup' && col.type !== 'relation',
 				enableSorting: col.type !== 'formula' && col.type !== 'lookup' && col.type !== 'relation',
 				header: () => (
@@ -626,7 +655,7 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		}
 
 		return cols
-	}, [config, updateSchema, renameColumn, handleChangeColumnType, manager, dbFile])
+	}, [config, orderedSchema, activeView, updateSchema, renameColumn, handleChangeColumnType, manager, dbFile])
 
 	// ── Instância da tabela ──────────────────────────────────────────────────
 
@@ -781,15 +810,9 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	const getColumnIcon = getColumnIconStatic
 
 	const saveActivePills = useCallback(async (filters: { columnId: string }[]) => {
-		if (!dbFile) return
-		const newConfig = {
-			...config,
-			views: config.views.map((v, i) =>
-				i === 0 ? { ...v, activePills: (filters as ActiveFilter[]).map(f => ({ id: f.id, columnId: f.columnId, operator: f.operator, value: f.value })) } : v
-			),
-		}
-		await manager.writeConfig(dbFile, newConfig)
-	}, [dbFile, config, manager])
+		const pills = (filters as ActiveFilter[]).map(f => ({ id: f.id, columnId: f.columnId, operator: f.operator, value: f.value }))
+		await saveView({ ...activeView, activePills: pills })
+	}, [saveView, activeView])
 
 	const handlePillDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event
@@ -866,11 +889,18 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 	// ── Toggle visibilidade de um campo ──────────────────────────────────────
 
 	const toggleFieldVisibility = useCallback(async (fieldId: string) => {
-		const newSchema = config.schema.map(col =>
-			col.id === fieldId ? { ...col, visible: !col.visible } : col
-		)
-		await updateSchema(newSchema)
-	}, [config.schema, updateSchema])
+		if (externalView) {
+			const hidden = activeView.hiddenColumns.includes(fieldId)
+				? activeView.hiddenColumns.filter(id => id !== fieldId)
+				: [...activeView.hiddenColumns, fieldId]
+			await saveView({ ...activeView, hiddenColumns: hidden })
+		} else {
+			const newSchema = config.schema.map(col =>
+				col.id === fieldId ? { ...col, visible: !col.visible } : col
+			)
+			await updateSchema(newSchema)
+		}
+	}, [externalView, activeView, saveView, config.schema, updateSchema])
 
 	// ── Reordenar colunas via drag ────────────────────────────────────────────
 
@@ -878,12 +908,17 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		const { active, over } = event
 		if (!over || active.id === over.id) return
 
-		const oldIndex = config.schema.findIndex(c => c.id === active.id)
-		const newIndex = config.schema.findIndex(c => c.id === over.id)
+		const oldIndex = orderedSchema.findIndex(c => c.id === active.id)
+		const newIndex = orderedSchema.findIndex(c => c.id === over.id)
 		if (oldIndex === -1 || newIndex === -1) return
 
-		await updateSchema(arrayMove(config.schema, oldIndex, newIndex))
-	}, [config.schema, updateSchema])
+		if (externalView) {
+			const newOrder = arrayMove(orderedSchema, oldIndex, newIndex).map(c => c.id)
+			await saveView({ ...activeView, columnOrder: newOrder })
+		} else {
+			await updateSchema(arrayMove(config.schema, oldIndex, newIndex))
+		}
+	}, [orderedSchema, externalView, activeView, saveView, config.schema, updateSchema])
 
 	// ── Adicionar coluna ─────────────────────────────────────────────────────
 
@@ -962,7 +997,9 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 									<input
 										type="checkbox"
 										className="nb-field-checkbox"
-										checked={col.visible}
+										checked={externalView
+											? col.visible && !activeView.hiddenColumns.includes(col.id)
+											: col.visible}
 										onChange={() => toggleFieldVisibility(col.id)}
 									/>
 									<span className="nb-field-icon">{
@@ -1166,8 +1203,8 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 				<table className="nb-table">
 					<thead className="nb-thead">
 						{table.getHeaderGroups().map(group => {
-							const visibleSchemaIds = config.schema
-								.filter(c => c.visible)
+							const visibleSchemaIds = orderedSchema
+								.filter(c => c.visible && !activeView.hiddenColumns.includes(c.id))
 								.map(c => c.id)
 							return (
 								<DndContext
