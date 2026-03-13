@@ -2,6 +2,7 @@ import { Notice, Plugin, TFile, WorkspaceLeaf } from 'obsidian'
 import { DATABASE_VIEW_TYPE, DatabaseView } from './database-view'
 import { DatabaseManager } from './database-manager'
 import { DEFAULT_SETTINGS, NotionBasesSettings, NotionBasesSettingTab } from './settings'
+import { DatabasePickerModal } from './database-picker-modal'
 
 export default class NotionBasesPlugin extends Plugin {
 	settings: NotionBasesSettings
@@ -20,9 +21,9 @@ export default class NotionBasesPlugin extends Plugin {
 			leaf => new DatabaseView(leaf, this)
 		)
 
-		// Ribbon — abrir/criar banco na pasta atual
-		this.addRibbonIcon('table', 'Notion Bases', async () => {
-			await this.openOrCreateDatabase()
+		// Ribbon — selecionar banco de dados
+		this.addRibbonIcon('table', 'Notion Bases', () => {
+			this.openDatabasePicker()
 		})
 
 		// Comandos
@@ -105,6 +106,26 @@ export default class NotionBasesPlugin extends Plugin {
 	}
 
 	// ── Helpers ──────────────────────────────────────────────────────────────
+
+	openDatabasePicker() {
+		const databases = this.manager.getAllDatabases()
+			.sort((a, b) => (a.parent?.path ?? '').localeCompare(b.parent?.path ?? ''))
+
+		if (databases.length === 0) {
+			new Notice('Nenhum banco de dados encontrado. Use o comando "Criar novo banco de dados" para criar um.')
+			return
+		}
+
+		new DatabasePickerModal(this.app, databases, async file => {
+			const existingLeaf = this.findDatabaseLeaf(file.path)
+			if (existingLeaf) {
+				this.app.workspace.revealLeaf(existingLeaf)
+				return
+			}
+			const leaf = this.app.workspace.getLeaf('tab')
+			await this.openDatabaseInLeaf(leaf, file)
+		}).open()
+	}
 
 	async openOrCreateDatabase() {
 		// getActiveFile() retorna null quando a leaf ativa é uma database view
