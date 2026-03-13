@@ -28,7 +28,7 @@ import { ReactNode, useState, useMemo, useEffect, useCallback, useRef } from 're
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
-import { ColumnSchema, ColumnType, DatabaseConfig, FilterOperator, NoteRow, ViewConfig, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW } from '../types'
+import { ColumnSchema, ColumnType, DatabaseConfig, FilterOperator, NoteRow, SortConfig, ViewConfig, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW } from '../types'
 import { evaluateFormulas } from '../formula-engine'
 import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
@@ -202,6 +202,86 @@ function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 	}
 }
 
+function SortPanel({ sorts, schema, onSortChange }: {
+	sorts: SortConfig[]
+	schema: ColumnSchema[]
+	onSortChange: (sorts: SortConfig[]) => void
+}) {
+	const sortableSchema = schema.filter(c =>
+		c.visible && c.type !== 'formula' && c.type !== 'lookup' && c.type !== 'relation'
+	)
+	const usedIds = new Set(sorts.map(s => s.columnId))
+	const availableColumns: { id: string; name: string }[] = [
+		...(!usedIds.has('_title') ? [{ id: '_title', name: 'Nome' }] : []),
+		...sortableSchema.filter(c => !usedIds.has(c.id)).map(c => ({ id: c.id, name: c.name })),
+	]
+
+	const move = (idx: number, dir: -1 | 1) => {
+		const next = [...sorts]
+		const swap = idx + dir
+		if (swap < 0 || swap >= next.length) return
+		;[next[idx], next[swap]] = [next[swap], next[idx]]
+		onSortChange(next)
+	}
+
+	const toggleDir = (columnId: string) => {
+		onSortChange(sorts.map(s => s.columnId === columnId
+			? { ...s, direction: s.direction === 'asc' ? 'desc' : 'asc' }
+			: s
+		))
+	}
+
+	const remove = (columnId: string) => {
+		onSortChange(sorts.filter(s => s.columnId !== columnId))
+	}
+
+	const add = (columnId: string) => {
+		if (!columnId) return
+		onSortChange([...sorts, { columnId, direction: 'asc' }])
+	}
+
+	return (
+		<div className="nb-sort-panel">
+			<div className="nb-sort-panel-label">Ordenar por</div>
+			{sorts.length === 0 && (
+				<div className="nb-sort-panel-empty">Nenhuma ordenação ativa</div>
+			)}
+			{sorts.map((sort, idx) => {
+				const name = sort.columnId === '_title'
+					? 'Nome'
+					: (schema.find(c => c.id === sort.columnId)?.name ?? sort.columnId)
+				return (
+					<div key={sort.columnId} className="nb-sort-row">
+						<div className="nb-sort-row-priority">
+							<button className="nb-sort-priority-btn" onClick={() => move(idx, -1)} disabled={idx === 0} title="Mover para cima">↑</button>
+							<button className="nb-sort-priority-btn" onClick={() => move(idx, 1)} disabled={idx === sorts.length - 1} title="Mover para baixo">↓</button>
+						</div>
+						<span className="nb-sort-row-name">{name}</span>
+						<button className="nb-sort-dir-btn" onClick={() => toggleDir(sort.columnId)}>
+							{sort.direction === 'asc' ? 'A → Z' : 'Z → A'}
+						</button>
+						<button className="nb-sort-remove-btn" onClick={() => remove(sort.columnId)} title="Remover">×</button>
+					</div>
+				)
+			})}
+			{availableColumns.length > 0 && (
+				<div className="nb-sort-add-row">
+					<select
+						className="nb-sort-add-select"
+						value=""
+						onChange={e => { add(e.target.value); e.target.value = '' }}
+					>
+						<option value="">+ Adicionar ordenação...</option>
+						{availableColumns.map(c => (
+							<option key={c.id} value={c.id}>{c.name}</option>
+						))}
+					</select>
+				</div>
+			)}
+		</div>
+	)
+}
+
 // ── Cabeçalho de coluna arrastável ───────────────────────────────────────────
 
 function ResizeHandle({ onResize, onAutoFit }: { onResize: (w: number) => void; onAutoFit?: () => void }) {
@@ -372,6 +452,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const [config, setConfig] = useState<DatabaseConfig>(DEFAULT_DATABASE_CONFIG)
 	const [rows, setRows] = useState<NoteRow[]>([])
 	const [sorting, setSorting] = useState<SortingState>([])
+	const [sortPanelOpen, setSortPanelOpen] = useState(false)
+	const sortPanelRef = useRef<HTMLDivElement>(null)
 	const [globalFilter, setGlobalFilter] = useState('')
 	const [editingCell, setEditingCell] = useState<{ rowIndex: number; columnId: string } | null>(null)
 	const [loading, setLoading] = useState(true)
@@ -408,6 +490,12 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	// View ativa: embed usa estado local; database usa config.views[0]
 	const activeView: ViewConfig = (externalView ? localEmbedView : undefined) ?? config.views[0] ?? DEFAULT_VIEW
+
+	// Sync sorting state when activeView changes (e.g. embed switching)
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	useEffect(() => {
+		setSorting(activeView.sorts.map(s => ({ id: s.columnId, desc: s.direction === 'desc' })))
+	}, [activeView.id])
 
 	// Schema ordenado: no embed usa columnOrder da view; no database usa a ordem do schema
 	const orderedSchema = useMemo(() => {
@@ -573,6 +661,24 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		await saveView({ ...activeView, pinnedColumnId: next })
 	}, [pinnedColumnId, saveView, activeView])
 
+	const handleSortChange = useCallback(async (newSorts: SortConfig[]) => {
+		setSorting(newSorts.map(s => ({ id: s.columnId, desc: s.direction === 'desc' })))
+		await saveView({ ...activeView, sorts: newSorts })
+	}, [activeView, saveView])
+
+	const handleColumnToggleSort = useCallback((colId: string) => {
+		const existing = activeView.sorts.find(s => s.columnId === colId)
+		let newSorts: SortConfig[]
+		if (!existing) {
+			newSorts = [...activeView.sorts, { columnId: colId, direction: 'asc' }]
+		} else if (existing.direction === 'asc') {
+			newSorts = activeView.sorts.map(s => s.columnId === colId ? { ...s, direction: 'desc' as const } : s)
+		} else {
+			newSorts = activeView.sorts.filter(s => s.columnId !== colId)
+		}
+		handleSortChange(newSorts)
+	}, [activeView.sorts, handleSortChange])
+
 	const handleColumnResize = useCallback(async (colId: string, width: number) => {
 		await saveView({ ...activeView, columnWidths: { ...activeView.columnWidths, [colId]: width } })
 	}, [activeView, saveView])
@@ -653,7 +759,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						<span>Nome</span>
 						<button
 							className={`nb-sort-btn ${sorted ? 'nb-sort-btn--sorted' : ''}`}
-							onClick={e => { e.stopPropagation(); column.toggleSorting(sorted === 'asc') }}
+							onClick={e => { e.stopPropagation(); handleColumnToggleSort('_title') }}
 							title={sorted === 'asc' ? 'Ordenar Z→A' : sorted === 'desc' ? 'Remover ordenação' : 'Ordenar A→Z'}
 						>
 							<span className={sorted === 'asc' ? 'nb-sort-chevron--active' : 'nb-sort-chevron'}>⌃</span>
@@ -741,7 +847,6 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	const handleAddRow = async () => {
 		if (!dbFile) return
-		setSorting([])
 		const newFile = await manager.createNote(dbFile)
 		lastCreatedPath.current = newFile.path
 		// loadData será chamado pelo evento vault.on('create')
@@ -772,6 +877,19 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		document.addEventListener('mousedown', handler)
 		return () => document.removeEventListener('mousedown', handler)
 	}, [actionsMenuOpen])
+
+	// ── Fechar painel de ordenação ao clicar fora ────────────────────
+
+	useEffect(() => {
+		if (!sortPanelOpen) return
+		const handler = (e: MouseEvent) => {
+			if (sortPanelRef.current && !sortPanelRef.current.contains(e.target as Node)) {
+				setSortPanelOpen(false)
+			}
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [sortPanelOpen])
 
 	// ── Ações em lote ────────────────────────────────────────────────────────
 
@@ -1166,6 +1284,23 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						</div>
 					)}
 				</div>
+
+				<div className="nb-sort-menu-wrapper" ref={sortPanelRef}>
+					<button
+						className={`nb-toolbar-btn${activeView.sorts.length > 0 ? ' nb-toolbar-btn--active' : ''}`}
+						onClick={() => setSortPanelOpen(v => !v)}
+					>
+						<span>Ordenar</span>
+						{activeView.sorts.length > 0 && <span className="nb-hidden-badge">{activeView.sorts.length}</span>}
+					</button>
+					{sortPanelOpen && (
+						<SortPanel
+							sorts={activeView.sorts}
+							schema={config.schema}
+							onSortChange={handleSortChange}
+						/>
+					)}
+				</div>
 			</div>
 
 	
@@ -1330,7 +1465,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 														isPinned={pinnedColumnId === header.id}
 														onTogglePin={() => handleTogglePin(header.id)}
 					sorted={header.column.getCanSort() ? header.column.getIsSorted() : undefined}
-					onToggleSort={header.column.getCanSort() ? () => header.column.toggleSorting(header.column.getIsSorted() === "asc") : undefined}
+					onToggleSort={header.column.getCanSort() ? () => handleColumnToggleSort(header.id) : undefined}
 					onResize={w => handleColumnResize(header.id, w)}
 					onAutoFit={() => handleColumnAutoFit(header.id)}
 													>

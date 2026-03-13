@@ -597,6 +597,155 @@
 	border-right: 2px solid var(--color-accent) !important;
 }
 
+/* ── Sort panel ──────────────────────────────────────────────────────────── */
+
+.nb-sort-menu-wrapper {
+	position: relative;
+}
+
+.nb-sort-panel {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	z-index: 100;
+	min-width: 280px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	box-shadow: var(--shadow-l);
+	padding: 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.nb-sort-panel-label {
+	padding: 4px 6px 2px;
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	color: var(--text-faint);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.nb-sort-panel-empty {
+	padding: 6px 8px;
+	font-size: var(--font-ui-small);
+	color: var(--text-faint);
+	font-style: italic;
+}
+
+.nb-sort-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 6px;
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+}
+
+.nb-sort-row-priority {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.nb-sort-priority-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 14px;
+	padding: 0;
+	background: transparent !important;
+	box-shadow: none !important;
+	border: none;
+	font-size: 10px;
+	line-height: 1;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.nb-sort-priority-btn:hover:not(:disabled) {
+	color: var(--text-normal);
+}
+
+.nb-sort-priority-btn:disabled {
+	opacity: 0.3;
+	cursor: default;
+}
+
+.nb-sort-row-name {
+	flex: 1;
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.nb-sort-dir-btn {
+	padding: 2px 8px;
+	background: var(--background-modifier-hover) !important;
+	box-shadow: none !important;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	font-size: var(--font-ui-smaller);
+	color: var(--text-normal);
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.nb-sort-dir-btn:hover {
+	border-color: var(--interactive-accent);
+	color: var(--interactive-accent);
+}
+
+.nb-sort-remove-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	background: transparent !important;
+	box-shadow: none !important;
+	border: none;
+	border-radius: 50%;
+	font-size: 14px;
+	line-height: 1;
+	color: var(--text-muted);
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.nb-sort-remove-btn:hover {
+	background: var(--background-modifier-error) !important;
+	color: var(--text-on-accent);
+}
+
+.nb-sort-add-row {
+	padding: 2px 2px 0;
+}
+
+.nb-sort-add-select {
+	width: 100%;
+	padding: 5px 8px;
+	border-radius: var(--radius-s);
+	border: 1px dashed var(--background-modifier-border);
+	background: transparent;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+	outline: none;
+}
+
+.nb-sort-add-select:hover,
+.nb-sort-add-select:focus {
+	border-color: var(--interactive-accent);
+	color: var(--text-normal);
+}
+
 /* ── Column resize handle ────────────────────────────────────────────────── */
 
 .nb-col-resizer {
