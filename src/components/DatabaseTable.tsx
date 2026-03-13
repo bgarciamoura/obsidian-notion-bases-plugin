@@ -919,22 +919,25 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 		{/* Linha de pills de filtros ativos */}
 		{activeFilters.length > 0 && !(shouldCollapse && searchExpanded) && (
 			<div className="nb-pills-row">
-				{activeFilters.map(filter => (
-					<button
-						key={filter.id}
-						ref={el => { filterPillRefs.current[filter.id] = el }}
-						className={`nb-filter-pill ${openFilterPill === filter.id ? 'nb-filter-pill--active' : ''}`}
-						onClick={() => setOpenFilterPill(v => v === filter.id ? null : filter.id)}
-					>
-						<span className="nb-filter-pill-icon">{filter.icon}</span>
-						<span className="nb-filter-pill-name">{filter.columnName}</span>
-						<span
-							className="nb-filter-pill-remove"
-							onClick={e => { e.stopPropagation(); removeFilter(filter.id) }}
-							title="Remover filtro"
-						>×</span>
-					</button>
-				))}
+				<DndContext
+					sensors={sensors}
+					collisionDetection={closestCenter}
+					onDragStart={() => setOpenFilterPill(null)}
+					onDragEnd={handlePillDragEnd}
+				>
+					<SortableContext items={activeFilters.map(f => f.id)} strategy={horizontalListSortingStrategy}>
+						{activeFilters.map(filter => (
+							<SortablePill
+								key={filter.id}
+								filter={filter}
+								isActive={openFilterPill === filter.id}
+								onToggle={() => setOpenFilterPill(v => v === filter.id ? null : filter.id)}
+								onRemove={() => removeFilter(filter.id)}
+								btnRef={el => { filterPillRefs.current[filter.id] = el }}
+							/>
+						))}
+					</SortableContext>
+				</DndContext>
 			</div>
 		)}
 
