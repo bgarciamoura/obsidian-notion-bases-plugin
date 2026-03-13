@@ -773,12 +773,12 @@
 .nb-filter-pill-wrapper {
 	position: relative;
 	max-width: 300px;
-	overflow: hidden;
 	transition: max-width 300ms cubic-bezier(.4,0,.2,1), opacity 200ms ease;
 }
 
 .nb-filter-pill-wrapper--hidden {
 	max-width: 0;
+	overflow: hidden;
 	opacity: 0;
 	pointer-events: none;
 }
@@ -831,15 +831,15 @@
 
 .nb-filter-pill-dropdown {
 	position: absolute;
-	top: calc(100% + 4px);
+	top: calc(100% + 6px);
 	left: 0;
-	z-index: 100;
-	min-width: 180px;
+	z-index: 200;
+	min-width: 220px;
 	background: var(--background-primary);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
 	box-shadow: var(--shadow-l);
-	padding: 4px;
+	padding: 8px;
 }
 
 /* ── Filter query UI (pill dropdown content) ─────────────────────────────── */
