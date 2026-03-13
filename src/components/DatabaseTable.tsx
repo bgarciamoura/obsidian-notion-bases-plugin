@@ -6,6 +6,8 @@ import {
 	flexRender,
 	ColumnDef,
 	SortingState,
+	SortingFn,
+	SortingFnOption,
 	RowSelectionState,
 } from '@tanstack/react-table'
 import {
@@ -202,13 +204,51 @@ function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 	}
 }
 
-function SortPanel({ sorts, schema, onSortChange }: {
+function getColumnSortingFn(type: ColumnType): SortingFnOption<NoteRow> {
+	switch (type) {
+		case 'number': return 'basic'
+		case 'date': return (rowA, rowB, colId) => {
+			const a = new Date(String(rowA.getValue(colId) ?? '')).getTime() || 0
+			const b = new Date(String(rowB.getValue(colId) ?? '')).getTime() || 0
+			return a - b
+		}
+		case 'checkbox': return (rowA, rowB, colId) => {
+			const a = rowA.getValue(colId) ? 1 : 0
+			const b = rowB.getValue(colId) ? 1 : 0
+			return (a as number) - (b as number)
+		}
+		default: return 'text'
+	}
+}
+
+function SortPanel({ sorts, schema, onSortChange, onClose, anchorRect, panelRef }: {
 	sorts: SortConfig[]
 	schema: ColumnSchema[]
 	onSortChange: (sorts: SortConfig[]) => void
+	onClose: () => void
+	anchorRect: DOMRect
+	panelRef: React.RefObject<HTMLDivElement>
 }) {
+	const [pos, setPos] = useState(() => ({
+		x: anchorRect.right - 280,
+		y: anchorRect.bottom + 4,
+	}))
+
+	const handleDragStart = (e: React.MouseEvent) => {
+		e.preventDefault()
+		const startX = e.clientX - pos.x
+		const startY = e.clientY - pos.y
+		const onMove = (ev: MouseEvent) => setPos({ x: ev.clientX - startX, y: ev.clientY - startY })
+		const onUp = () => {
+			window.removeEventListener('mousemove', onMove)
+			window.removeEventListener('mouseup', onUp)
+		}
+		window.addEventListener('mousemove', onMove)
+		window.addEventListener('mouseup', onUp)
+	}
+
 	const sortableSchema = schema.filter(c =>
-		c.visible && c.type !== 'formula' && c.type !== 'lookup' && c.type !== 'relation'
+		c.type !== 'formula' && c.type !== 'lookup' && c.type !== 'relation' && c.type !== 'multiselect'
 	)
 	const usedIds = new Set(sorts.map(s => s.columnId))
 	const availableColumns: { id: string; name: string }[] = [
@@ -240,9 +280,16 @@ function SortPanel({ sorts, schema, onSortChange }: {
 		onSortChange([...sorts, { columnId, direction: 'asc' }])
 	}
 
-	return (
-		<div className="nb-sort-panel">
-			<div className="nb-sort-panel-label">Ordenar por</div>
+	return createPortal(
+		<div
+			ref={panelRef}
+			className="nb-sort-panel"
+			style={{ position: 'fixed', top: pos.y, left: pos.x }}
+		>
+			<div className="nb-sort-panel-titlebar" onMouseDown={handleDragStart}>
+				<span className="nb-sort-panel-title">Ordenar por</span>
+				<button className="nb-sort-panel-close" onClick={onClose} title="Fechar">×</button>
+			</div>
 			{sorts.length === 0 && (
 				<div className="nb-sort-panel-empty">Nenhuma ordenação ativa</div>
 			)}
@@ -278,11 +325,10 @@ function SortPanel({ sorts, schema, onSortChange }: {
 					</select>
 				</div>
 			)}
-		</div>
+		</div>,
+		document.body
 	)
-}
-
-// ── Cabeçalho de coluna arrastável ───────────────────────────────────────────
+}
 
 function ResizeHandle({ onResize, onAutoFit }: { onResize: (w: number) => void; onAutoFit?: () => void }) {
 	const handleMouseDown = (e: React.MouseEvent) => {
@@ -454,6 +500,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const [sorting, setSorting] = useState<SortingState>([])
 	const [sortPanelOpen, setSortPanelOpen] = useState(false)
 	const sortPanelRef = useRef<HTMLDivElement>(null)
+	const [sortAnchorRect, setSortAnchorRect] = useState<DOMRect | null>(null)
+	const sortButtonRef = useRef<HTMLButtonElement>(null)
 	const [globalFilter, setGlobalFilter] = useState('')
 	const [editingCell, setEditingCell] = useState<{ rowIndex: number; columnId: string } | null>(null)
 	const [loading, setLoading] = useState(true)
@@ -789,7 +837,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				accessorFn: row => row[col.id],
 				size: activeView.columnWidths[col.id] ?? (col.width ?? 150),
 				enableColumnFilter: col.type !== 'formula' && col.type !== 'lookup' && col.type !== 'relation',
-				enableSorting: col.type !== 'formula' && col.type !== 'lookup' && col.type !== 'relation',
+				enableSorting: col.type !== 'formula' && col.type !== 'lookup' && col.type !== 'relation' && col.type !== 'multiselect',
+			sortingFn: getColumnSortingFn(col.type),
 				header: () => (
 					<ColumnHeader
 						col={col}
@@ -883,6 +932,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	useEffect(() => {
 		if (!sortPanelOpen) return
 		const handler = (e: MouseEvent) => {
+			if (sortButtonRef.current?.contains(e.target as Node)) return
 			if (sortPanelRef.current && !sortPanelRef.current.contains(e.target as Node)) {
 				setSortPanelOpen(false)
 			}
@@ -1285,22 +1335,31 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 					)}
 				</div>
 
-				<div className="nb-sort-menu-wrapper" ref={sortPanelRef}>
+				<>
 					<button
+						ref={sortButtonRef}
 						className={`nb-toolbar-btn${activeView.sorts.length > 0 ? ' nb-toolbar-btn--active' : ''}`}
-						onClick={() => setSortPanelOpen(v => !v)}
+						onClick={() => {
+							if (!sortPanelOpen && sortButtonRef.current) {
+								setSortAnchorRect(sortButtonRef.current.getBoundingClientRect())
+							}
+							setSortPanelOpen(v => !v)
+						}}
 					>
 						<span>Ordenar</span>
 						{activeView.sorts.length > 0 && <span className="nb-hidden-badge">{activeView.sorts.length}</span>}
 					</button>
-					{sortPanelOpen && (
+					{sortPanelOpen && sortAnchorRect && (
 						<SortPanel
 							sorts={activeView.sorts}
 							schema={config.schema}
 							onSortChange={handleSortChange}
+							onClose={() => setSortPanelOpen(false)}
+							anchorRect={sortAnchorRect}
+							panelRef={sortPanelRef}
 						/>
 					)}
-				</div>
+				</>
 			</div>
 
 	
