@@ -334,6 +334,12 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 		setMenuOpen(false)
 	}
 
+	const handleRemoveNumberFmt = async () => {
+		await updateCol({ numberFormat: undefined })
+		setEditingNumberFmt(false)
+		setMenuOpen(false)
+	}
+
 	const handleFmtTitleBarMouseDown = (e: React.MouseEvent) => {
 		if (!fmtPanelPos) return
 		fmtDragOffset.current = { x: e.clientX - fmtPanelPos.x, y: e.clientY - fmtPanelPos.y }
@@ -557,6 +563,13 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, mana
 					<button className="nb-formula-save" onClick={handleSaveNumberFmt}>Salvar</button>
 					<button className="nb-formula-cancel" onClick={handleCloseNumberFmt}>Cancelar</button>
 				</div>
+				{col.numberFormat && (
+					<div style={{ marginTop: '8px', textAlign: 'center' }}>
+						<button className="nb-formula-cancel" onClick={handleRemoveNumberFmt} style={{ color: 'var(--text-error)', width: '100%' }}>
+							Remover formatação
+						</button>
+					</div>
+				)}
 			</div>
 		</div>,
 		document.body
