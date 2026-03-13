@@ -752,14 +752,6 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 								<div className="nb-filter-query-row">
 									<span className="nb-filter-query-name">{filter.columnName}</span>
 									<div
-										style={{ flex: 1 }}
-									/>
-									<button
-										className="nb-filter-query-clear"
-										onClick={e => { e.stopPropagation(); removeFilter(filter.columnId) }}
-										title="Remover filtro"
-									>×</button>
-									<div
 										className="nb-filter-op-wrapper"
 										ref={el => { operatorPickerRefs.current[filter.columnId] = el }}
 									>
@@ -784,6 +776,11 @@ export function DatabaseTable({ dbFile, manager }: DatabaseTableProps) {
 											</div>
 										)}
 									</div>
+									<button
+										className="nb-filter-query-clear"
+										onClick={e => { e.stopPropagation(); removeFilter(filter.columnId) }}
+										title="Remover filtro"
+									>×</button>
 								</div>
 								{filter.operator !== 'is_empty' && filter.operator !== 'is_not_empty' && (
 									<input
