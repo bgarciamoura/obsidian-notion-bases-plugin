@@ -204,7 +204,40 @@ function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 
 // ── Cabeçalho de coluna arrastável ───────────────────────────────────────────
 
-function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, onTogglePin, sorted, onToggleSort }: {
+function ResizeHandle({ onResize, onAutoFit }: { onResize: (w: number) => void; onAutoFit?: () => void }) {
+	const handleMouseDown = (e: React.MouseEvent) => {
+		e.preventDefault()
+		e.stopPropagation()
+		const th = (e.currentTarget as HTMLElement).closest('th') as HTMLElement
+		if (!th) return
+		const startX = e.clientX
+		const startWidth = th.offsetWidth
+		let currentWidth = startWidth
+
+		const onMouseMove = (ev: MouseEvent) => {
+			currentWidth = Math.max(50, startWidth + (ev.clientX - startX))
+			th.style.width = currentWidth + 'px'
+		}
+		const onMouseUp = () => {
+			window.removeEventListener('mousemove', onMouseMove)
+			window.removeEventListener('mouseup', onMouseUp)
+			onResize(currentWidth)
+		}
+		window.addEventListener('mousemove', onMouseMove)
+		window.addEventListener('mouseup', onMouseUp)
+	}
+
+	return (
+		<div
+			className="nb-col-resizer"
+			onMouseDown={handleMouseDown}
+			onDoubleClick={e => { e.stopPropagation(); onAutoFit?.() }}
+			title="Arrastar para redimensionar; clique duplo para ajustar ao conteúdo"
+		/>
+	)
+}
+
+function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, onTogglePin, sorted, onToggleSort, onResize, onAutoFit }: {
 	id: string
 	size: number
 	children: ReactNode
@@ -214,6 +247,8 @@ function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, on
 	onTogglePin?: () => void
 	sorted?: false | "asc" | "desc"
 	onToggleSort?: () => void
+	onResize?: (width: number) => void
+	onAutoFit?: () => void
 }) {
 	const {
 		attributes,
@@ -230,6 +265,7 @@ function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, on
 	return (
 		<th
 			ref={setNodeRef}
+			data-col-id={id}
 			className={[
 				'nb-th',
 				isDragging ? 'nb-th--dragging' : '',
@@ -274,6 +310,7 @@ function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, on
 					</button>
 				)}
 			</div>
+			{onResize && <ResizeHandle onResize={onResize} onAutoFit={onAutoFit} />}
 		</th>
 	)
 }
@@ -344,6 +381,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 	const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
 	const actionsMenuRef = useRef<HTMLDivElement>(null)
+	const tableRef = useRef<HTMLTableElement>(null)
 	const lastCreatedPath = useRef<string | null>(null)
 	const [pinnedColumnId, setPinnedColumnId] = useState<string | null>(null)
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
@@ -534,6 +572,20 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		setPinnedColumnId(next)
 		await saveView({ ...activeView, pinnedColumnId: next })
 	}, [pinnedColumnId, saveView, activeView])
+
+	const handleColumnResize = useCallback(async (colId: string, width: number) => {
+		await saveView({ ...activeView, columnWidths: { ...activeView.columnWidths, [colId]: width } })
+	}, [activeView, saveView])
+
+	const handleColumnAutoFit = useCallback(async (colId: string) => {
+		const table = tableRef.current
+		if (!table) return
+		let maxWidth = 60
+		table.querySelectorAll<HTMLElement>(`[data-col-id="${colId}"]`).forEach(el => {
+			maxWidth = Math.max(maxWidth, el.scrollWidth)
+		})
+		await handleColumnResize(colId, maxWidth + 16)
+	}, [handleColumnResize])
 
 	const stickyMap = useMemo(() => {
 		const map = new Map<string, { left: number; isLast: boolean }>()
@@ -1200,7 +1252,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		{/* Tabela */}
 			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema, relationOptions }}>
 			<div className="nb-table-wrapper">
-				<table className="nb-table">
+				<table ref={tableRef} className="nb-table">
 					<thead className="nb-thead">
 						{table.getHeaderGroups().map(group => {
 							const visibleSchemaIds = orderedSchema
@@ -1243,6 +1295,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 													return (
 														<th
 															key={header.id}
+															data-col-id="_title"
 															className={[
 																'nb-th',
 																sticky ? 'nb-th--sticky' : '',
@@ -1263,6 +1316,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 																	title={pinnedColumnId === '_title' ? 'Desafixar colunas' : 'Fixar colunas até aqui'}
 																>📌</button>
 															</div>
+															<ResizeHandle onResize={w => handleColumnResize('_title', w)} onAutoFit={() => handleColumnAutoFit('_title')} />
 														</th>
 													)
 												}
@@ -1277,6 +1331,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 														onTogglePin={() => handleTogglePin(header.id)}
 					sorted={header.column.getCanSort() ? header.column.getIsSorted() : undefined}
 					onToggleSort={header.column.getCanSort() ? () => header.column.toggleSorting(header.column.getIsSorted() === "asc") : undefined}
+					onResize={w => handleColumnResize(header.id, w)}
+					onAutoFit={() => handleColumnAutoFit(header.id)}
 													>
 														{flexRender(header.column.columnDef.header, header.getContext())}
 													</SortableTh>
@@ -1316,6 +1372,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 										return (
 											<td
 												key={cell.id}
+												data-col-id={cell.column.id}
 												className={[
 													'nb-td',
 													sticky ? 'nb-td--sticky' : '',
