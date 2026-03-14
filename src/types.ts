@@ -89,6 +89,7 @@ export interface ViewConfig {
 	columnOrder?: string[]
 	rowHeight?: 'compact' | 'medium' | 'tall'
 	aggregations?: Record<string, AggregationType>
+	wrapText?: boolean
 }
 
 // ── Database config (stored in _database.md frontmatter) ───────────────────

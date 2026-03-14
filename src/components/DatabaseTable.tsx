@@ -1171,6 +1171,10 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		setRowHeightMenuOpen(false)
 	}
 
+	const toggleWrapText = async () => {
+		await saveView({ ...activeView, wrapText: !activeView.wrapText })
+	}
+
 	const setAggregation = async (columnId: string, type: AggregationType) => {
 		const next = { ...(activeView.aggregations ?? {}), [columnId]: type }
 		await saveView({ ...activeView, aggregations: next })
@@ -1370,6 +1374,17 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						</div>
 					)}
 				</div>
+
+				{/* Botão Wrap de texto */}
+				<button
+					className={`nb-toolbar-btn nb-toolbar-btn--icon ${activeView.wrapText ? 'nb-toolbar-btn--active' : ''}`}
+					onClick={toggleWrapText}
+					title="Wrap de texto"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+						<path d="M3 18h12a3 3 0 0 0 0-6h-3"/><polyline points="9 15 6 18 9 21"/>
+					</svg>
+				</button>
 
 				{/* Botão Campos */}
 				<div className="nb-fields-menu-wrapper" ref={fieldsMenuRef}>
@@ -1631,7 +1646,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 		{/* Tabela */}
 			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema, relationOptions, updateSchema }}>
-			<div className="nb-table-wrapper"
+			<div className={`nb-table-wrapper${activeView.wrapText ? ' nb-table--wrap' : ''}`}
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				style={{ '--nb-row-height': activeView.rowHeight === 'compact' ? '28px' : activeView.rowHeight === 'tall' ? '64px' : '36px' } as any}>
 				<table ref={tableRef} className="nb-table">

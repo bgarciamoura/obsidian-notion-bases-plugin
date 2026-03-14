@@ -1599,6 +1599,37 @@
 	color: var(--text-muted);
 }
 
+/* ── Wrap de texto ──────────────────────────────────────────────────────────── */
+
+.nb-table--wrap .nb-td-inner {
+	height: auto;
+	max-height: none;
+	min-height: var(--nb-row-height);
+	overflow: visible;
+	align-items: flex-start;
+	padding: 6px 0;
+}
+
+.nb-table--wrap .nb-cell-text {
+	white-space: normal;
+	word-break: break-word;
+	overflow: visible;
+	text-overflow: clip;
+	align-items: flex-start;
+	padding: 6px 10px;
+	height: auto;
+}
+
+.nb-table--wrap .nb-cell-clickable {
+	height: auto;
+	min-height: var(--nb-row-height);
+	align-items: flex-start;
+	padding-top: 6px;
+	padding-bottom: 6px;
+	white-space: normal;
+	word-break: break-word;
+}
+
 /* ── Linha de agregação ─────────────────────────────────────────────────────── */
 
 .nb-tfoot {
