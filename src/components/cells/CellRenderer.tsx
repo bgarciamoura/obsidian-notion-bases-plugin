@@ -600,7 +600,8 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 		const handler = (e: MouseEvent) => {
 			const inWrapper = wrapperRef.current?.contains(e.target as Node)
 			const inDropdown = dropdownRef.current?.contains(e.target as Node)
-			if (!inWrapper && !inDropdown) onCancel()
+			const inColorPicker = colorPickerRef.current?.contains(e.target as Node)
+			if (!inWrapper && !inDropdown && !inColorPicker) onCancel()
 		}
 		document.addEventListener('mousedown', handler)
 		return () => document.removeEventListener('mousedown', handler)
