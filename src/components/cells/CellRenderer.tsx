@@ -575,8 +575,24 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 	const dropdownRef = useRef<HTMLDivElement>(null)
 	const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null)
 	const [newStatusName, setNewStatusName] = useState('')
+	const [colorPickerFor, setColorPickerFor] = useState<string | null>(null)
+	const [colorPickerPos, setColorPickerPos] = useState<{ top: number; left: number } | null>(null)
+	const colorPickerRef = useRef<HTMLDivElement>(null)
+
+	const STATUS_COLOR_PALETTE = [
+		'#9E9E9E', '#F44336', '#E91E63', '#9C27B0', '#673AB7',
+		'#3F51B5', '#2196F3', '#03A9F4', '#00BCD4', '#009688',
+		'#4CAF50', '#8BC34A', '#FFEB3B', '#FF9800', '#FF5722', '#795548',
+	]
 
 	const options = col.options?.length ? col.options : DEFAULT_STATUS_OPTIONS
+
+	const updateOptionColor = async (optValue: string, color: string) => {
+		const newOptions = options.map(o => o.value === optValue ? { ...o, color } : o)
+		const newSchema = schema.map(c => c.id === col.id ? { ...c, options: newOptions } : c)
+		await updateSchema(newSchema)
+		setColorPickerFor(null)
+	}
 
 	useEffect(() => {
 		if (!isEditing) return
@@ -590,13 +606,25 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 	}, [isEditing, onCancel])
 
 	useEffect(() => {
-		if (!isEditing) return
+		if (!isEditing) {
+			setColorPickerFor(null)
+			return
+		}
 		setNewStatusName('')
 		if (wrapperRef.current) {
 			const rect = wrapperRef.current.getBoundingClientRect()
 			setDropPos({ top: rect.bottom, left: rect.left, width: rect.width })
 		}
 	}, [isEditing])
+
+	useEffect(() => {
+		if (!colorPickerFor) return
+		const handler = (e: MouseEvent) => {
+			if (!colorPickerRef.current?.contains(e.target as Node)) setColorPickerFor(null)
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [colorPickerFor])
 
 	const addNewStatus = async () => {
 		const name = newStatusName.trim()
@@ -633,6 +661,17 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 						</span>
 					</button>
 					<button
+						className={`nb-status-color-swatch ${colorPickerFor === opt.value ? 'nb-status-color-swatch--active' : ''}`}
+						title="Trocar cor"
+						style={{ background: getOptionColor(options, opt.value) }}
+						onClick={e => {
+							e.stopPropagation()
+							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+							setColorPickerPos({ top: rect.bottom + 4, left: rect.left })
+							setColorPickerFor(prev => prev === opt.value ? null : opt.value)
+						}}
+					/>
+					<button
 						className="nb-status-delete-btn"
 						title="Excluir status"
 						onClick={async e => {
@@ -667,6 +706,38 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 		document.body
 	) : null
 
+	const colorPicker = colorPickerFor && colorPickerPos ? createPortal(
+		<div
+			ref={colorPickerRef}
+			className="nb-status-color-picker"
+			style={{ position: 'fixed', top: colorPickerPos.top, left: colorPickerPos.left, zIndex: 10000 }}
+		>
+			<div className="nb-status-color-grid">
+				{STATUS_COLOR_PALETTE.map(color => (
+					<button
+						key={color}
+						className="nb-status-color-dot"
+						style={{ background: color }}
+						title={color}
+						onClick={e => { e.stopPropagation(); updateOptionColor(colorPickerFor, color) }}
+					/>
+				))}
+			</div>
+			<div className="nb-status-color-custom">
+				<label className="nb-status-color-custom-label">
+					Personalizada
+					<input
+						type="color"
+						className="nb-status-color-input"
+						defaultValue={getOptionColor(options, colorPickerFor)}
+						onChange={e => updateOptionColor(colorPickerFor, e.target.value)}
+					/>
+				</label>
+			</div>
+		</div>,
+		document.body
+	) : null
+
 	return (
 		<div className="nb-cell-select-wrapper" ref={wrapperRef}>
 			<div className="nb-cell-clickable" onClick={onStartEdit}>
@@ -682,6 +753,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 				)}
 			</div>
 			{dropdown}
+			{colorPicker}
 		</div>
 	)
 }
