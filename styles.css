@@ -902,6 +902,42 @@
 	line-height: 28px;
 }
 
+/* ── Link cells (url, email, phone) ─────────────────────────────────────────── */
+
+.nb-cell-link-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	overflow: hidden;
+}
+
+.nb-cell-link {
+	color: var(--link-color);
+	text-decoration: none;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	cursor: pointer;
+	font-size: var(--font-ui-small);
+}
+
+.nb-cell-link:hover {
+	text-decoration: underline;
+}
+
+.nb-cell-link-icon {
+	color: var(--link-color);
+	font-size: 10px;
+	opacity: 0;
+	flex-shrink: 0;
+	cursor: pointer;
+	transition: opacity 0.1s;
+}
+
+.nb-cell-clickable:hover .nb-cell-link-icon {
+	opacity: 1;
+}
+
 /* ── Formula editor floating panel ───────────────────────────────────────── */
 
 .nb-formula-floating-panel {

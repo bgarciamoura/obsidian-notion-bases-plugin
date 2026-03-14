@@ -50,6 +50,57 @@ function formatNumber(value: number, fmt: NumberFormat | undefined): string {
 
 // ── Componente principal ─────────────────────────────────────────────────────
 
+const DEFAULT_STATUS_OPTIONS: SelectOption[] = [
+	{ value: 'Não iniciado', color: '#9E9E9E' },
+	{ value: 'Em andamento', color: '#2196F3' },
+	{ value: 'Concluído', color: '#4CAF50' },
+	{ value: 'Cancelado', color: '#F44336' },
+]
+
+function LinkCell({ value, href, isEditing, inputType, onStartEdit, onCommit, onCancel }: {
+	value: string | null
+	href: string | null
+	inputType: string
+	isEditing: boolean
+	onStartEdit: () => void
+	onCommit: (v: string | null) => void
+	onCancel: () => void
+}) {
+	const openLink = (e: React.MouseEvent) => {
+		e.stopPropagation()
+		if (href) window.open(href, '_blank')
+	}
+
+	if (isEditing) {
+		return (
+			<input
+				className="nb-cell-input"
+				autoFocus
+				type={inputType}
+				defaultValue={value ?? ''}
+				onBlur={e => onCommit(e.target.value || null)}
+				onKeyDown={e => {
+					if (e.key === 'Enter') onCommit((e.target as HTMLInputElement).value || null)
+					if (e.key === 'Escape') onCancel()
+				}}
+			/>
+		)
+	}
+
+	return (
+		<div className="nb-cell-clickable" onClick={onStartEdit}>
+			{value ? (
+				<span className="nb-cell-link-wrapper">
+					<span className="nb-cell-link" onClick={openLink}>{value}</span>
+					<span className="nb-cell-link-icon" onClick={openLink}>↗</span>
+				</span>
+			) : (
+				<span className="nb-cell-empty">—</span>
+			)}
+		</div>
+	)
+}
+
 export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps) {
 	const { editingCell, setEditingCell, updateCell, relationOptions } = useCellContext()
 	const app = useApp()
@@ -144,6 +195,57 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 				<RelationCell
 					value={value as string | null}
 					options={relationOptions.get(columnId) ?? []}
+					isEditing={isEditing}
+					onStartEdit={startEditing}
+					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCancel={() => setEditingCell(null)}
+				/>
+			)
+
+		case 'url':
+			return (
+				<LinkCell
+					value={value as string | null}
+					href={value ? String(value) : null}
+					inputType="url"
+					isEditing={isEditing}
+					onStartEdit={startEditing}
+					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCancel={() => setEditingCell(null)}
+				/>
+			)
+
+		case 'email':
+			return (
+				<LinkCell
+					value={value as string | null}
+					href={value ? `mailto:${value}` : null}
+					inputType="email"
+					isEditing={isEditing}
+					onStartEdit={startEditing}
+					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCancel={() => setEditingCell(null)}
+				/>
+			)
+
+		case 'phone':
+			return (
+				<LinkCell
+					value={value as string | null}
+					href={value ? `tel:${value}` : null}
+					inputType="tel"
+					isEditing={isEditing}
+					onStartEdit={startEditing}
+					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCancel={() => setEditingCell(null)}
+				/>
+			)
+
+		case 'status':
+			return (
+				<SelectCell
+					value={value as string | null}
+					options={DEFAULT_STATUS_OPTIONS}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
 					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}

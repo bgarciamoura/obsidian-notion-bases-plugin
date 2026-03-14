@@ -14,6 +14,10 @@ const TYPE_ICONS: Record<ColumnType, string> = {
 	multiselect: '◈',
 	date:        '📅',
 	checkbox:    '☑',
+	url:         '↗',
+	email:       '✉',
+	phone:       '📞',
+	status:      '◎',
 	formula:     'ƒ',
 	relation:    '🔗',
 	lookup:      '↗',
@@ -27,6 +31,10 @@ const TYPE_LABELS: Record<ColumnType, string> = {
 	multiselect: 'Multi-seleção',
 	date:        'Data',
 	checkbox:    'Checkbox',
+	url:         'URL',
+	email:       'Email',
+	phone:       'Telefone',
+	status:      'Status',
 	formula:     'Fórmula',
 	relation:    'Relação',
 	lookup:      'Lookup',
@@ -686,7 +694,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 
 					<div className="nb-menu-separator" />
 					<div className="nb-menu-label">Tipo de campo</div>
-					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'formula', 'relation', 'lookup'] as ColumnType[]).map(type => (
+					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'url', 'email', 'phone', 'status', 'formula', 'relation', 'lookup'] as ColumnType[]).map(type => (
 						<button
 							key={type}
 							className={`nb-menu-item nb-menu-type-item ${col.type === type ? 'nb-menu-item--active' : ''}`}
