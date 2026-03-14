@@ -163,6 +163,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 	const groupMenuRef  = useRef<HTMLDivElement>(null)
 	const scrollRef     = useRef<HTMLDivElement>(null)
 	const filtersInit   = useRef(false)
+	const justResized   = useRef(false)
 
 	useEffect(() => { setActiveView(externalView) }, [externalView.id])
 
@@ -246,6 +247,8 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 			setResizing(null); setResizeDelta(0)
 			document.body.style.cursor = ''; document.body.style.userSelect = ''
 			if (Math.abs(delta) < 2) return
+			justResized.current = true
+			setTimeout(() => { justResized.current = false }, 200)
 			const { handle, origBarLeft, origBarWidth, startFieldId, endFieldId, filePath } = resizing
 			let newLeft = origBarLeft, newWidth = origBarWidth
 			if (handle === 'left') { newLeft = origBarLeft + delta; newWidth = origBarWidth - delta }
@@ -583,7 +586,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 											return (
 												<div className="nb-tl-bar"
 													style={{ left: bLeft, width: bWidth, top: (ROW_H - 22) / 2, height: 22 }}
-													onClick={isRes ? undefined : () => app.workspace.getLeaf().openFile(item.row._file)}
+													onClick={() => { if (justResized.current) return; app.workspace.getLeaf().openFile(item.row._file) }}
 													title={item.row._title}>
 													<div className="nb-tl-bar-handle nb-tl-bar-handle--left"
 														onMouseDown={e => {
