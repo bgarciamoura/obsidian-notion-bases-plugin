@@ -1626,6 +1626,18 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				</table>
 			</div>
 
+			{/* Barra de contagem de linhas */}
+			<div className="nb-row-count-bar">
+				{(() => {
+					const total = rows.length
+					const filtered = table.getFilteredRowModel().rows.length
+					const isFiltered = filtered !== total
+					return isFiltered
+						? <span className="nb-row-count">{filtered} de {total} registro{total !== 1 ? 's' : ''}</span>
+						: <span className="nb-row-count">{total} registro{total !== 1 ? 's' : ''}</span>
+				})()}
+			</div>
+
 			</CellContext.Provider>
 		</div>
 	)

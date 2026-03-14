@@ -1564,6 +1564,23 @@
 	background: var(--background-modifier-hover);
 }
 
+/* ── Barra de contagem de linhas ─────────────────────────────────────────── */
+
+.nb-row-count-bar {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+}
+
+.nb-row-count {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
 /* ── Estados especiais ───────────────────────────────────────────────────── */
 
 .nb-empty-state,
