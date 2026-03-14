@@ -2141,6 +2141,11 @@
 	font-weight: 500;
 }
 
+.nb-view-tab--drag-over {
+	background: var(--background-modifier-hover);
+	border-left: 2px solid var(--interactive-accent);
+}
+
 .nb-view-tab-icon {
 	font-size: 13px;
 	line-height: 1;

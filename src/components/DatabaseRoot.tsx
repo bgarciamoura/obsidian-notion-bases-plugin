@@ -55,6 +55,10 @@ export function DatabaseRoot({
 	const [renameValue, setRenameValue] = useState('')
 	const renameInputRef = useRef<HTMLInputElement>(null)
 
+	// ── Tab drag-to-reorder state ────────────────────────────────────────────
+	const [dragViewId, setDragViewId] = useState<string | null>(null)
+	const [dragOverId, setDragOverId] = useState<string | null>(null)
+
 	// ── Load database config ──────────────────────────────────────────────────
 
 	useEffect(() => {
@@ -125,6 +129,33 @@ export function DatabaseRoot({
 		setRenamingViewId(null)
 	}, [renamingViewId])
 
+	const reorderViews = (views: ViewConfig[], fromId: string, toId: string): ViewConfig[] => {
+		const from = views.findIndex(v => v.id === fromId)
+		const to   = views.findIndex(v => v.id === toId)
+		if (from < 0 || to < 0) return views
+		const result = [...views]
+		const [moved] = result.splice(from, 1)
+		result.splice(to, 0, moved)
+		return result
+	}
+
+	const handleDirectTabDrop = async (toId: string) => {
+		setDragOverId(null)
+		if (!dragViewId || dragViewId === toId || !dbFile) { setDragViewId(null); return }
+		const newViews = reorderViews(config.views, dragViewId, toId)
+		const newConfig = { ...config, views: newViews }
+		setConfig(newConfig); setDragViewId(null)
+		await manager.writeConfig(dbFile, newConfig)
+	}
+
+	const handleEmbedTabDrop = async (toId: string) => {
+		setDragOverId(null)
+		if (!dragViewId || dragViewId === toId) { setDragViewId(null); return }
+		const newViews = reorderViews(embedViews, dragViewId, toId)
+		setEmbedViews(newViews); setDragViewId(null)
+		await onEmbedStateChange!({ activeViewId: embedActiveId, views: newViews })
+	}
+
 	// ── View renderer helper ──────────────────────────────────────────────────
 
 	function renderView(view: ViewConfig, onChange: (v: ViewConfig) => Promise<void>, key?: string) {
@@ -194,8 +225,14 @@ export function DatabaseRoot({
 					{embedViews.map(view => (
 						<button
 							key={view.id}
-							className={`nb-view-tab${view.id === embedActiveId ? ' nb-view-tab--active' : ''}`}
-							onClick={() => renamingViewId !== view.id && switchEmbedTab(view.id)}
+							className={`nb-view-tab${view.id === embedActiveId ? ' nb-view-tab--active' : ''}${dragOverId === view.id && dragViewId !== view.id ? ' nb-view-tab--drag-over' : ''}`}
+						draggable
+						onDragStart={() => setDragViewId(view.id)}
+						onDragOver={e => { e.preventDefault(); setDragOverId(view.id) }}
+						onDragLeave={() => setDragOverId(null)}
+						onDrop={() => handleEmbedTabDrop(view.id)}
+						onDragEnd={() => { setDragViewId(null); setDragOverId(null) }}
+						onClick={() => renamingViewId !== view.id && switchEmbedTab(view.id)}
 						>
 							<span className="nb-view-tab-icon">{VIEW_ICONS[view.type] ?? '□'}</span>
 							{renamingViewId === view.id ? (
@@ -311,7 +348,13 @@ export function DatabaseRoot({
 				{config.views.map(view => (
 					<button
 						key={view.id}
-						className={`nb-view-tab${view.id === activeViewId ? ' nb-view-tab--active' : ''}`}
+						className={`nb-view-tab${view.id === activeViewId ? ' nb-view-tab--active' : ''}${dragOverId === view.id && dragViewId !== view.id ? ' nb-view-tab--drag-over' : ''}`}
+						draggable
+						onDragStart={() => setDragViewId(view.id)}
+						onDragOver={e => { e.preventDefault(); setDragOverId(view.id) }}
+						onDragLeave={() => setDragOverId(null)}
+						onDrop={() => handleDirectTabDrop(view.id)}
+						onDragEnd={() => { setDragViewId(null); setDragOverId(null) }}
 						onClick={() => renamingViewId !== view.id && setActiveViewId(view.id)}
 					>
 						<span className="nb-view-tab-icon">{VIEW_ICONS[view.type] ?? '□'}</span>
