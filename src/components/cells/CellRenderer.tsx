@@ -620,18 +620,30 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 				Limpar
 			</button>
 			{options.map(opt => (
-				<button
-					key={opt.value}
-					className={`nb-select-option ${value === opt.value ? 'nb-select-option--active' : ''}`}
-					onClick={() => onCommit(opt.value)}
-				>
-					<span
-						className="nb-select-badge"
-						style={{ background: getOptionColor(options, opt.value) }}
+				<div key={opt.value} className="nb-status-option-row">
+					<button
+						className={`nb-select-option nb-status-option-btn ${value === opt.value ? 'nb-select-option--active' : ''}`}
+						onClick={() => onCommit(opt.value)}
 					>
-						{opt.value}
-					</span>
-				</button>
+						<span
+							className="nb-select-badge"
+							style={{ background: getOptionColor(options, opt.value) }}
+						>
+							{opt.value}
+						</span>
+					</button>
+					<button
+						className="nb-status-delete-btn"
+						title="Excluir status"
+						onClick={async e => {
+							e.stopPropagation()
+							const newOptions = options.filter(o => o.value !== opt.value)
+							const newSchema = schema.map(c => c.id === col.id ? { ...c, options: newOptions } : c)
+							await updateSchema(newSchema)
+							if (value === opt.value) onCommit(null)
+						}}
+					>×</button>
+				</div>
 			))}
 			<div className="nb-status-new-row">
 				<input

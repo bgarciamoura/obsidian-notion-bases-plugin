@@ -962,6 +962,42 @@
 
 /* ── Status cell – criar novo status ─────────────────────────────────────── */
 
+.nb-status-option-row {
+	display: flex;
+	align-items: center;
+}
+
+.nb-status-option-btn {
+	flex: 1;
+}
+
+.nb-status-delete-btn {
+	flex-shrink: 0;
+	width: 22px;
+	height: 22px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: none;
+	border-radius: 4px;
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: 14px;
+	opacity: 0;
+	transition: opacity 0.1s, color 0.1s;
+	margin-right: 4px;
+}
+
+.nb-status-option-row:hover .nb-status-delete-btn {
+	opacity: 1;
+}
+
+.nb-status-delete-btn:hover {
+	color: var(--color-red);
+	background: color-mix(in srgb, var(--color-red) 12%, transparent);
+}
+
 .nb-status-new-row {
 	display: flex;
 	align-items: center;
