@@ -577,7 +577,26 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 	const [newStatusName, setNewStatusName] = useState('')
 	const [colorPickerFor, setColorPickerFor] = useState<string | null>(null)
 	const [colorPickerPos, setColorPickerPos] = useState<{ top: number; left: number } | null>(null)
+	const [colorPickerDragPos, setColorPickerDragPos] = useState<{ x: number; y: number } | null>(null)
 	const colorPickerRef = useRef<HTMLDivElement>(null)
+	const PICKER_W = 176
+
+	const handleColorPickerDrag = (e: React.MouseEvent) => {
+		e.preventDefault()
+		const el = colorPickerRef.current
+		if (!el) return
+		const elRect = el.getBoundingClientRect()
+		const startX = e.clientX - elRect.left
+		const startY = e.clientY - elRect.top
+		if (!colorPickerDragPos) setColorPickerDragPos({ x: elRect.left, y: elRect.top })
+		const onMove = (ev: MouseEvent) => setColorPickerDragPos({ x: ev.clientX - startX, y: ev.clientY - startY })
+		const onUp = () => {
+			window.removeEventListener('mousemove', onMove)
+			window.removeEventListener('mouseup', onUp)
+		}
+		window.addEventListener('mousemove', onMove)
+		window.addEventListener('mouseup', onUp)
+	}
 
 	const STATUS_COLOR_PALETTE = [
 		'#9E9E9E', '#F44336', '#E91E63', '#9C27B0', '#673AB7',
@@ -608,6 +627,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 	useEffect(() => {
 		if (!isEditing) {
 			setColorPickerFor(null)
+			setColorPickerDragPos(null)
 			return
 		}
 		setNewStatusName('')
@@ -667,7 +687,8 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 						onClick={e => {
 							e.stopPropagation()
 							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-							setColorPickerPos({ top: rect.bottom + 4, left: rect.left })
+							setColorPickerPos({ top: rect.bottom + 4, left: Math.min(rect.right - PICKER_W, window.innerWidth - PICKER_W - 8) })
+							setColorPickerDragPos(null)
 							setColorPickerFor(prev => prev === opt.value ? null : opt.value)
 						}}
 					/>
@@ -706,12 +727,18 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 		document.body
 	) : null
 
+	const pickerLeft = colorPickerDragPos ? colorPickerDragPos.x : colorPickerPos?.left ?? 0
+	const pickerTop = colorPickerDragPos ? colorPickerDragPos.y : colorPickerPos?.top ?? 0
+
 	const colorPicker = colorPickerFor && colorPickerPos ? createPortal(
 		<div
 			ref={colorPickerRef}
 			className="nb-status-color-picker"
-			style={{ position: 'fixed', top: colorPickerPos.top, left: colorPickerPos.left, zIndex: 10000 }}
+			style={{ position: 'fixed', top: pickerTop, left: pickerLeft, zIndex: 10000 }}
 		>
+			<div className="nb-status-color-picker-handle" onMouseDown={handleColorPickerDrag}>
+				<span className="nb-status-color-picker-title">Cor do status</span>
+			</div>
 			<div className="nb-status-color-grid">
 				{STATUS_COLOR_PALETTE.map(color => (
 					<button

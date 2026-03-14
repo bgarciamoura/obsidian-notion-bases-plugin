@@ -965,10 +965,21 @@
 .nb-status-option-row {
 	display: flex;
 	align-items: center;
+	border-radius: 4px;
+	transition: background 0.1s;
+}
+
+.nb-status-option-row:hover {
+	background: var(--background-modifier-hover);
 }
 
 .nb-status-option-btn {
 	flex: 1;
+}
+
+/* Remove o hover individual do botão quando está dentro da row */
+.nb-status-option-row .nb-status-option-btn:hover {
+	background: none;
 }
 
 .nb-status-delete-btn {
@@ -1027,8 +1038,25 @@
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 8px;
 	box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-	padding: 8px;
-	min-width: 160px;
+	padding: 0 8px 8px;
+	min-width: 176px;
+	user-select: none;
+}
+
+.nb-status-color-picker-handle {
+	display: flex;
+	align-items: center;
+	height: 28px;
+	cursor: move;
+	border-bottom: 1px solid var(--background-modifier-border);
+	margin: 0 -8px 8px;
+	padding: 0 8px;
+}
+
+.nb-status-color-picker-title {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	font-weight: 500;
 }
 
 .nb-status-color-grid {
