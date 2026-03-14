@@ -978,8 +978,9 @@
 }
 
 /* Remove o hover individual do botão quando está dentro da row */
-.nb-status-option-row .nb-status-option-btn:hover {
-	background: none;
+.nb-status-option-row .nb-status-option-btn:hover,
+.nb-status-option-row .nb-status-option-btn:focus {
+	background: none !important;
 }
 
 .nb-status-delete-btn {
