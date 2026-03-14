@@ -31,6 +31,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
 	const [activeView, setActiveView] = useState<ViewConfig>(externalView)
 	const [hideEmpty, setHideEmpty] = useState(false)
+	const [hideNoValue, setHideNoValue] = useState(false)
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const [groupByMenuOpen, setGroupByMenuOpen] = useState(false)
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
@@ -175,8 +176,10 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			const rest = all.filter(x => !order.includes(x.value))
 			ordered = [...inOrder, ...rest]
 		}
-		return hideEmpty ? ordered.filter(c => c.rows.length > 0) : ordered
-	}, [groupByCol, sortedRows, hideEmpty, activeView.boardColumnOrder])
+		let result = hideEmpty ? ordered.filter(c => c.rows.length > 0) : ordered
+		if (hideNoValue) result = result.filter(c => c.value !== '')
+		return result
+	}, [groupByCol, sortedRows, hideEmpty, hideNoValue, activeView.boardColumnOrder])
 
 	// ── Actions ───────────────────────────────────────────────────────────────
 
@@ -298,6 +301,12 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 				<label className="nb-toolbar-btn nb-toolbar-toggle">
 					<input type="checkbox" checked={hideEmpty} onChange={e => setHideEmpty(e.target.checked)} />
 					Ocultar vazias
+				</label>
+
+				{/* Ocultar sem valor */}
+				<label className="nb-toolbar-btn nb-toolbar-toggle">
+					<input type="checkbox" checked={hideNoValue} onChange={e => setHideNoValue(e.target.checked)} />
+					Ocultar sem valor
 				</label>
 
 				{/* Row count */}
