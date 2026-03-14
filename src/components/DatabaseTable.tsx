@@ -582,6 +582,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const [openAggCol, setOpenAggCol] = useState<string | null>(null)
 	const actionsMenuRef = useRef<HTMLDivElement>(null)
 	const rowHeightMenuRef = useRef<HTMLDivElement>(null)
+	const csvInputRef = useRef<HTMLInputElement>(null)
 	const tableRef = useRef<HTMLTableElement>(null)
 	const lastCreatedPath = useRef<string | null>(null)
 	const [pinnedColumnId, setPinnedColumnId] = useState<string | null>(null)
@@ -1081,6 +1082,89 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		setActionsMenuOpen(false)
 	}, [getSelectedFiles, manager])
 
+	const handleExportCsv = useCallback(() => {
+		const visibleCols = orderedSchema.filter(col =>
+			col.visible && !activeView.hiddenColumns.includes(col.id)
+		)
+		const escapeCell = (v: unknown): string => {
+			const s = v === null || v === undefined ? '' : String(v)
+			if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+				return '"' + s.replace(/"/g, '""') + '"'
+			}
+			return s
+		}
+		const headers = ['Nome', ...visibleCols.map(c => c.name)]
+		const rowLines = filteredRows.map(row => {
+			const cells = [row._title, ...visibleCols.map(col => {
+				const v = row[col.id]
+				return Array.isArray(v) ? v.join(';') : v
+			})]
+			return cells.map(escapeCell).join(',')
+		})
+		const csv = [headers.join(','), ...rowLines].join('\n')
+		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+		const url = URL.createObjectURL(blob)
+		const a = document.createElement('a')
+		a.href = url
+		a.download = (dbFile?.parent?.name || app.vault.getName() || 'database') + '.csv'
+		a.click()
+		URL.revokeObjectURL(url)
+		setActionsMenuOpen(false)
+	}, [orderedSchema, activeView.hiddenColumns, filteredRows, dbFile, app])
+
+	const handleImportCsv = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const csvFile = e.target.files?.[0]
+		if (!csvFile || !dbFile) return
+		const text = await csvFile.text()
+		const lines = text.split(/\r?\n/).filter(l => l.trim() !== '')
+		if (lines.length < 2) return
+		const parseRow = (line: string): string[] => {
+			const cells: string[] = []
+			let cur = '', inQ = false
+			for (let i = 0; i < line.length; i++) {
+				const ch = line[i]
+				if (ch === '"') {
+					if (inQ && line[i+1] === '"') { cur += '"'; i++ }
+					else inQ = !inQ
+				} else if (ch === ',' && !inQ) {
+					cells.push(cur); cur = ''
+				} else cur += ch
+			}
+			cells.push(cur)
+			return cells
+		}
+		const headers = parseRow(lines[0]).map(h => h.trim().toLowerCase())
+		// Map column index → schema column (skip duplicates: first match wins)
+		const colByIdx = new Map<number, { id: string; type: string }>()
+		const seenColIds = new Set<string>()
+		headers.forEach((h, i) => {
+			if (h === 'nome' || h === 'title' || h === 'name') return
+			const col = config.schema.find(s => s.name.toLowerCase() === h)
+			if (col && !seenColIds.has(col.id)) {
+				colByIdx.set(i, { id: col.id, type: col.type })
+				seenColIds.add(col.id)
+			}
+		})
+		const titleIdx = headers.findIndex(h => h === 'nome' || h === 'title' || h === 'name')
+		for (const line of lines.slice(1)) {
+			const cells = parseRow(line)
+			const title = titleIdx >= 0 ? cells[titleIdx]?.trim() : ''
+			// Skip row if a note with this title already exists
+			if (title && rows.some(r => r._title === title)) continue
+			const newNote = await manager.createNote(dbFile)
+			// renameNote mutates newNote in place — use it directly after
+			if (title) await manager.renameNote(newNote, title)
+			for (const [idx, col] of colByIdx) {
+				const raw = cells[idx]?.trim() ?? ''
+				if (!raw) continue
+				const value = col.type === 'multiselect' ? raw.split(';').map((v: string) => v.trim()) : raw
+				await manager.updateNoteField(newNote, col.id, value)
+			}
+		}
+		e.target.value = ''
+		setActionsMenuOpen(false)
+	}, [dbFile, config.schema, manager, app])
+
 	// ── Fechar menu de filtros ao clicar fora ────────────────────────────────
 
 	useEffect(() => {
@@ -1472,6 +1556,16 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 								<span className="nb-menu-item-icon">📋</span>
 								<span>Duplicar todos selecionados</span>
 							</button>
+							<div className="nb-menu-separator" />
+							<button className="nb-menu-item" onClick={handleExportCsv}>
+								<span className="nb-menu-item-icon">⬇</span>
+								<span>Exportar CSV</span>
+							</button>
+							<button className="nb-menu-item" onClick={() => csvInputRef.current?.click()}>
+								<span className="nb-menu-item-icon">⬆</span>
+								<span>Importar CSV</span>
+							</button>
+							<input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportCsv} />
 						</div>
 					)}
 				</div>
