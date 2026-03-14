@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-notion-bases",
 	"name": "Notion Bases",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "1.4.0",
 	"description": "Banco de dados para o seu vault — tabela, kanban, galeria e mais.",
 	"author": "bgarciamoura",
