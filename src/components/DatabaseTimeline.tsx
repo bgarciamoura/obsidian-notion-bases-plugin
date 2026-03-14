@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import {
@@ -191,10 +191,10 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 			const pills = externalView.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
-					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
+					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 				})
 				setActiveFilters(restored as ActiveFilter[])
 			}
@@ -203,7 +203,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 	}, [dbFile, manager])
 
 	useEffect(() => { filtersInit.current = false }, [dbFile])
-	useEffect(() => { loadData() }, [loadData])
+	useEffect(() => { void loadData() }, [loadData])
 	useEffect(() => {
 		const cb = () => loadData()
 		app.vault.on('create', cb); app.vault.on('delete', cb); app.vault.on('rename', cb)
@@ -221,7 +221,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 			if (!open) return
 			const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setter(false) }
 			document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
-		}, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+		}, [open])
 
 	mkCloseEffect(filterMenuOpen, filterMenuRef, setFilterMenuOpen)
 	mkCloseEffect(fieldsMenuOpen, fieldsMenuRef, setFieldsMenuOpen)
@@ -245,7 +245,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 		const onUp   = async (e: MouseEvent) => {
 			const delta = e.clientX - resizing.startX
 			setResizing(null); setResizeDelta(0)
-			document.body.style.cursor = ''; document.body.style.userSelect = ''
+			document.body.classList.remove('nb-tl-resizing')
 			if (Math.abs(delta) < 2) return
 			justResized.current = true
 			setTimeout(() => { justResized.current = false }, 200)
@@ -257,15 +257,16 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 			const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 			const file = app.vault.getAbstractFileByPath(filePath) as TFile | null
 			if (!file) return
-			await app.fileManager.processFrontMatter(file, fm => {
+			await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
 				if (handle === 'left'  && startFieldId) fm[startFieldId] = fmt(px2date(newLeft,                    zoom, origin, unitW))
 				if (handle === 'right' && endFieldId)   fm[endFieldId]   = fmt(px2date(newLeft + newWidth - unitW, zoom, origin, unitW))
 			})
 		}
-		document.body.style.cursor = 'ew-resize'; document.body.style.userSelect = 'none'
-		window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp)
-		return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
-	}, [resizing, zoom, origin, unitW, app]) // eslint-disable-line react-hooks/exhaustive-deps
+		document.body.classList.add('nb-tl-resizing')
+		const voidOnUp = (e: MouseEvent) => { void onUp(e) }
+		window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', voidOnUp)
+		return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', voidOnUp) }
+	}, [resizing, zoom, origin, unitW, app])
 
 	// Scroll to today on zoom change and initial mount
 	useEffect(() => {
@@ -274,7 +275,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 			const target = Math.max(0, todayPx - scrollRef.current.clientWidth * 0.3)
 			scrollRef.current.scrollLeft = target
 		})
-	}, [zoom]) // eslint-disable-line react-hooks/exhaustive-deps
+	}, [zoom])
 
 	// ── Derived data ──────────────────────────────────────────────────────────
 
@@ -321,7 +322,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 
 		const groups = new Map<string, NoteRow[]>()
 		for (const row of sorted) {
-			const val = String(row[groupField.id] ?? '')
+			const val = String((row[groupField.id] as string | number | boolean | null | undefined) ?? '')
 			if (!groups.has(val)) groups.set(val, [])
 			groups.get(val)!.push(row)
 		}
@@ -350,11 +351,11 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 
 	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
 		const next = [...activeFilters, { id: crypto.randomUUID(), columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '', conjunction: 'and' as const }]
-		setActiveFilters(next); saveActivePills(next); setFilterMenuOpen(false)
+		setActiveFilters(next); void saveActivePills(next); setFilterMenuOpen(false)
 	}
-	const removeFilter = (id: string) => { const n = activeFilters.filter(f => f.id !== id); setActiveFilters(n); saveActivePills(n) }
-	const updateFilter = (id: string, op: FilterOperator, val: string) => { const n = activeFilters.map(f => f.id === id ? { ...f, operator: op, value: val } : f); setActiveFilters(n); saveActivePills(n) }
-	const toggleConj   = (id: string) => { const n = activeFilters.map(f => f.id === id ? { ...f, conjunction: f.conjunction === 'and' ? 'or' as const : 'and' as const } : f); setActiveFilters(n); saveActivePills(n) }
+	const removeFilter = (id: string) => { const n = activeFilters.filter(f => f.id !== id); setActiveFilters(n); void saveActivePills(n) }
+	const updateFilter = (id: string, op: FilterOperator, val: string) => { const n = activeFilters.map(f => f.id === id ? { ...f, operator: op, value: val } : f); setActiveFilters(n); void saveActivePills(n) }
+	const toggleConj   = (id: string) => { const n = activeFilters.map(f => f.id === id ? { ...f, conjunction: f.conjunction === 'and' ? 'or' as const : 'and' as const } : f); setActiveFilters(n); void saveActivePills(n) }
 
 	const toggleFieldVisibility = useCallback(async (fieldId: string) => {
 		const hidden = activeView.hiddenColumns.includes(fieldId)
@@ -392,12 +393,12 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 					<div className="nb-fields-dropdown">
 						<div className="nb-fields-dropdown-label">Campo de {label.toLowerCase()}</div>
 						<button className={`nb-menu-item${!activeView[valueKey] ? ' nb-menu-item--active' : ''}`}
-							onClick={async () => { await saveView({ ...activeView, [valueKey]: undefined }); setOpen(false) }}>
+							onClick={() => { void saveView({ ...activeView, [valueKey]: undefined }); setOpen(false) }}>
 							<span className="nb-menu-item-icon">—</span><span>Nenhum</span>
 						</button>
 						{config.schema.filter(c => c.type === 'date').map(col => (
 							<button key={col.id} className={`nb-menu-item${activeView[valueKey] === col.id ? ' nb-menu-item--active' : ''}`}
-								onClick={async () => { await saveView({ ...activeView, [valueKey]: col.id }); setOpen(false) }}>
+								onClick={() => { void saveView({ ...activeView, [valueKey]: col.id }); setOpen(false) }}>
 								<span className="nb-menu-item-icon">📅</span><span>{col.name}</span>
 							</button>
 						))}
@@ -423,12 +424,12 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 						<div className="nb-fields-dropdown">
 							<div className="nb-fields-dropdown-label">Agrupar por</div>
 							<button className={`nb-menu-item${!activeView.timelineGroupByField ? ' nb-menu-item--active' : ''}`}
-								onClick={async () => { await saveView({ ...activeView, timelineGroupByField: undefined }); setGroupMenuOpen(false) }}>
+								onClick={() => { void saveView({ ...activeView, timelineGroupByField: undefined }); setGroupMenuOpen(false) }}>
 								<span className="nb-menu-item-icon">—</span><span>Nenhum</span>
 							</button>
 							{config.schema.filter(c => c.type === 'select' || c.type === 'status').map(col => (
 								<button key={col.id} className={`nb-menu-item${activeView.timelineGroupByField === col.id ? ' nb-menu-item--active' : ''}`}
-									onClick={async () => { await saveView({ ...activeView, timelineGroupByField: col.id }); setGroupMenuOpen(false) }}>
+									onClick={() => { void saveView({ ...activeView, timelineGroupByField: col.id }); setGroupMenuOpen(false) }}>
 									<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span><span>{col.name}</span>
 								</button>
 							))}
@@ -444,7 +445,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 							<div className="nb-fields-dropdown-label">Campos nas barras</div>
 							{config.schema.map(col => (
 								<label key={col.id} className="nb-field-row">
-									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => toggleFieldVisibility(col.id)} />
+									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
 									<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
 									<span className="nb-field-name">{col.name}</span>
 								</label>
@@ -464,7 +465,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 				<div className="nb-tl-zoom-group">
 					{(['days', 'weeks', 'months'] as ZoomLevel[]).map(z => (
 						<button key={z} className={`nb-tl-zoom-btn${zoom === z ? ' nb-tl-zoom-btn--active' : ''}`}
-							onClick={() => saveView({ ...activeView, timelineZoom: z })}>
+							onClick={() => { void saveView({ ...activeView, timelineZoom: z }) }}>
 							{ZOOM_LBL[z]}
 						</button>
 					))}
@@ -541,7 +542,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 								</div>
 							) : (
 								<div key={item.row._file.path} className="nb-tl-sidebar-row" style={{ height: ROW_H }}
-									onClick={() => app.workspace.getLeaf().openFile(item.row._file)}>
+									onClick={() => { void app.workspace.getLeaf().openFile(item.row._file) }}>
 									<span className="nb-tl-row-label">{item.row._title}</span>
 								</div>
 							))}
@@ -586,7 +587,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 											return (
 												<div className="nb-tl-bar"
 													style={{ left: bLeft, width: bWidth, top: (ROW_H - 22) / 2, height: 22 }}
-													onClick={() => { if (justResized.current) return; app.workspace.getLeaf().openFile(item.row._file) }}
+													onClick={() => { if (justResized.current) return; void app.workspace.getLeaf().openFile(item.row._file) }}
 													title={item.row._title}>
 													<div className="nb-tl-bar-handle nb-tl-bar-handle--left"
 														onMouseDown={e => {
@@ -599,8 +600,8 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 													<span className="nb-tl-bar-title">{item.row._title}</span>
 													{visibleCols.map(col => {
 														const val = item.row[col.id]
-														if (!val || String(val).trim() === '') return null
-														const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val)
+														if (!val || String(val as string | number | boolean).trim() === '') return null
+														const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
 														return <span key={col.id} className="nb-tl-bar-field"> · {display}</span>
 													})}
 													<div className="nb-tl-bar-handle nb-tl-bar-handle--right"
@@ -633,7 +634,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 						<div className="nb-tl-no-interval-list">
 							{noIntervalRows.map(row => (
 								<div key={row._file.path} className="nb-cal-card nb-cal-card--no-date"
-									onClick={() => app.workspace.getLeaf().openFile(row._file)}>
+									onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}>
 									<span className="nb-cal-card-title">{row._title}</span>
 								</div>
 							))}

@@ -6,6 +6,7 @@ import {
 	DEFAULT_DATABASE_CONFIG,
 	DEFAULT_VIEW,
 	NoteRow,
+	ViewConfig,
 } from './types'
 
 export const DATABASE_MARKER = 'notion-bases'
@@ -31,20 +32,20 @@ export class DatabaseManager {
 
 	async readConfig(file: TFile): Promise<DatabaseConfig> {
 		const cache = this.app.metadataCache.getFileCache(file)
-		const fm = cache?.frontmatter
+		const fm = cache?.frontmatter as Record<string, unknown> | undefined
 		if (!fm || !fm[DATABASE_MARKER]) return structuredClone(DEFAULT_DATABASE_CONFIG)
 
 		return {
-			schema: Array.isArray(fm.schema) ? fm.schema as ColumnSchema[] : [],
-			views: Array.isArray(fm.views) && fm.views.length > 0 ? fm.views : [DEFAULT_VIEW],
+			schema: Array.isArray(fm['schema']) ? fm['schema'] as ColumnSchema[] : [],
+			views: Array.isArray(fm['views']) && (fm['views'] as unknown[]).length > 0 ? fm['views'] as ViewConfig[] : [DEFAULT_VIEW],
 		}
 	}
 
 	async writeConfig(file: TFile, config: DatabaseConfig): Promise<void> {
-		await this.app.fileManager.processFrontMatter(file, fm => {
+		await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
 			fm[DATABASE_MARKER] = true
-			fm.schema = config.schema
-			fm.views = config.views
+			fm['schema'] = config.schema
+			fm['views'] = config.views
 		})
 	}
 
@@ -81,7 +82,7 @@ export class DatabaseManager {
 	}
 
 	async updateNoteField(file: TFile, fieldId: string, value: unknown): Promise<void> {
-		await this.app.fileManager.processFrontMatter(file, fm => {
+		await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
 			if (value === null || value === undefined || value === '') {
 				delete fm[fieldId]
 			} else {
@@ -139,7 +140,7 @@ export class DatabaseManager {
 			for (const col of lookupCols) {
 				const refRows = refDataCache.get(col.refDatabasePath!) ?? []
 				const rawMatch = col.refMatchColumnId === '_title' ? row._title : row[col.refMatchColumnId!]
-				const matchValue = String(rawMatch ?? '')
+				const matchValue = String((rawMatch as string | number | boolean | null | undefined) ?? '')
 				if (!matchValue) { result[col.id] = null; continue }
 				const refRow = refRows.find(r => r._title === matchValue)
 				result[col.id] = refRow ? (refRow[col.refColumnId!] ?? null) : null
@@ -280,7 +281,7 @@ export class DatabaseManager {
 			if (type === 'multiselect' && Array.isArray(v)) {
 				for (const item of v) unique.add(String(item))
 			} else if (v !== null && v !== undefined) {
-				unique.add(String(v))
+				unique.add(String(v as string | number | boolean))
 			}
 		}
 
@@ -311,7 +312,7 @@ export class DatabaseManager {
 			for (const note of notes) {
 				const cache = this.app.metadataCache.getFileCache(note)
 				if (cache?.frontmatter && oldId in cache.frontmatter) {
-					await this.app.fileManager.processFrontMatter(note, fm => {
+					await this.app.fileManager.processFrontMatter(note, (fm: Record<string, unknown>) => {
 						fm[newId] = fm[oldId]
 						delete fm[oldId]
 					})

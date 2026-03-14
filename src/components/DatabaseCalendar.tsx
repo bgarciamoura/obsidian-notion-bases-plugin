@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import {
@@ -91,10 +91,10 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 			const pills = externalView.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
-					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
+					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 				})
 				setActiveFilters(restored as ActiveFilter[])
 			}
@@ -105,7 +105,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	}, [dbFile, manager])
 
 	useEffect(() => { filtersInitialized.current = false }, [dbFile])
-	useEffect(() => { loadData() }, [loadData])
+	useEffect(() => { void loadData() }, [loadData])
 	useEffect(() => {
 		const onChange = () => loadData()
 		app.vault.on('create', onChange)
@@ -160,7 +160,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		const map = new Map<number, NoteRow[]>()
 		if (!dateField) return map
 		for (const row of filteredRows) {
-			const parsed = parseDateValue(row[dateField.id])
+			const parsed = parseDateValue((row as Record<string, unknown>)[dateField.id])
 			if (!parsed) continue
 			if (parsed.year === currentYear && parsed.month === currentMonth) {
 				const existing = map.get(parsed.day) ?? []
@@ -174,8 +174,8 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	const noDateRows = useMemo(() => {
 		if (!dateField) return []
 		return filteredRows.filter(row => {
-			const val = row[dateField.id]
-			return !val || String(val).trim() === ''
+			const val = (row as Record<string, unknown>)[dateField.id]
+			return !val || String(val as string | number | boolean).trim() === ''
 		})
 	}, [filteredRows, dateField])
 
@@ -188,11 +188,11 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 
 	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
 		const next: ActiveFilter[] = [...activeFilters, { id: crypto.randomUUID(), columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '', conjunction: 'and' }]
-		setActiveFilters(next); saveActivePills(next); setFilterMenuOpen(false)
+		setActiveFilters(next); void saveActivePills(next); setFilterMenuOpen(false)
 	}
-	const removeFilter = (id: string) => { const next = activeFilters.filter(f => f.id !== id); setActiveFilters(next); saveActivePills(next) }
-	const updateFilter = (id: string, operator: FilterOperator, value: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, operator, value } : f); setActiveFilters(next); saveActivePills(next) }
-	const toggleConjunction = (id: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, conjunction: f.conjunction === 'and' ? 'or' as const : 'and' as const } : f); setActiveFilters(next); saveActivePills(next) }
+	const removeFilter = (id: string) => { const next = activeFilters.filter(f => f.id !== id); setActiveFilters(next); void saveActivePills(next) }
+	const updateFilter = (id: string, operator: FilterOperator, value: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, operator, value } : f); setActiveFilters(next); void saveActivePills(next) }
+	const toggleConjunction = (id: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, conjunction: f.conjunction === 'and' ? 'or' as const : 'and' as const } : f); setActiveFilters(next); void saveActivePills(next) }
 
 	const toggleFieldVisibility = useCallback(async (fieldId: string) => {
 		const hidden = activeView.hiddenColumns.includes(fieldId)
@@ -218,7 +218,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		if (!dbFile || !dateField) return
 		const newFile = await manager.createNote(dbFile)
 		const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-		await app.fileManager.processFrontMatter(newFile, fm => { fm[dateField.id] = dateStr })
+		await app.fileManager.processFrontMatter(newFile, (fm: Record<string, unknown>) => { fm[dateField.id] = dateStr })
 	}
 
 	const handleCardDragStart = (e: React.DragEvent, row: NoteRow) => {
@@ -247,7 +247,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		const file = app.vault.getFileByPath(path)
 		if (!file) return
 		const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-		await app.fileManager.processFrontMatter(file, fm => { fm[dateField.id] = dateStr })
+		await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => { fm[dateField.id] = dateStr })
 	}
 
 	// ── Render ────────────────────────────────────────────────────────────────
@@ -271,7 +271,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 							<div className="nb-fields-dropdown-label">Campo de data</div>
 							<button
 								className={`nb-menu-item${!activeView.calendarDateField ? ' nb-menu-item--active' : ''}`}
-								onClick={async () => { await saveView({ ...activeView, calendarDateField: undefined }); setDateFieldMenuOpen(false) }}
+								onClick={() => { void saveView({ ...activeView, calendarDateField: undefined }); setDateFieldMenuOpen(false) }}
 							>
 								<span className="nb-menu-item-icon">—</span>
 								<span>Nenhum</span>
@@ -280,7 +280,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 								<button
 									key={col.id}
 									className={`nb-menu-item${activeView.calendarDateField === col.id ? ' nb-menu-item--active' : ''}`}
-									onClick={async () => { await saveView({ ...activeView, calendarDateField: col.id }); setDateFieldMenuOpen(false) }}
+									onClick={() => { void saveView({ ...activeView, calendarDateField: col.id }); setDateFieldMenuOpen(false) }}
 								>
 									<span className="nb-menu-item-icon">📅</span>
 									<span>{col.name}</span>
@@ -300,7 +300,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 							<div className="nb-fields-dropdown-label">Campos</div>
 							{config.schema.map(col => (
 								<label key={col.id} className="nb-field-row">
-									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => toggleFieldVisibility(col.id)} />
+									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
 									<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
 									<span className="nb-field-name">{col.name}</span>
 								</label>
@@ -395,10 +395,10 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 								<div
 									key={day}
 									className={`nb-cal-cell${isToday ? ' nb-cal-cell--today' : ''}${isDragOver ? ' nb-cal-cell--drag-over' : ''}`}
-									onClick={() => handleDayClick(day)}
+									onClick={() => { void handleDayClick(day) }}
 									onDragOver={e => handleDayDragOver(e, day)}
 									onDragLeave={handleDayDragLeave}
-									onDrop={e => handleDayDrop(e, day)}
+									onDrop={e => { void handleDayDrop(e, day) }}
 									title="Clique para criar nota"
 								>
 									<div className="nb-cal-cell-header">
@@ -411,15 +411,15 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 												className="nb-cal-card"
 												draggable
 												onDragStart={e => handleCardDragStart(e, row)}
-												onClick={e => { e.stopPropagation(); app.workspace.getLeaf().openFile(row._file) }}
+												onClick={(e) => { e.stopPropagation(); void app.workspace.getLeaf().openFile(row._file) }}
 											>
 												<span className="nb-cal-card-title">{row._title}</span>
 												{visibleCols.length > 0 && (
 													<div className="nb-cal-card-props">
 														{visibleCols.map(col => {
 															const val = row[col.id]
-															if (val === null || val === undefined || String(val).trim() === '') return null
-															const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val)
+															if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
+															const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
 															return (
 																<span key={col.id} className="nb-cal-card-prop">
 																	{display}
@@ -447,7 +447,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 										className="nb-cal-card nb-cal-card--no-date"
 										draggable
 										onDragStart={e => handleCardDragStart(e, row)}
-										onClick={() => app.workspace.getLeaf().openFile(row._file)}
+										onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
 									>
 										<span className="nb-cal-card-title">{row._title}</span>
 									</div>

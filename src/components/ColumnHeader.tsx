@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { TFile } from 'obsidian'
 import { ColumnSchema, ColumnType, NumberFormat } from '../types'
@@ -196,7 +196,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		if (!lookupDbPath) { setRefDbSchema([]); return }
 		const refDbFile = app.vault.getFileByPath(lookupDbPath)
 		if (!refDbFile) { setRefDbSchema([]); return }
-		manager.readConfig(refDbFile).then(cfg => setRefDbSchema(cfg.schema))
+		void manager.readConfig(refDbFile).then(cfg => setRefDbSchema(cfg.schema))
 	}, [lookupDbPath, app, manager])
 
 	// Sync lookup state with col when not editing
@@ -504,7 +504,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 					rows={3}
 					spellCheck={false}
 					onKeyDown={e => {
-						if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); handleSaveFormula() }
+						if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void handleSaveFormula() }
 						if (e.key === 'Escape') handleCloseFormula()
 					}}
 				/>
@@ -573,7 +573,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 					<button
 						className="nb-formula-save"
 						disabled={!!formulaError}
-						onClick={handleSaveFormula}
+						onClick={() => { void handleSaveFormula() }}
 						title="Salvar (Ctrl+Enter)"
 					>Salvar</button>
 					<button className="nb-formula-cancel" onClick={handleCloseFormula}>Cancelar</button>
@@ -631,12 +631,12 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 					/>
 				</div>
 				<div className="nb-formula-actions">
-					<button className="nb-formula-save" onClick={handleSaveNumberFmt}>Salvar</button>
+					<button className="nb-formula-save" onClick={() => { void handleSaveNumberFmt() }}>Salvar</button>
 					<button className="nb-formula-cancel" onClick={handleCloseNumberFmt}>Cancelar</button>
 				</div>
 				{col.numberFormat && (
 					<div style={{ marginTop: '8px', textAlign: 'center' }}>
-						<button className="nb-formula-cancel" onClick={handleRemoveNumberFmt} style={{ color: 'var(--text-error)', width: '100%' }}>
+						<button className="nb-formula-cancel" onClick={() => { void handleRemoveNumberFmt() }} style={{ color: 'var(--text-error)', width: '100%' }}>
 							Remover formatação
 						</button>
 					</div>
@@ -681,7 +681,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 					</div>
 				)}
 				<div className="nb-formula-actions">
-					<button className="nb-formula-save" disabled={!lookupDbPath || !lookupRefColId || (col.type === 'lookup' && !lookupMatchColId)} onClick={handleSaveLookup}>Salvar</button>
+					<button className="nb-formula-save" disabled={!lookupDbPath || !lookupRefColId || (col.type === 'lookup' && !lookupMatchColId)} onClick={() => { void handleSaveLookup() }}>Salvar</button>
 					<button className="nb-formula-cancel" onClick={handleCloseLookup}>Cancelar</button>
 				</div>
 			</div>
@@ -709,7 +709,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				/>
 				<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
 					<button className="nb-menu-item" onClick={handleCloseImageConfig} style={{ flex: 1 }}>Cancelar</button>
-					<button className="nb-menu-item" onClick={handleSaveImageConfig} style={{ flex: 1, color: 'var(--interactive-accent)' }}>Salvar</button>
+					<button className="nb-menu-item" onClick={() => { void handleSaveImageConfig() }} style={{ flex: 1, color: 'var(--interactive-accent)' }}>Salvar</button>
 				</div>
 			</div>
 		</div>,
@@ -725,9 +725,9 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 					className="nb-header-rename-input"
 					value={nameValue}
 					onChange={e => setNameValue(e.target.value)}
-					onBlur={handleRename}
+					onBlur={() => { void handleRename() }}
 					onKeyDown={e => {
-						if (e.key === 'Enter') handleRename()
+						if (e.key === 'Enter') void handleRename()
 						if (e.key === 'Escape') { setRenaming(false); setMenuOpen(false) }
 					}}
 					onClick={e => e.stopPropagation()}
@@ -792,7 +792,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						<button
 							key={type}
 							className={`nb-menu-item nb-menu-type-item ${col.type === type ? 'nb-menu-item--active' : ''}`}
-							onClick={() => handleTypeChange(type)}
+							onClick={() => { void handleTypeChange(type) }}
 						>
 							<span className="nb-menu-item-icon">{TYPE_ICONS[type]}</span>
 							<span>{TYPE_LABELS[type]}</span>
@@ -800,11 +800,11 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 					))}
 
 					<div className="nb-menu-separator" />
-					<button className="nb-menu-item" onClick={handleHide}>
+					<button className="nb-menu-item" onClick={() => { void handleHide() }}>
 						<span className="nb-menu-item-icon">👁</span>
 						<span>Ocultar campo</span>
 					</button>
-					<button className="nb-menu-item nb-menu-item--danger" onClick={handleDelete}>
+					<button className="nb-menu-item nb-menu-item--danger" onClick={() => { void handleDelete() }}>
 						<span className="nb-menu-item-icon">🗑</span>
 						<span>Excluir campo</span>
 					</button>

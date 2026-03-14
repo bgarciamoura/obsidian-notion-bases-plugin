@@ -60,13 +60,13 @@ export function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 	if (!noValue && f.value === '') return true
 	const raw = f.columnId === '_title' ? row._title : row[f.columnId]
 
-	if (f.operator === 'is_empty') return raw === null || raw === undefined || String(raw ?? '').trim() === ''
-	if (f.operator === 'is_not_empty') return raw !== null && raw !== undefined && String(raw ?? '').trim() !== ''
+	if (f.operator === 'is_empty') return raw === null || raw === undefined || String((raw as string | number | boolean | null | undefined) ?? '').trim() === ''
+	if (f.operator === 'is_not_empty') return raw !== null && raw !== undefined && String((raw as string | number | boolean | null | undefined) ?? '').trim() !== ''
 	if (f.operator === 'is_checked') return raw === true || raw === 'true'
 	if (f.operator === 'is_unchecked') return raw !== true && raw !== 'true'
 
 	if (f.columnType === 'number') {
-		const n = parseFloat(String(raw ?? ''))
+		const n = parseFloat(String((raw as string | number | boolean | null | undefined) ?? ''))
 		const v = parseFloat(f.value)
 		if (isNaN(n) || isNaN(v)) return false
 		switch (f.operator) {
@@ -81,7 +81,7 @@ export function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 	}
 
 	if (f.columnType === 'date') {
-		const d = new Date(String(raw ?? '')).getTime()
+		const d = new Date(String((raw as string | number | boolean | null | undefined) ?? '')).getTime()
 		const v = new Date(f.value).getTime()
 		if (isNaN(d) || isNaN(v)) return false
 		switch (f.operator) {
@@ -97,7 +97,7 @@ export function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 
 	const cell = Array.isArray(raw)
 		? (raw as string[]).join(', ').toLowerCase()
-		: String(raw ?? '').toLowerCase()
+		: String((raw as string | number | boolean | null | undefined) ?? '').toLowerCase()
 	const v = f.value.toLowerCase()
 	switch (f.operator) {
 		case 'is': return cell === v
@@ -135,12 +135,12 @@ export function applySorts(rows: NoteRow[], sorts: SortConfig[]): NoteRow[] {
 			if (aVal === null || aVal === undefined) cmp = -1
 			else if (bVal === null || bVal === undefined) cmp = 1
 			else {
-				const aNum = parseFloat(String(aVal))
-				const bNum = parseFloat(String(bVal))
+				const aNum = parseFloat(String(aVal as string | number | boolean))
+				const bNum = parseFloat(String(bVal as string | number | boolean))
 				if (!isNaN(aNum) && !isNaN(bNum)) {
 					cmp = aNum - bNum
 				} else {
-					cmp = String(aVal ?? '').toLowerCase().localeCompare(String(bVal ?? '').toLowerCase())
+					cmp = String((aVal as string | number | boolean | null | undefined) ?? '').toLowerCase().localeCompare(String((bVal as string | number | boolean | null | undefined) ?? '').toLowerCase())
 				}
 			}
 			if (cmp !== 0) return sort.direction === 'asc' ? cmp : -cmp

@@ -23,7 +23,7 @@ export default class NotionBasesPlugin extends Plugin {
 		)
 
 		// Ribbon — selecionar banco de dados
-		this.addRibbonIcon('table', 'Notion Bases', () => {
+		this.addRibbonIcon('table', 'Notion bases', () => {
 			this.openDatabasePicker()
 		})
 
@@ -62,14 +62,14 @@ export default class NotionBasesPlugin extends Plugin {
 				if (!leaf || this._redirecting) return
 				if (leaf.view.getViewType() !== 'markdown') return
 
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
 				const file = (leaf.view as any).file as TFile | undefined
 				if (!file || !this.manager.isDatabaseFile(file)) return
 
 				const existingLeaf = this.findDatabaseLeaf(file.path)
 				if (existingLeaf && existingLeaf !== leaf) {
 					// Database já aberto: revelar a aba existente e fechar esta
-					this.app.workspace.revealLeaf(existingLeaf)
+					void this.app.workspace.revealLeaf(existingLeaf)
 					leaf.detach()
 					return
 				}
@@ -116,18 +116,19 @@ export default class NotionBasesPlugin extends Plugin {
 			.sort((a, b) => (a.parent?.path ?? '').localeCompare(b.parent?.path ?? ''))
 
 		if (databases.length === 0) {
+			// eslint-disable-next-line obsidianmd/ui/sentence-case
 			new Notice('Nenhum banco de dados encontrado. Use o comando "Criar novo banco de dados" para criar um.')
 			return
 		}
 
-		new DatabasePickerModal(this.app, databases, async file => {
+		new DatabasePickerModal(this.app, databases, file => {
 			const existingLeaf = this.findDatabaseLeaf(file.path)
 			if (existingLeaf) {
-				this.app.workspace.revealLeaf(existingLeaf)
+				void this.app.workspace.revealLeaf(existingLeaf)
 				return
 			}
 			const leaf = this.app.workspace.getLeaf('tab')
-			await this.openDatabaseInLeaf(leaf, file)
+			void this.openDatabaseInLeaf(leaf, file)
 		}).open()
 	}
 
@@ -138,9 +139,9 @@ export default class NotionBasesPlugin extends Plugin {
 		let folderPath = activeFile?.parent?.path ?? ''
 
 		if (!activeFile) {
-			const activeLeaf = this.app.workspace.activeLeaf
+			const activeLeaf = this.app.workspace.getActiveViewOfType(DatabaseView)?.leaf ?? null
 			if (activeLeaf?.view instanceof DatabaseView) {
-				const dbPath = (activeLeaf.view as DatabaseView).getDatabaseFilePath()
+				const dbPath = activeLeaf.view.getDatabaseFilePath()
 				const dbFile = this.app.vault.getFileByPath(dbPath)
 				folderPath = dbFile?.parent?.path ?? ''
 			}
@@ -152,7 +153,7 @@ export default class NotionBasesPlugin extends Plugin {
 			// Se já existe uma aba com esse database, apenas revelá-la
 			const existingLeaf = this.findDatabaseLeaf(existing.path)
 			if (existingLeaf) {
-				this.app.workspace.revealLeaf(existingLeaf)
+				void this.app.workspace.revealLeaf(existingLeaf)
 				return
 			}
 			const leaf = this.app.workspace.getLeaf('tab')
@@ -179,7 +180,7 @@ export default class NotionBasesPlugin extends Plugin {
 			state: { dbFilePath: file.path },
 			active: true,
 		})
-		this.app.workspace.revealLeaf(leaf)
+		void this.app.workspace.revealLeaf(leaf)
 
 		// Garantia extra: chamar setDatabaseFile diretamente caso setState
 		// não tenha renderizado (ex: leaf recém-criado sem container pronto)

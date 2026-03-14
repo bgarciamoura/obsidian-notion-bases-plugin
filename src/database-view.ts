@@ -31,6 +31,7 @@ export class DatabaseView extends ItemView {
 			const file = this.app.vault.getFileByPath(this.dbFilePath)
 			return file?.parent?.name ?? 'Banco de Dados'
 		}
+		// eslint-disable-next-line obsidianmd/ui/sentence-case
 		return 'Notion Bases'
 	}
 

@@ -3258,3 +3258,11 @@
 	color: var(--text-normal);
 	font-weight: 600;
 }
+
+/* ── Timeline resizing cursor ─────────────────────────────────────────────── */
+
+body.nb-tl-resizing,
+body.nb-tl-resizing * {
+	cursor: ew-resize !important;
+	user-select: none !important;
+}

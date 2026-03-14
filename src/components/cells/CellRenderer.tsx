@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { TFile } from 'obsidian'
 import { ColumnSchema, NoteRow, NumberFormat, SelectOption } from '../../types'
@@ -139,22 +139,22 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 		case 'title':
 			return (
 				<TextCell
-					value={String(value ?? '')}
+					value={String((value as string | number | boolean | null | undefined) ?? '')}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => updateCell(rowIndex, columnId, v)}
+					onCommit={v => { void updateCell(rowIndex, columnId, v) }}
 					onCancel={() => setEditingCell(null)}
-					onOpen={file ? () => app.workspace.getLeaf(false).openFile(file) : undefined}
+					onOpen={file ? () => { void app.workspace.getLeaf(false).openFile(file) } : undefined}
 				/>
 			)
 
 		case 'text':
 			return (
 				<TextCell
-					value={String(value ?? '')}
+					value={String((value as string | number | boolean | null | undefined) ?? '')}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => updateCell(rowIndex, columnId, v)}
+					onCommit={v => { void updateCell(rowIndex, columnId, v) }}
 					onCancel={() => setEditingCell(null)}
 				/>
 			)
@@ -165,7 +165,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 					value={value as number | null}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => updateCell(rowIndex, columnId, v)}
+					onCommit={v => { void updateCell(rowIndex, columnId, v) }}
 					onCancel={() => setEditingCell(null)}
 					format={col.numberFormat}
 				/>
@@ -178,7 +178,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 					options={col.options ?? []}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
 					onCancel={() => setEditingCell(null)}
 				/>
 			)
@@ -190,7 +190,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 					options={col.options ?? []}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
 					onCancel={() => setEditingCell(null)}
 				/>
 			)
@@ -201,7 +201,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 					value={value as string | null}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
 					onCancel={() => setEditingCell(null)}
 				/>
 			)
@@ -210,7 +210,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 			return (
 				<CheckboxCell
 					value={Boolean(value)}
-					onCommit={v => updateCell(rowIndex, columnId, v)}
+					onCommit={v => { void updateCell(rowIndex, columnId, v) }}
 				/>
 			)
 
@@ -221,7 +221,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 					options={relationOptions.get(columnId) ?? []}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
 					onCancel={() => setEditingCell(null)}
 				/>
 			)
@@ -230,11 +230,11 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 			return (
 				<LinkCell
 					value={value as string | null}
-					href={value ? String(value) : null}
+					href={value ? String(value as string | number | boolean) : null}
 					inputType="url"
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
 					onCancel={() => setEditingCell(null)}
 				/>
 			)
@@ -243,11 +243,11 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 			return (
 				<LinkCell
 					value={value as string | null}
-					href={value ? `mailto:${value}` : null}
+					href={value ? `mailto:${value as string}` : null}
 					inputType="email"
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
 					onCancel={() => setEditingCell(null)}
 					validate={v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : 'E-mail inválido'}
 				/>
@@ -259,7 +259,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 					value={value as string | null}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
 					onCancel={() => setEditingCell(null)}
 				/>
 			)
@@ -271,7 +271,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 					col={col}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
 					onCancel={() => setEditingCell(null)}
 				/>
 			)
@@ -289,13 +289,13 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 					value={value as string | null}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
 					onCancel={() => setEditingCell(null)}
 				/>
 			)
 
 		default:
-			return <span className="nb-cell-text">{String(value ?? '')}</span>
+			return <span className="nb-cell-text">{String((value as string | number | boolean | null | undefined) ?? '')}</span>
 	}
 }
 
@@ -688,11 +688,11 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 					<button
 						className="nb-status-delete-btn"
 						title="Excluir status"
-						onClick={async e => {
+						onClick={(e) => {
 							e.stopPropagation()
 							const newOptions = options.filter(o => o.value !== opt.value)
 							const newSchema = schema.map(c => c.id === col.id ? { ...c, options: newOptions } : c)
-							await updateSchema(newSchema)
+							void updateSchema(newSchema)
 							if (value === opt.value) onCommit(null)
 						}}
 					>×</button>
@@ -705,14 +705,14 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 					value={newStatusName}
 					onChange={e => setNewStatusName(e.target.value)}
 					onKeyDown={e => {
-						if (e.key === 'Enter') { e.preventDefault(); addNewStatus() }
+						if (e.key === 'Enter') { e.preventDefault(); void addNewStatus() }
 						if (e.key === 'Escape') onCancel()
 						e.stopPropagation()
 					}}
 				/>
 				<button
 					className="nb-status-new-btn"
-					onClick={addNewStatus}
+					onClick={() => { void addNewStatus() }}
 					disabled={!newStatusName.trim()}
 				>+</button>
 			</div>
@@ -733,7 +733,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 						className="nb-status-color-dot"
 						style={{ background: color }}
 						title={color}
-						onClick={e => { e.stopPropagation(); updateOptionColor(colorPickerFor, color) }}
+						onClick={(e) => { e.stopPropagation(); void updateOptionColor(colorPickerFor, color) }}
 					/>
 				))}
 			</div>
@@ -744,7 +744,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 						type="color"
 						className="nb-status-color-input"
 						defaultValue={getOptionColor(options, colorPickerFor)}
-						onChange={e => updateOptionColor(colorPickerFor, e.target.value)}
+						onChange={e => { void updateOptionColor(colorPickerFor, e.target.value) }}
 					/>
 				</label>
 			</div>
@@ -919,7 +919,7 @@ function CheckboxCell({ value, onCommit }: {
 // ── FormulaCell ──────────────────────────────────────────────────────────────
 
 function FormulaCell({ value, col }: { value: unknown; col: ColumnSchema }) {
-	const display = value === null || value === undefined ? '—' : String(value)
+	const display = value === null || value === undefined ? '—' : String(value as string | number | boolean)
 	return (
 		<div className="nb-cell-formula" title={`Fórmula: ${col.formula ?? ''}`}>
 			{display}
@@ -930,7 +930,7 @@ function FormulaCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 // ── LookupCell ───────────────────────────────────────────────────────────────
 
 function LookupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
-	const display = value === null || value === undefined ? '—' : String(value)
+	const display = value === null || value === undefined ? '—' : String(value as string | number | boolean)
 	return (
 		<div className="nb-cell-formula nb-cell-lookup" title={`Lookup de ${col.refDatabasePath ?? ''}`}>
 			{display}
@@ -1070,7 +1070,7 @@ function ImageCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 
 	const openImage = (e: React.MouseEvent) => {
 		e.stopPropagation()
-		if (imageFile) app.workspace.getLeaf(true).openFile(imageFile)
+		if (imageFile) void app.workspace.getLeaf(true).openFile(imageFile)
 	}
 
 	return (

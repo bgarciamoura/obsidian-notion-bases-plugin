@@ -63,7 +63,7 @@ export function DatabaseRoot({
 
 	useEffect(() => {
 		if (!dbFile || isForcedEmbed) return
-		manager.readConfig(dbFile).then(cfg => {
+		void manager.readConfig(dbFile).then(cfg => {
 			setConfig(cfg)
 			if (isDirectMode) {
 				setActiveViewId(prev => (prev && cfg.views.some(v => v.id === prev)) ? prev : (cfg.views[0]?.id ?? ''))
@@ -80,7 +80,7 @@ export function DatabaseRoot({
 				setEmbedViews(initialViews)
 				setEmbedActiveId(initialViews[0]?.id ?? '')
 				setEmbedInitialized(true)
-				onEmbedStateChange!(initialState)
+				void onEmbedStateChange(initialState)
 			}
 		})
 	}, [dbFile, manager, isForcedEmbed])
@@ -89,7 +89,7 @@ export function DatabaseRoot({
 	useEffect(() => {
 		if (!dbFile || !isDirectMode) return
 		const onChange = (file: TFile) => {
-			if (file === dbFile) manager.readConfig(dbFile).then(setConfig)
+			if (file === dbFile) void manager.readConfig(dbFile).then(setConfig)
 		}
 		app.metadataCache.on('changed', onChange)
 		return () => app.metadataCache.off('changed', onChange)
@@ -171,7 +171,7 @@ export function DatabaseRoot({
 	// ── Mode A: forced single view ────────────────────────────────────────────
 
 	if (isForcedEmbed) {
-		return renderView(externalView!, onViewChange!)
+		return renderView(externalView, onViewChange!)
 	}
 
 	// ── Mode B: free multi-view embed ─────────────────────────────────────────
@@ -182,7 +182,7 @@ export function DatabaseRoot({
 		const handleEmbedViewChange = async (updated: ViewConfig) => {
 			const newViews = embedViews.map(v => v.id === updated.id ? updated : v)
 			setEmbedViews(newViews)
-			await onEmbedStateChange!({ activeViewId: embedActiveId, views: newViews })
+			await onEmbedStateChange({ activeViewId: embedActiveId, views: newViews })
 		}
 
 		const addEmbedView = async (type: ViewConfig['type']) => {
@@ -197,7 +197,7 @@ export function DatabaseRoot({
 			setEmbedViews(newViews)
 			setEmbedActiveId(newView.id)
 			setEmbedAddMenuOpen(false)
-			await onEmbedStateChange!({ activeViewId: newView.id, views: newViews })
+			await onEmbedStateChange({ activeViewId: newView.id, views: newViews })
 		}
 
 		const removeEmbedView = async (viewId: string) => {
@@ -206,17 +206,17 @@ export function DatabaseRoot({
 			const newActiveId = embedActiveId === viewId ? newViews[0].id : embedActiveId
 			setEmbedViews(newViews)
 			setEmbedActiveId(newActiveId)
-			await onEmbedStateChange!({ activeViewId: newActiveId, views: newViews })
+			await onEmbedStateChange({ activeViewId: newActiveId, views: newViews })
 		}
 
 		const switchEmbedTab = (viewId: string) => {
 			setEmbedActiveId(viewId)
-			onEmbedStateChange!({ activeViewId: viewId, views: embedViews })
+			void onEmbedStateChange({ activeViewId: viewId, views: embedViews })
 		}
 
 		const saveEmbedViewNames = async (updatedViews: ViewConfig[]) => {
 			setEmbedViews(updatedViews)
-			await onEmbedStateChange!({ activeViewId: embedActiveId, views: updatedViews })
+			await onEmbedStateChange({ activeViewId: embedActiveId, views: updatedViews })
 		}
 
 		return (
@@ -230,7 +230,7 @@ export function DatabaseRoot({
 						onDragStart={() => setDragViewId(view.id)}
 						onDragOver={e => { e.preventDefault(); setDragOverId(view.id) }}
 						onDragLeave={() => setDragOverId(null)}
-						onDrop={() => handleEmbedTabDrop(view.id)}
+						onDrop={() => { void handleEmbedTabDrop(view.id) }}
 						onDragEnd={() => { setDragViewId(null); setDragOverId(null) }}
 						onClick={() => renamingViewId !== view.id && switchEmbedTab(view.id)}
 						>
@@ -241,9 +241,9 @@ export function DatabaseRoot({
 									className="nb-view-tab-rename-input"
 									value={renameValue}
 									onChange={e => setRenameValue(e.target.value)}
-									onBlur={() => commitRename(embedViews, renameValue, saveEmbedViewNames)}
+									onBlur={() => { void commitRename(embedViews, renameValue, saveEmbedViewNames) }}
 									onKeyDown={e => {
-										if (e.key === 'Enter') { e.preventDefault(); commitRename(embedViews, renameValue, saveEmbedViewNames) }
+										if (e.key === 'Enter') { e.preventDefault(); void commitRename(embedViews, renameValue, saveEmbedViewNames) }
 										if (e.key === 'Escape') { e.preventDefault(); setRenamingViewId(null) }
 									}}
 									onClick={e => e.stopPropagation()}
@@ -259,7 +259,7 @@ export function DatabaseRoot({
 							{embedViews.length > 1 && renamingViewId !== view.id && (
 								<span
 									className="nb-view-tab-remove"
-									onClick={e => { e.stopPropagation(); removeEmbedView(view.id) }}
+									onClick={(e) => { e.stopPropagation(); void removeEmbedView(view.id) }}
 									title="Remover view"
 								>
 									×
@@ -275,7 +275,7 @@ export function DatabaseRoot({
 							<div className="nb-view-add-menu nb-fields-dropdown">
 								<div className="nb-fields-dropdown-label">Adicionar view</div>
 								{(['table', 'list', 'board', 'gallery', 'calendar', 'timeline'] as ViewConfig['type'][]).map(type => (
-									<button key={type} className="nb-menu-item" onClick={() => addEmbedView(type)}>
+									<button key={type} className="nb-menu-item" onClick={() => { void addEmbedView(type) }}>
 										<span className="nb-menu-item-icon">{VIEW_ICONS[type]}</span>
 										<span>{VIEW_LABELS[type]}</span>
 									</button>
@@ -353,7 +353,7 @@ export function DatabaseRoot({
 						onDragStart={() => setDragViewId(view.id)}
 						onDragOver={e => { e.preventDefault(); setDragOverId(view.id) }}
 						onDragLeave={() => setDragOverId(null)}
-						onDrop={() => handleDirectTabDrop(view.id)}
+						onDrop={() => { void handleDirectTabDrop(view.id) }}
 						onDragEnd={() => { setDragViewId(null); setDragOverId(null) }}
 						onClick={() => renamingViewId !== view.id && setActiveViewId(view.id)}
 					>
@@ -364,9 +364,9 @@ export function DatabaseRoot({
 								className="nb-view-tab-rename-input"
 								value={renameValue}
 								onChange={e => setRenameValue(e.target.value)}
-								onBlur={() => commitRename(config.views, renameValue, saveDirectViewNames)}
+								onBlur={() => { void commitRename(config.views, renameValue, saveDirectViewNames) }}
 								onKeyDown={e => {
-									if (e.key === 'Enter') { e.preventDefault(); commitRename(config.views, renameValue, saveDirectViewNames) }
+									if (e.key === 'Enter') { e.preventDefault(); void commitRename(config.views, renameValue, saveDirectViewNames) }
 									if (e.key === 'Escape') { e.preventDefault(); setRenamingViewId(null) }
 								}}
 								onClick={e => e.stopPropagation()}
@@ -382,7 +382,7 @@ export function DatabaseRoot({
 						{config.views.length > 1 && renamingViewId !== view.id && (
 							<span
 								className="nb-view-tab-remove"
-								onClick={e => { e.stopPropagation(); removeView(view.id) }}
+								onClick={(e) => { e.stopPropagation(); void removeView(view.id) }}
 								title="Remover view"
 							>
 								×
@@ -398,7 +398,7 @@ export function DatabaseRoot({
 						<div className="nb-view-add-menu nb-fields-dropdown">
 							<div className="nb-fields-dropdown-label">Adicionar view</div>
 							{(['table', 'list', 'board', 'gallery', 'calendar', 'timeline'] as ViewConfig['type'][]).map(type => (
-								<button key={type} className="nb-menu-item" onClick={() => addView(type)}>
+								<button key={type} className="nb-menu-item" onClick={() => { void addView(type) }}>
 									<span className="nb-menu-item-icon">{VIEW_ICONS[type]}</span>
 									<span>{VIEW_LABELS[type]}</span>
 								</button>

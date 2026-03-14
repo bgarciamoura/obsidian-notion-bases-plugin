@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
@@ -181,10 +181,10 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 			const pills = externalView.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
-					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
+					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 				})
 				setActiveFilters(restored as ActiveFilter[])
 			}
@@ -195,7 +195,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 	}, [dbFile, manager])
 
 	useEffect(() => { filtersInitialized.current = false }, [dbFile])
-	useEffect(() => { loadData() }, [loadData])
+	useEffect(() => { void loadData() }, [loadData])
 	useEffect(() => {
 		const onChange = () => loadData()
 		app.vault.on('create', onChange)
@@ -242,11 +242,11 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 
 	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
 		const next: ActiveFilter[] = [...activeFilters, { id: crypto.randomUUID(), columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '', conjunction: 'and' }]
-		setActiveFilters(next); saveActivePills(next); setFilterMenuOpen(false)
+		setActiveFilters(next); void saveActivePills(next); setFilterMenuOpen(false)
 	}
-	const removeFilter = (id: string) => { const next = activeFilters.filter(f => f.id !== id); setActiveFilters(next); saveActivePills(next) }
-	const updateFilter = (id: string, operator: FilterOperator, value: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, operator, value } : f); setActiveFilters(next); saveActivePills(next) }
-	const toggleConjunction = (id: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, conjunction: f.conjunction === 'and' ? 'or' as const : 'and' as const } : f); setActiveFilters(next); saveActivePills(next) }
+	const removeFilter = (id: string) => { const next = activeFilters.filter(f => f.id !== id); setActiveFilters(next); void saveActivePills(next) }
+	const updateFilter = (id: string, operator: FilterOperator, value: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, operator, value } : f); setActiveFilters(next); void saveActivePills(next) }
+	const toggleConjunction = (id: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, conjunction: f.conjunction === 'and' ? 'or' as const : 'and' as const } : f); setActiveFilters(next); void saveActivePills(next) }
 
 	const toggleFieldVisibility = useCallback(async (fieldId: string) => {
 		const hidden = activeView.hiddenColumns.includes(fieldId)
@@ -296,7 +296,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 										type="checkbox"
 										className="nb-field-checkbox"
 										checked={col.visible && !activeView.hiddenColumns.includes(col.id)}
-										onChange={() => toggleFieldVisibility(col.id)}
+										onChange={() => { void toggleFieldVisibility(col.id) }}
 									/>
 									<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
 									<span className="nb-field-name">{col.name}</span>
@@ -355,7 +355,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 					<ListSortPanel
 						sorts={activeView.sorts}
 						schema={config.schema}
-						onSortChange={handleSortChange}
+						onSortChange={s => { void handleSortChange(s) }}
 						onClose={() => setSortPanelOpen(false)}
 						anchorRect={sortAnchorRect}
 						panelRef={sortPanelRef}
@@ -385,7 +385,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 					<div
 						key={row._file.path}
 						className="nb-list-row"
-						onClick={() => app.workspace.getLeaf().openFile(row._file)}
+						onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
 					>
 						<span className="nb-list-row-icon">📄</span>
 						<span className="nb-list-row-title">{row._title}</span>
@@ -393,8 +393,8 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 							<span className="nb-list-row-props">
 								{visibleCols.map(col => {
 									const val = row[col.id]
-									if (val === null || val === undefined || String(val).trim() === '') return null
-									const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val)
+									if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
+									const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
 									return (
 										<span key={col.id} className="nb-list-prop">
 											<span className="nb-list-prop-name">{col.name}:</span>
@@ -406,7 +406,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 						)}
 					</div>
 				))}
-				<button className="nb-add-row nb-list-add-row" onClick={handleAddRow}>
+				<button className="nb-add-row nb-list-add-row" onClick={() => { void handleAddRow() }}>
 					+ Nova entrada
 				</button>
 			</div>

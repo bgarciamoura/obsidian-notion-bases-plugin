@@ -72,10 +72,10 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			const pills = externalView.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
-					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
+					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 				})
 				setActiveFilters(restored as ActiveFilter[])
 			}
@@ -86,7 +86,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	}, [dbFile, manager])
 
 	useEffect(() => { filtersInitialized.current = false }, [dbFile])
-	useEffect(() => { loadData() }, [loadData])
+	useEffect(() => { void loadData() }, [loadData])
 	useEffect(() => {
 		const onChange = () => loadData()
 		app.vault.on('create', onChange)
@@ -164,7 +164,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 				color: undefined,
 				rows: sortedRows.filter(r => {
 					const v = r[groupByCol.id]
-					return v === null || v === undefined || String(v).trim() === ''
+					return v === null || v === undefined || String(v as string | number | boolean).trim() === ''
 				}),
 			},
 		]
@@ -187,7 +187,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		if (!dbFile || !groupByCol) return
 		const file = app.vault.getFileByPath(rowPath)
 		if (!file) return
-		await app.fileManager.processFrontMatter(file, fm => {
+		await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
 			if (targetValue === '') {
 				delete fm[groupByCol.id]
 			} else {
@@ -212,7 +212,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		if (!dbFile || !groupByCol) return
 		const newFile = await manager.createNote(dbFile)
 		if (columnValue !== '') {
-			await app.fileManager.processFrontMatter(newFile, fm => {
+			await app.fileManager.processFrontMatter(newFile, (fm: Record<string, unknown>) => {
 				fm[groupByCol.id] = columnValue
 			})
 		}
@@ -225,11 +225,11 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 
 	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
 		const next: ActiveFilter[] = [...activeFilters, { id: crypto.randomUUID(), columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '', conjunction: 'and' }]
-		setActiveFilters(next); saveActivePills(next); setFilterMenuOpen(false)
+		setActiveFilters(next); void saveActivePills(next); setFilterMenuOpen(false)
 	}
-	const removeFilter = (id: string) => { const next = activeFilters.filter(f => f.id !== id); setActiveFilters(next); saveActivePills(next) }
-	const updateFilter = (id: string, operator: FilterOperator, value: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, operator, value } : f); setActiveFilters(next); saveActivePills(next) }
-	const toggleConjunction = (id: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, conjunction: f.conjunction === 'and' ? 'or' as const : 'and' as const } : f); setActiveFilters(next); saveActivePills(next) }
+	const removeFilter = (id: string) => { const next = activeFilters.filter(f => f.id !== id); setActiveFilters(next); void saveActivePills(next) }
+	const updateFilter = (id: string, operator: FilterOperator, value: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, operator, value } : f); setActiveFilters(next); void saveActivePills(next) }
+	const toggleConjunction = (id: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, conjunction: f.conjunction === 'and' ? 'or' as const : 'and' as const } : f); setActiveFilters(next); void saveActivePills(next) }
 
 	const toggleFieldVisibility = useCallback(async (fieldId: string) => {
 		const hidden = activeView.hiddenColumns.includes(fieldId)
@@ -266,7 +266,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 							<div className="nb-fields-dropdown-label">Campos no card</div>
 							{config.schema.filter(c => c.id !== groupByCol?.id && c.type !== 'title').map(col => (
 								<label key={col.id} className="nb-field-row">
-									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => toggleFieldVisibility(col.id)} />
+									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
 									<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
 									<span className="nb-field-name">{col.name}</span>
 								</label>
@@ -287,7 +287,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 								<button
 									key={col.id}
 									className={`nb-menu-item${activeView.groupByColumnId === col.id ? ' nb-menu-item--active' : ''}`}
-									onClick={async () => { await saveView({ ...activeView, groupByColumnId: col.id }); setGroupByMenuOpen(false) }}
+									onClick={() => { void saveView({ ...activeView, groupByColumnId: col.id }); setGroupByMenuOpen(false) }}
 								>
 									<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
 									<span>{col.name}</span>
@@ -386,6 +386,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 									setColDragOver(null)
 								}
 							}}
+							// eslint-disable-next-line @typescript-eslint/no-misused-promises
 							onDrop={async e => {
 								e.preventDefault()
 								setCardDragOver(null)
@@ -437,15 +438,15 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 											e.dataTransfer.setData('nb-row-path', row._file.path)
 											e.dataTransfer.setData(DRAG_TYPE_CARD, '')
 										}}
-										onClick={() => app.workspace.getLeaf().openFile(row._file)}
+										onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
 									>
 										<div className="nb-board-card-title">{row._title}</div>
 										{visibleCols.length > 0 && (
 											<div className="nb-board-card-props">
 												{visibleCols.map(c => {
 													const val = row[c.id]
-													if (val === null || val === undefined || String(val).trim() === '') return null
-													const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val)
+													if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
+													const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
 													return (
 														<span key={c.id} className="nb-board-card-prop">
 															<span className="nb-board-card-prop-name">{c.name}:</span>
@@ -460,7 +461,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 							</div>
 
 							{/* Add card */}
-							<button className="nb-board-add-card" onClick={() => addCardToColumn(col.value)}>
+							<button className="nb-board-add-card" onClick={() => { void addCardToColumn(col.value) }}>
 								+ Novo card
 							</button>
 						</div>

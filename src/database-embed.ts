@@ -39,15 +39,15 @@ class DatabaseEmbedChild extends MarkdownRenderChild {
 		const hostFm = hostFile
 			? this.plugin.app.metadataCache.getFileCache(hostFile)?.frontmatter
 			: undefined
-		const savedData = hostFm?.[EMBED_FM_KEY]?.[this.embedId]
+		const savedData = (hostFm as Record<string, Record<string, unknown>> | undefined)?.[EMBED_FM_KEY]?.[this.embedId]
 
 		let props: object
 
 		if (this.forcedType) {
 			// Mode A — type declared in code block: single forced view, no tabs
-			const savedView = (savedData && !('activeViewId' in savedData)) ? savedData as ViewConfig : undefined
+			const savedView = (savedData && typeof savedData === 'object' && !('activeViewId' in savedData)) ? savedData as ViewConfig : undefined
 			const dbFm = this.plugin.app.metadataCache.getFileCache(dbFile)?.frontmatter
-			const dbFirstView = dbFm?.views?.[0] as ViewConfig | undefined
+			const dbFirstView = (dbFm as Record<string, unknown[]> | undefined)?.views?.[0] as ViewConfig | undefined
 
 			let externalView: ViewConfig
 			if (savedView) {
@@ -61,7 +61,7 @@ class DatabaseEmbedChild extends MarkdownRenderChild {
 			const onViewChange = async (view: ViewConfig) => {
 				const hFile = this.plugin.app.vault.getFileByPath(this.sourcePath)
 				if (!hFile) return
-				await this.plugin.app.fileManager.processFrontMatter(hFile, fm => {
+				await this.plugin.app.fileManager.processFrontMatter(hFile, (fm: Record<string, Record<string, unknown>>) => {
 					if (!fm[EMBED_FM_KEY]) fm[EMBED_FM_KEY] = {}
 					fm[EMBED_FM_KEY][this.embedId] = view
 				})
@@ -71,14 +71,14 @@ class DatabaseEmbedChild extends MarkdownRenderChild {
 		} else {
 			// Mode B — no type declared: free multi-view embed with independent views
 			// EmbedState has { activeViewId, views[] }; old ViewConfig format is ignored
-			const embedState = (savedData && 'activeViewId' in savedData && Array.isArray(savedData.views))
+			const embedState = (savedData && typeof savedData === 'object' && 'activeViewId' in savedData && Array.isArray((savedData as Record<string, unknown>)['views']))
 				? savedData as EmbedState
 				: undefined
 
 			const onEmbedStateChange = async (state: EmbedState) => {
 				const hFile = this.plugin.app.vault.getFileByPath(this.sourcePath)
 				if (!hFile) return
-				await this.plugin.app.fileManager.processFrontMatter(hFile, fm => {
+				await this.plugin.app.fileManager.processFrontMatter(hFile, (fm: Record<string, Record<string, unknown>>) => {
 					if (!fm[EMBED_FM_KEY]) fm[EMBED_FM_KEY] = {}
 					fm[EMBED_FM_KEY][this.embedId] = state
 				})

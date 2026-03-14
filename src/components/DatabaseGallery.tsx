@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
@@ -145,10 +145,10 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 			const pills = externalView.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
-					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
+					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 				})
 				setActiveFilters(restored as ActiveFilter[])
 			}
@@ -159,7 +159,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 	}, [dbFile, manager])
 
 	useEffect(() => { filtersInitialized.current = false }, [dbFile])
-	useEffect(() => { loadData() }, [loadData])
+	useEffect(() => { void loadData() }, [loadData])
 	useEffect(() => {
 		const onChange = () => loadData()
 		app.vault.on('create', onChange)
@@ -236,11 +236,11 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 
 	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
 		const next: ActiveFilter[] = [...activeFilters, { id: crypto.randomUUID(), columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '', conjunction: 'and' }]
-		setActiveFilters(next); saveActivePills(next); setFilterMenuOpen(false)
+		setActiveFilters(next); void saveActivePills(next); setFilterMenuOpen(false)
 	}
-	const removeFilter = (id: string) => { const next = activeFilters.filter(f => f.id !== id); setActiveFilters(next); saveActivePills(next) }
-	const updateFilter = (id: string, operator: FilterOperator, value: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, operator, value } : f); setActiveFilters(next); saveActivePills(next) }
-	const toggleConjunction = (id: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, conjunction: f.conjunction === 'and' ? 'or' as const : 'and' as const } : f); setActiveFilters(next); saveActivePills(next) }
+	const removeFilter = (id: string) => { const next = activeFilters.filter(f => f.id !== id); setActiveFilters(next); void saveActivePills(next) }
+	const updateFilter = (id: string, operator: FilterOperator, value: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, operator, value } : f); setActiveFilters(next); void saveActivePills(next) }
+	const toggleConjunction = (id: string) => { const next = activeFilters.map(f => f.id === id ? { ...f, conjunction: f.conjunction === 'and' ? 'or' as const : 'and' as const } : f); setActiveFilters(next); void saveActivePills(next) }
 
 	const toggleFieldVisibility = useCallback(async (fieldId: string) => {
 		const hidden = activeView.hiddenColumns.includes(fieldId)
@@ -274,7 +274,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 							<div className="nb-fields-dropdown-label">Campos</div>
 							{config.schema.map(col => (
 								<label key={col.id} className="nb-field-row">
-									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => toggleFieldVisibility(col.id)} />
+									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
 									<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
 									<span className="nb-field-name">{col.name}</span>
 								</label>
@@ -293,7 +293,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 							<div className="nb-fields-dropdown-label">Campo de capa</div>
 							<button
 								className={`nb-menu-item${!activeView.galleryCoverField ? ' nb-menu-item--active' : ''}`}
-								onClick={async () => { await saveView({ ...activeView, galleryCoverField: undefined }); setCoverMenuOpen(false) }}
+								onClick={() => { void saveView({ ...activeView, galleryCoverField: undefined }); setCoverMenuOpen(false) }}
 							>
 								<span className="nb-menu-item-icon">—</span>
 								<span>Nenhuma</span>
@@ -302,7 +302,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 								<button
 									key={col.id}
 									className={`nb-menu-item${activeView.galleryCoverField === col.id ? ' nb-menu-item--active' : ''}`}
-									onClick={async () => { await saveView({ ...activeView, galleryCoverField: col.id }); setCoverMenuOpen(false) }}
+									onClick={() => { void saveView({ ...activeView, galleryCoverField: col.id }); setCoverMenuOpen(false) }}
 								>
 									<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
 									<span>{col.name}</span>
@@ -324,7 +324,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 								<button
 									key={size}
 									className={`nb-menu-item${cardSize === size ? ' nb-menu-item--active' : ''}`}
-									onClick={async () => { await saveView({ ...activeView, galleryCardSize: size }); setSizeMenuOpen(false) }}
+									onClick={() => { void saveView({ ...activeView, galleryCardSize: size }); setSizeMenuOpen(false) }}
 								>
 									{CARD_SIZE_LABELS[size]}
 								</button>
@@ -378,7 +378,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 					<GallerySortPanel
 						sorts={activeView.sorts}
 						schema={config.schema}
-						onSortChange={handleSortChange}
+						onSortChange={s => { void handleSortChange(s) }}
 						onClose={() => setSortPanelOpen(false)}
 						anchorRect={sortAnchorRect}
 						panelRef={sortPanelRef}
@@ -415,18 +415,18 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 			{/* Gallery grid */}
 			<div className="nb-gallery" style={{ gridTemplateColumns: gridTemplate }}>
 				{displayRows.map(row => {
-					const coverImagePath = coverField?.type === 'image' ? (row[coverField.id] as string | null) ?? null : null
+					const coverImagePath = coverField?.type === 'image' ? ((row as Record<string, unknown>)[coverField.id] as string | null) ?? null : null
 					const coverImageFile = coverImagePath ? app.vault.getFileByPath(coverImagePath) : null
 					const coverImageUrl = coverImageFile ? app.vault.getResourcePath(coverImageFile) : null
 					const coverTextValue = coverField && coverField.type !== 'image'
-						? (coverField.type === 'title' ? row._title : String(row[coverField.id] ?? ''))
+						? (coverField.type === 'title' ? row._title : String(((row as Record<string, unknown>)[coverField.id] as string | number | boolean | null | undefined) ?? ''))
 						: null
 
 					return (
 						<div
 							key={row._file.path}
 							className={`nb-gallery-card nb-gallery-card--${cardSize}`}
-							onClick={() => app.workspace.getLeaf().openFile(row._file)}
+							onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
 						>
 							{/* Cover */}
 							{coverImageUrl ? (
@@ -450,8 +450,8 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 									<div className="nb-gallery-props">
 										{visibleCols.map(col => {
 											const val = row[col.id]
-											if (val === null || val === undefined || String(val).trim() === '') return null
-											const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val)
+											if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
+											const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
 											return (
 												<span key={col.id} className="nb-gallery-prop">
 													<span className="nb-gallery-prop-name">{col.name}:</span>
@@ -467,7 +467,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 				})}
 
 				{/* Add card */}
-				<div className="nb-gallery-card nb-gallery-card--add" onClick={handleAddRow}>
+				<div className="nb-gallery-card nb-gallery-card--add" onClick={() => { void handleAddRow() }}>
 					<div className="nb-gallery-add-inner">+ Nova entrada</div>
 				</div>
 			</div>

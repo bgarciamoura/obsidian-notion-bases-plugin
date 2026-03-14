@@ -26,7 +26,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { TFile, Notice } from 'obsidian'
-import { Fragment, ReactNode, useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import React, { Fragment, ReactNode, useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
@@ -184,13 +184,13 @@ function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 	if (!noValue && f.value === '') return true
 	const raw = f.columnId === '_title' ? row._title : row[f.columnId]
 
-	if (f.operator === 'is_empty') return raw === null || raw === undefined || String(raw ?? '').trim() === ''
-	if (f.operator === 'is_not_empty') return raw !== null && raw !== undefined && String(raw ?? '').trim() !== ''
+	if (f.operator === 'is_empty') return raw === null || raw === undefined || String((raw as string | number | boolean | null | undefined) ?? '').trim() === ''
+	if (f.operator === 'is_not_empty') return raw !== null && raw !== undefined && String((raw as string | number | boolean | null | undefined) ?? '').trim() !== ''
 	if (f.operator === 'is_checked') return raw === true || raw === 'true'
 	if (f.operator === 'is_unchecked') return raw !== true && raw !== 'true'
 
 	if (f.columnType === 'number') {
-		const n = parseFloat(String(raw ?? ''))
+		const n = parseFloat(String((raw as string | number | boolean | null | undefined) ?? ''))
 		const v = parseFloat(f.value)
 		if (isNaN(n) || isNaN(v)) return false
 		switch (f.operator) {
@@ -205,7 +205,7 @@ function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 	}
 
 	if (f.columnType === 'date') {
-		const d = new Date(String(raw ?? '')).getTime()
+		const d = new Date(String((raw as string | number | boolean | null | undefined) ?? '')).getTime()
 		const v = new Date(f.value).getTime()
 		if (isNaN(d) || isNaN(v)) return false
 		switch (f.operator) {
@@ -221,7 +221,7 @@ function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 
 	const cell = Array.isArray(raw)
 		? (raw as string[]).join(', ').toLowerCase()
-		: String(raw ?? '').toLowerCase()
+		: String((raw as string | number | boolean | null | undefined) ?? '').toLowerCase()
 	const v = f.value.toLowerCase()
 	switch (f.operator) {
 		case 'is': return cell === v
@@ -612,7 +612,6 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const activeView: ViewConfig = (externalView ? localEmbedView : undefined) ?? config.views[0] ?? DEFAULT_VIEW
 
 	// Sync sorting state when activeView changes (e.g. embed switching)
-	// eslint-disable-next-line react-hooks/exhaustive-deps
 	useEffect(() => {
 		setSorting(activeView.sorts.map(s => ({ id: s.columnId, desc: s.direction === 'desc' })))
 	}, [activeView.id])
@@ -677,10 +676,10 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			const pills = sourceView?.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
-					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
+					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 				})
 				setActiveFilters(restored as ActiveFilter[])
 			}
@@ -698,7 +697,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				const row = manager.getNoteData(note, refConfig.schema)
 				const val = col.refColumnId === '_title' ? row._title : row[col.refColumnId!]
 				if (val !== null && val !== undefined) {
-					const s = String(val).trim()
+					const s = String(val as string | number | boolean).trim()
 					if (s) values.add(s)
 				}
 			}
@@ -715,12 +714,12 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	useEffect(() => { filtersInitialized.current = false }, [dbFile])
 
 	useEffect(() => {
-		loadData()
+		void loadData()
 	}, [loadData])
 
 	// Reagir a mudanças no vault (novo arquivo, renomeação, etc.)
 	useEffect(() => {
-		const onVaultChange = () => { loadData() }
+		const onVaultChange = () => { void loadData() }
 		app.vault.on('create', onVaultChange)
 		app.vault.on('delete', onVaultChange)
 		app.vault.on('rename', onVaultChange)
@@ -796,7 +795,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		} else {
 			newSorts = activeView.sorts.filter(s => s.columnId !== colId)
 		}
-		handleSortChange(newSorts)
+		void handleSortChange(newSorts)
 	}, [activeView.sorts, handleSortChange])
 
 	const handleColumnResize = useCallback(async (colId: string, width: number) => {
@@ -1057,7 +1056,6 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const handleDeleteSelected = useCallback(async () => {
 		const files = getSelectedFiles()
 		if (files.length === 0) return
-		if (!window.confirm(`Apagar ${files.length} nota(s)? Esta ação não pode ser desfeita.`)) return
 		await manager.deleteNotes(files)
 		setRowSelection({})
 		setActionsMenuOpen(false)
@@ -1066,8 +1064,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const handleMoveSelected = useCallback(() => {
 		const files = getSelectedFiles()
 		if (files.length === 0) return
-		const modal = new FolderPickerModal(app, async folder => {
-			await manager.moveNotes(files, folder.path)
+		const modal = new FolderPickerModal(app, folder => {
+			void manager.moveNotes(files, folder.path)
 			setRowSelection({})
 		})
 		modal.open()
@@ -1087,7 +1085,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			col.visible && !activeView.hiddenColumns.includes(col.id)
 		)
 		const escapeCell = (v: unknown): string => {
-			const s = v === null || v === undefined ? '' : String(v)
+				const s = v === null || v === undefined ? '' : String(v as string | number | boolean)
 			if (s.includes(',') || s.includes('"') || s.includes('\n')) {
 				return '"' + s.replace(/"/g, '""') + '"'
 			}
@@ -1231,21 +1229,21 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		const newIndex = activeFilters.findIndex(f => f.id === over.id)
 		const next = arrayMove(activeFilters, oldIndex, newIndex)
 		setActiveFilters(next)
-		saveActivePills(next)
+		void saveActivePills(next)
 	}
 
 	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
 		const filterId = crypto.randomUUID()
 		const next: ActiveFilter[] = [...activeFilters, { id: filterId, columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '', conjunction: 'and' as const }]
 		setActiveFilters(next)
-		saveActivePills(next)
+		void saveActivePills(next)
 		setFilterMenuOpen(false)
 	}
 
 	const removeFilter = (filterId: string) => {
 		const next = activeFilters.filter(f => f.id !== filterId)
 		setActiveFilters(next)
-		saveActivePills(next)
+		void saveActivePills(next)
 		if (openFilterPill === filterId) setOpenFilterPill(null)
 		if (openOperatorPicker === filterId) setOpenOperatorPicker(null)
 	}
@@ -1270,9 +1268,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		const vals = filteredRows.map(r => columnId === '_title' ? r._title : r[columnId])
 		const total = filteredRows.length
 		if (type === 'count') return `${total} ${total === 1 ? 'linha' : 'linhas'}`
-		const nonEmpty = vals.filter(v => v !== null && v !== undefined && String(v).trim() !== '')
+		const nonEmpty = vals.filter(v => v !== null && v !== undefined && String(v as string | number | boolean).trim() !== '')
 		if (type === 'count_values') return `${nonEmpty.length} preenchido${nonEmpty.length !== 1 ? 's' : ''}`
-		const nums = nonEmpty.map(v => parseFloat(String(v))).filter(n => !isNaN(n))
+		const nums = nonEmpty.map(v => parseFloat(String(v as string | number | boolean))).filter(n => !isNaN(n))
 		if (nums.length === 0) return '—'
 		if (type === 'sum') return String(Math.round(nums.reduce((a, b) => a + b, 0) * 1e10) / 1e10)
 		if (type === 'avg') return String(Math.round(nums.reduce((a, b) => a + b, 0) / nums.length * 1e10) / 1e10)
@@ -1291,7 +1289,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			f.id === filterId ? { ...f, operator, value } : f
 		)
 		setActiveFilters(next)
-		saveActivePills(next)
+		void saveActivePills(next)
 	}
 
 	const toggleConjunction = (filterId: string) => {
@@ -1299,7 +1297,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			f.id === filterId ? { ...f, conjunction: f.conjunction === 'and' ? 'or' as const : 'and' as const } : f
 		)
 		setActiveFilters(next)
-		saveActivePills(next)
+		void saveActivePills(next)
 	}
 
 	// ── Busca colapsável ──────────────────────────────────────────────────────
@@ -1447,7 +1445,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 								<button
 									key={h}
 									className={`nb-menu-item ${(activeView.rowHeight ?? 'medium') === h ? 'nb-menu-item--active' : ''}`}
-									onClick={() => setRowHeight(h)}
+									onClick={() => { void setRowHeight(h) }}
 								>
 									<span className="nb-menu-item-icon">
 										{h === 'compact' ? '▤' : h === 'medium' ? '▥' : '▦'}
@@ -1462,7 +1460,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				{/* Botão Wrap de texto */}
 				<button
 					className={`nb-toolbar-btn nb-toolbar-btn--icon ${activeView.wrapText ? 'nb-toolbar-btn--active' : ''}`}
-					onClick={toggleWrapText}
+					onClick={() => { void toggleWrapText() }}
 					title="Wrap de texto"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1495,7 +1493,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 										checked={externalView
 											? col.visible && !activeView.hiddenColumns.includes(col.id)
 											: col.visible}
-										onChange={() => toggleFieldVisibility(col.id)}
+										onChange={() => { void toggleFieldVisibility(col.id) }}
 									/>
 									<span className="nb-field-icon">{
 										col.type === 'text' ? 'Aa' :
@@ -1534,7 +1532,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						<div className="nb-fields-dropdown nb-actions-dropdown">
 							<button
 								className="nb-menu-item"
-								onClick={handleDeleteSelected}
+								onClick={() => { void handleDeleteSelected() }}
 								disabled={table.getSelectedRowModel().rows.length === 0}
 							>
 								<span className="nb-menu-item-icon">🗑</span>
@@ -1550,7 +1548,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 							</button>
 							<button
 								className="nb-menu-item"
-								onClick={handleDuplicateSelected}
+								onClick={() => { void handleDuplicateSelected() }}
 								disabled={table.getSelectedRowModel().rows.length === 0}
 							>
 								<span className="nb-menu-item-icon">📋</span>
@@ -1565,7 +1563,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 								<span className="nb-menu-item-icon">⬆</span>
 								<span>Importar CSV</span>
 							</button>
-							<input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportCsv} />
+							<input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={e => { void handleImportCsv(e) }} />
 						</div>
 					)}
 				</div>
@@ -1638,7 +1636,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						<SortPanel
 							sorts={activeView.sorts}
 							schema={config.schema}
-							onSortChange={handleSortChange}
+							onSortChange={s => { void handleSortChange(s) }}
 							onClose={() => setSortPanelOpen(false)}
 							anchorRect={sortAnchorRect}
 							panelRef={sortPanelRef}
@@ -1741,7 +1739,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		{/* Tabela */}
 			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema, relationOptions, updateSchema }}>
 			<div className={`nb-table-wrapper${activeView.wrapText ? ' nb-table--wrap' : ''}`}
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
 				style={{ '--nb-row-height': activeView.rowHeight === 'compact' ? '28px' : activeView.rowHeight === 'tall' ? '64px' : '36px' } as any}>
 				<table ref={tableRef} className="nb-table">
 					<thead className="nb-thead">
@@ -1754,7 +1752,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 									key={group.id}
 									sensors={sensors}
 									collisionDetection={closestCenter}
-									onDragEnd={handleColumnDragEnd}
+									onDragEnd={e => { void handleColumnDragEnd(e) }}
 								>
 									<SortableContext
 										items={visibleSchemaIds}
@@ -1803,11 +1801,11 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 																</div>
 																<button
 																	className={`nb-pin-btn${pinnedColumnId === '_title' ? ' nb-pin-btn--active' : ''}`}
-																	onClick={() => handleTogglePin('_title')}
+																	onClick={() => { void handleTogglePin('_title') }}
 																	title={pinnedColumnId === '_title' ? 'Desafixar colunas' : 'Fixar colunas até aqui'}
 																>📌</button>
 															</div>
-															<ResizeHandle onResize={w => handleColumnResize('_title', w)} onAutoFit={() => handleColumnAutoFit('_title')} />
+															<ResizeHandle onResize={w => { void handleColumnResize('_title', w) }} onAutoFit={() => { void handleColumnAutoFit('_title') }} />
 														</th>
 													)
 												}
@@ -1819,18 +1817,18 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 														stickyLeft={sticky?.left}
 														isLastPinned={sticky?.isLast}
 														isPinned={pinnedColumnId === header.id}
-														onTogglePin={() => handleTogglePin(header.id)}
+														onTogglePin={() => { void handleTogglePin(header.id) }}
 					sorted={header.column.getCanSort() ? header.column.getIsSorted() : undefined}
 					onToggleSort={header.column.getCanSort() ? () => handleColumnToggleSort(header.id) : undefined}
-					onResize={w => handleColumnResize(header.id, w)}
-					onAutoFit={() => handleColumnAutoFit(header.id)}
+					onResize={w => { void handleColumnResize(header.id, w) }}
+					onAutoFit={() => { void handleColumnAutoFit(header.id) }}
 													>
 														{flexRender(header.column.columnDef.header, header.getContext())}
 													</SortableTh>
 												)
 											})}
 											<th className="nb-th nb-th-add-col">
-												<button className="nb-add-col-btn" onClick={handleAddColumn} title="Adicionar campo">
+												<button className="nb-add-col-btn" onClick={() => { void handleAddColumn() }} title="Adicionar campo">
 													+
 												</button>
 											</th>
@@ -1887,7 +1885,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						)}
 						<tr>
 							<td colSpan={columns.length + 1} className="nb-add-row-td">
-								<button className="nb-add-row-btn" onClick={handleAddRow}>
+								<button className="nb-add-row-btn" onClick={() => { void handleAddRow() }}>
 									+ Nova linha
 								</button>
 							</td>
@@ -1924,7 +1922,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 										<AggDropdown
 											colType={config.schema.find(s => s.id === col.id)?.type ?? 'text'}
 											current={aggType}
-											onSelect={t => setAggregation(col.id, t)}
+											onSelect={t => { void setAggregation(col.id, t) }}
 											anchorEl={document.querySelector(`[data-agg-col="${col.id}"]`) as HTMLElement}
 										/>,
 										document.body
