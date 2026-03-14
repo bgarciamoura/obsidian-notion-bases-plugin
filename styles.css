@@ -3160,6 +3160,26 @@
 	flex-shrink: 0;
 }
 
+.nb-tl-bar-handle {
+	position: absolute;
+	top: 0;
+	width: 8px;
+	height: 100%;
+	cursor: ew-resize;
+	opacity: 0;
+	z-index: 2;
+	border-radius: 2px;
+	transition: opacity 0.15s;
+}
+
+.nb-tl-bar-handle--left  { left: 0; }
+.nb-tl-bar-handle--right { right: 0; }
+
+.nb-tl-bar:hover .nb-tl-bar-handle {
+	opacity: 1;
+	background: rgba(255, 255, 255, 0.35);
+}
+
 /* Today line */
 
 .nb-tl-today-line {

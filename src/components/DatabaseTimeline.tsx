@@ -55,6 +55,11 @@ function d2px(d: Date, zoom: ZoomLevel, origin: Date, unitW: number): number {
 	const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
 	return (mo + (d.getDate() - 1) / dim) * unitW
 }
+function px2date(px: number, zoom: ZoomLevel, origin: Date, unitW: number): Date {
+	if (zoom === 'days')  return addDays(origin, Math.round(px / unitW))
+	if (zoom === 'weeks') return addDays(origin, Math.round(px / unitW * 7))
+	return addMonths(origin, Math.floor(px / unitW))
+}
 
 interface HCell { key: string; left: number; width: number; label: string }
 function computeHeader(zoom: ZoomLevel, origin: Date, unitW: number, total: number): { top: HCell[]; bottom: HCell[] } {
@@ -144,6 +149,13 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 	const [groupMenuOpen,  setGroupMenuOpen]  = useState(false)
 	const [noIntervalOpen, setNoIntervalOpen] = useState(true)
 
+	const [resizing, setResizing] = useState<{
+		filePath: string; handle: 'left' | 'right'
+		startX: number; origBarLeft: number; origBarWidth: number
+		startFieldId: string | null; endFieldId: string | null
+	} | null>(null)
+	const [resizeDelta, setResizeDelta] = useState(0)
+
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const startMenuRef  = useRef<HTMLDivElement>(null)
@@ -214,9 +226,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 	mkCloseEffect(fieldsMenuOpen, fieldsMenuRef, setFieldsMenuOpen)
 	mkCloseEffect(startMenuOpen,  startMenuRef,  setStartMenuOpen)
 	mkCloseEffect(endMenuOpen,    endMenuRef,    setEndMenuOpen)
-	mkCloseEffect(groupMenuOpen,  groupMenuRef,  setGroupMenuOpen)
-
-	// ── Canvas geometry ────────────────────────────────────────────────────────
+	mkCloseEffect(groupMenuOpen,  groupMenuRef,  setGroupMenuOpen)	// ── Canvas geometry ────────────────────────────────────────────────────────
 
 	const zoom   = activeView.timelineZoom ?? 'months'
 	const unitW  = UNIT_W[zoom]
@@ -225,6 +235,34 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 	const canvasWidth = total * unitW
 	const header  = useMemo(() => computeHeader(zoom, origin, unitW, total), [zoom, origin, unitW, total])
 	const todayPx = useMemo(() => d2px(today, zoom, origin, unitW), [today, zoom, origin, unitW])
+
+	// ── Bar resize ─────────────────────────────────────────────────────
+
+	useEffect(() => {
+		if (!resizing) return
+		const onMove = (e: MouseEvent) => setResizeDelta(e.clientX - resizing.startX)
+		const onUp   = async (e: MouseEvent) => {
+			const delta = e.clientX - resizing.startX
+			setResizing(null); setResizeDelta(0)
+			document.body.style.cursor = ''; document.body.style.userSelect = ''
+			if (Math.abs(delta) < 2) return
+			const { handle, origBarLeft, origBarWidth, startFieldId, endFieldId, filePath } = resizing
+			let newLeft = origBarLeft, newWidth = origBarWidth
+			if (handle === 'left') { newLeft = origBarLeft + delta; newWidth = origBarWidth - delta }
+			else                   { newWidth = origBarWidth + delta }
+			if (newWidth < unitW) return
+			const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+			const file = app.vault.getAbstractFileByPath(filePath) as TFile | null
+			if (!file) return
+			await app.fileManager.processFrontMatter(file, fm => {
+				if (handle === 'left'  && startFieldId) fm[startFieldId] = fmt(px2date(newLeft,                    zoom, origin, unitW))
+				if (handle === 'right' && endFieldId)   fm[endFieldId]   = fmt(px2date(newLeft + newWidth - unitW, zoom, origin, unitW))
+			})
+		}
+		document.body.style.cursor = 'ew-resize'; document.body.style.userSelect = 'none'
+		window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp)
+		return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+	}, [resizing, zoom, origin, unitW, app]) // eslint-disable-line react-hooks/exhaustive-deps
 
 	// Scroll to today on zoom change and initial mount
 	useEffect(() => {
@@ -534,20 +572,46 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 									<div key={`gr-${idx}`} className="nb-tl-group-row" style={{ height: GROUP_H }} />
 								) : (
 									<div key={item.row._file.path} className={`nb-tl-row${idx % 2 === 0 ? '' : ' nb-tl-row--odd'}`} style={{ height: ROW_H }}>
-										{item.barLeft !== null && item.barWidth !== null && (
-											<div className="nb-tl-bar"
-												style={{ left: item.barLeft, width: item.barWidth, top: (ROW_H - 22) / 2, height: 22 }}
-												onClick={() => app.workspace.getLeaf().openFile(item.row._file)}
-												title={item.row._title}>
-												<span className="nb-tl-bar-title">{item.row._title}</span>
-												{visibleCols.map(col => {
-													const val = item.row[col.id]
-													if (!val || String(val).trim() === '') return null
-													const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val)
-													return <span key={col.id} className="nb-tl-bar-field"> · {display}</span>
-												})}
-											</div>
-										)}
+										{item.barLeft !== null && item.barWidth !== null && (() => {
+											const isRes = resizing?.filePath === item.row._file.path
+											let bLeft = item.barLeft, bWidth = item.barWidth
+											if (isRes && resizing) {
+												if (resizing.handle === 'left') { bLeft = item.barLeft + resizeDelta; bWidth = item.barWidth - resizeDelta }
+												else { bWidth = item.barWidth + resizeDelta }
+											}
+											bWidth = Math.max(8, bWidth)
+											return (
+												<div className="nb-tl-bar"
+													style={{ left: bLeft, width: bWidth, top: (ROW_H - 22) / 2, height: 22 }}
+													onClick={isRes ? undefined : () => app.workspace.getLeaf().openFile(item.row._file)}
+													title={item.row._title}>
+													<div className="nb-tl-bar-handle nb-tl-bar-handle--left"
+														onMouseDown={e => {
+															e.stopPropagation(); e.preventDefault()
+															setResizing({ filePath: item.row._file.path, handle: 'left', startX: e.clientX,
+																origBarLeft: item.barLeft!, origBarWidth: item.barWidth!,
+																startFieldId: startField?.id ?? null, endFieldId: endField?.id ?? null })
+															setResizeDelta(0)
+														}} />
+													<span className="nb-tl-bar-title">{item.row._title}</span>
+													{visibleCols.map(col => {
+														const val = item.row[col.id]
+														if (!val || String(val).trim() === '') return null
+														const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val)
+														return <span key={col.id} className="nb-tl-bar-field"> · {display}</span>
+													})}
+													<div className="nb-tl-bar-handle nb-tl-bar-handle--right"
+														onMouseDown={e => {
+															e.stopPropagation(); e.preventDefault()
+															setResizing({ filePath: item.row._file.path, handle: 'right', startX: e.clientX,
+																origBarLeft: item.barLeft!, origBarWidth: item.barWidth!,
+																startFieldId: startField?.id ?? null, endFieldId: endField?.id ?? null })
+															setResizeDelta(0)
+														}} />
+												</div>
+											)
+										})()
+										}
 									</div>
 								))}
 							</div>
