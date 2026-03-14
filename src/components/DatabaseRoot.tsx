@@ -5,6 +5,7 @@ import { DatabaseManager } from '../database-manager'
 import { DatabaseConfig, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW, EmbedState, ViewConfig } from '../types'
 import { DatabaseTable } from './DatabaseTable'
 import { DatabaseList } from './DatabaseList'
+import { DatabaseBoard } from './DatabaseBoard'
 
 interface DatabaseRootProps {
 	dbFile: TFile | null
@@ -17,8 +18,8 @@ interface DatabaseRootProps {
 	onEmbedStateChange?: (state: EmbedState) => Promise<void>
 }
 
-const VIEW_ICONS: Record<string, string> = { table: '⊞', list: '≡' }
-const VIEW_LABELS: Record<string, string> = { table: 'Tabela', list: 'Lista' }
+const VIEW_ICONS: Record<string, string> = { table: '⊞', list: '≡', board: '▦' }
+const VIEW_LABELS: Record<string, string> = { table: 'Tabela', list: 'Lista', board: 'Board' }
 
 export function DatabaseRoot({
 	dbFile, manager,
@@ -121,13 +122,19 @@ export function DatabaseRoot({
 		setRenamingViewId(null)
 	}, [renamingViewId])
 
+	// ── View renderer helper ──────────────────────────────────────────────────
+
+	function renderView(view: ViewConfig, onChange: (v: ViewConfig) => Promise<void>, key?: string) {
+		const props = { key, dbFile, manager, externalView: view, onViewChange: onChange }
+		if (view.type === 'list') return <DatabaseList {...props} />
+		if (view.type === 'board') return <DatabaseBoard {...props} />
+		return <DatabaseTable key={key} dbFile={dbFile} manager={manager} externalView={view} onViewChange={onChange} />
+	}
+
 	// ── Mode A: forced single view ────────────────────────────────────────────
 
 	if (isForcedEmbed) {
-		if (externalView!.type === 'list') {
-			return <DatabaseList dbFile={dbFile} manager={manager} externalView={externalView!} onViewChange={onViewChange!} />
-		}
-		return <DatabaseTable dbFile={dbFile} manager={manager} externalView={externalView} onViewChange={onViewChange} />
+		return renderView(externalView!, onViewChange!)
 	}
 
 	// ── Mode B: free multi-view embed ─────────────────────────────────────────
@@ -224,7 +231,7 @@ export function DatabaseRoot({
 						{embedAddMenuOpen && (
 							<div className="nb-view-add-menu nb-fields-dropdown">
 								<div className="nb-fields-dropdown-label">Adicionar view</div>
-								{(['table', 'list'] as ViewConfig['type'][]).map(type => (
+								{(['table', 'list', 'board'] as ViewConfig['type'][]).map(type => (
 									<button key={type} className="nb-menu-item" onClick={() => addEmbedView(type)}>
 										<span className="nb-menu-item-icon">{VIEW_ICONS[type]}</span>
 										<span>{VIEW_LABELS[type]}</span>
@@ -234,10 +241,7 @@ export function DatabaseRoot({
 						)}
 					</div>
 				</div>
-				{embedActiveView.type === 'list'
-					? <DatabaseList key={embedActiveId} dbFile={dbFile} manager={manager} externalView={embedActiveView} onViewChange={handleEmbedViewChange} />
-					: <DatabaseTable key={embedActiveId} dbFile={dbFile} manager={manager} externalView={embedActiveView} onViewChange={handleEmbedViewChange} />
-				}
+				{renderView(embedActiveView, handleEmbedViewChange, embedActiveId)}
 			</Fragment>
 		)
 	}
@@ -344,7 +348,7 @@ export function DatabaseRoot({
 					{addMenuOpen && (
 						<div className="nb-view-add-menu nb-fields-dropdown">
 							<div className="nb-fields-dropdown-label">Adicionar view</div>
-							{(['table', 'list'] as ViewConfig['type'][]).map(type => (
+							{(['table', 'list', 'board'] as ViewConfig['type'][]).map(type => (
 								<button key={type} className="nb-menu-item" onClick={() => addView(type)}>
 									<span className="nb-menu-item-icon">{VIEW_ICONS[type]}</span>
 									<span>{VIEW_LABELS[type]}</span>
@@ -354,15 +358,15 @@ export function DatabaseRoot({
 					)}
 				</div>
 			</div>
-			{activeView.type === 'list'
-				? <DatabaseList key={activeViewId} dbFile={dbFile} manager={manager} externalView={activeView} onViewChange={handleViewChange} />
-				: <DatabaseTable
+			{activeView.type === 'table'
+				? <DatabaseTable
 					key={activeViewId}
 					dbFile={dbFile}
 					manager={manager}
 					externalView={isSingleTableView ? undefined : activeView}
 					onViewChange={isSingleTableView ? undefined : handleViewChange}
 				/>
+				: renderView(activeView, handleViewChange, activeViewId)
 			}
 		</Fragment>
 	)

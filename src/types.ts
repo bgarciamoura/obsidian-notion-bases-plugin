@@ -80,7 +80,7 @@ export type AggregationType = 'none' | 'count' | 'count_values' | 'sum' | 'avg' 
 export interface ViewConfig {
 	id: string
 	name?: string
-	type: 'table' | 'list'
+	type: 'table' | 'list' | 'board'
 	filters: FilterConfig[]
 	sorts: SortConfig[]
 	hiddenColumns: string[]
@@ -91,6 +91,7 @@ export interface ViewConfig {
 	rowHeight?: 'compact' | 'medium' | 'tall'
 	aggregations?: Record<string, AggregationType>
 	wrapText?: boolean
+	groupByColumnId?: string
 }
 
 // ── Embed multi-view state (stored in hosting note frontmatter) ─────────────

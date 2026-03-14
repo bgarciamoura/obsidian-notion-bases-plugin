@@ -2303,3 +2303,168 @@
 	padding: 4px 8px;
 	font-size: var(--font-ui-smaller);
 }
+
+/* ── Board (Kanban) ──────────────────────────────────────────────────────── */
+
+.nb-board {
+	overflow-x: auto;
+	display: flex;
+	gap: 12px;
+	padding: 12px 0 16px;
+	align-items: flex-start;
+	min-height: 200px;
+}
+
+.nb-board-column {
+	flex: 0 0 260px;
+	min-width: 0;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	max-height: calc(100vh - 220px);
+	overflow: hidden;
+	transition: background 0.15s;
+}
+
+.nb-board-column--drag-over {
+	background: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+}
+
+.nb-board-column-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 12px 8px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	gap: 6px;
+	flex-shrink: 0;
+}
+
+.nb-board-column-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: var(--radius-s);
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	color: var(--text-on-accent);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 160px;
+}
+
+.nb-board-column-name {
+	font-size: var(--font-ui-small);
+	font-weight: 600;
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 180px;
+}
+
+.nb-board-column-count {
+	margin-left: auto;
+	flex-shrink: 0;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+	background: var(--background-modifier-border);
+	border-radius: 10px;
+	padding: 1px 7px;
+}
+
+.nb-board-cards {
+	padding: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	overflow-y: auto;
+	flex: 1;
+}
+
+.nb-board-card {
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	padding: 8px 10px;
+	cursor: pointer;
+	transition: box-shadow 0.1s, border-color 0.1s;
+	user-select: none;
+}
+
+.nb-board-card:hover {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 1px 4px var(--background-modifier-box-shadow);
+}
+
+.nb-board-card[draggable='true']:active {
+	opacity: 0.7;
+	cursor: grabbing;
+}
+
+.nb-board-card-title {
+	font-size: var(--font-ui-small);
+	font-weight: 500;
+	color: var(--text-normal);
+	margin-bottom: 4px;
+}
+
+.nb-board-card-props {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.nb-board-card-prop {
+	display: flex;
+	gap: 4px;
+	font-size: var(--font-ui-smaller);
+}
+
+.nb-board-card-prop-name {
+	color: var(--text-faint);
+	flex-shrink: 0;
+}
+
+.nb-board-card-prop-value {
+	color: var(--text-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.nb-board-add-card {
+	margin: 0;
+	padding: 6px 12px;
+	border: none;
+	background: transparent;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+	text-align: left;
+	border-top: 1px solid var(--background-modifier-border);
+	flex-shrink: 0;
+	transition: color 0.1s, background 0.1s;
+}
+
+.nb-board-add-card:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.nb-toolbar-toggle {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	cursor: pointer;
+	font-weight: normal;
+}
+
+.nb-toolbar-toggle input[type='checkbox'] {
+	margin: 0;
+	cursor: pointer;
+}
