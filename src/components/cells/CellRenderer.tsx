@@ -874,7 +874,7 @@ function DateCell({ value, isEditing, onStartEdit, onCommit, onCancel }: {
 	}, [isEditing])
 
 	const formatted = value
-		? new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+		? (([y,m,d]) => new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }))(value.split('-'))
 		: null
 
 	if (!isEditing) {
