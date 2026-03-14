@@ -20,6 +20,9 @@ interface DatabaseBoardProps {
 	onViewChange: (view: ViewConfig) => Promise<void>
 }
 
+const DRAG_TYPE_CARD = 'nb-card'
+const DRAG_TYPE_COLUMN = 'nb-column'
+
 export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: DatabaseBoardProps) {
 	const app = useApp()
 	const [rows, setRows] = useState<NoteRow[]>([])
@@ -31,8 +34,10 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const [groupByMenuOpen, setGroupByMenuOpen] = useState(false)
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
-	const [dragRowPath, setDragRowPath] = useState<string | null>(null)
-	const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
+	// card drag
+	const [cardDragOver, setCardDragOver] = useState<string | null>(null)
+	// column drag
+	const [colDragOver, setColDragOver] = useState<string | null>(null)
 
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const groupByMenuRef = useRef<HTMLDivElement>(null)
@@ -145,20 +150,33 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	const columns = useMemo(() => {
 		if (!groupByCol) return []
 		const options = groupByCol.options ?? []
-		const defined = options.map(opt => ({
-			value: opt.value,
-			label: opt.value,
-			color: opt.color,
-			rows: sortedRows.filter(r => r[groupByCol.id] === opt.value),
-		}))
-		const noValueRows = sortedRows.filter(r => {
-			const v = r[groupByCol.id]
-			return v === null || v === undefined || String(v).trim() === ''
-		})
-		const noValueCol = { value: '', label: 'Sem valor', color: undefined, rows: noValueRows }
-		const all = [...defined, noValueCol]
-		return hideEmpty ? all.filter(c => c.rows.length > 0) : all
-	}, [groupByCol, sortedRows, hideEmpty])
+		const all = [
+			...options.map(opt => ({
+				value: opt.value,
+				label: opt.value,
+				color: opt.color,
+				rows: sortedRows.filter(r => r[groupByCol.id] === opt.value),
+			})),
+			{
+				value: '',
+				label: 'Sem valor',
+				color: undefined,
+				rows: sortedRows.filter(r => {
+					const v = r[groupByCol.id]
+					return v === null || v === undefined || String(v).trim() === ''
+				}),
+			},
+		]
+		// Apply saved column order
+		const order = activeView.boardColumnOrder
+		let ordered = all
+		if (order && order.length > 0) {
+			const inOrder = order.flatMap(v => { const c = all.find(x => x.value === v); return c ? [c] : [] })
+			const rest = all.filter(x => !order.includes(x.value))
+			ordered = [...inOrder, ...rest]
+		}
+		return hideEmpty ? ordered.filter(c => c.rows.length > 0) : ordered
+	}, [groupByCol, sortedRows, hideEmpty, activeView.boardColumnOrder])
 
 	// ── Actions ───────────────────────────────────────────────────────────────
 
@@ -174,6 +192,18 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			}
 		})
 	}, [app, dbFile, groupByCol])
+
+	const moveColumn = useCallback(async (fromValue: string, toValue: string) => {
+		if (fromValue === toValue) return
+		const currentOrder = columns.map(c => c.value)
+		const fromIdx = currentOrder.indexOf(fromValue)
+		const toIdx = currentOrder.indexOf(toValue)
+		if (fromIdx === -1 || toIdx === -1) return
+		const next = [...currentOrder]
+		next.splice(fromIdx, 1)
+		next.splice(toIdx, 0, fromValue)
+		await saveView({ ...activeView, boardColumnOrder: next })
+	}, [columns, activeView, saveView])
 
 	const addCardToColumn = useCallback(async (columnValue: string) => {
 		if (!dbFile || !groupByCol) return
@@ -326,68 +356,107 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 
 			{/* Board */}
 			<div className="nb-board">
-				{columns.map(col => (
-					<div
-						key={col.value || '__no_value__'}
-						className={`nb-board-column${dragOverColumn === (col.value || '__no_value__') ? ' nb-board-column--drag-over' : ''}`}
-						onDragOver={e => { e.preventDefault(); setDragOverColumn(col.value || '__no_value__') }}
-						onDragLeave={e => {
-							const related = e.relatedTarget as Node | null
-							if (!e.currentTarget.contains(related)) setDragOverColumn(null)
-						}}
-						onDrop={async e => {
-							e.preventDefault()
-							setDragOverColumn(null)
-							if (dragRowPath) { await moveCard(dragRowPath, col.value); setDragRowPath(null) }
-						}}
-					>
-						{/* Column header */}
-						<div className="nb-board-column-header">
-							{col.color ? (
-								<span className="nb-board-column-badge" style={{ background: col.color }}>{col.label}</span>
-							) : (
-								<span className="nb-board-column-name">{col.label}</span>
-							)}
-							<span className="nb-board-column-count">{col.rows.length}</span>
-						</div>
+				{columns.map(col => {
+					const key = col.value || '__no_value__'
+					const isCardOver = cardDragOver === key
+					const isColOver = colDragOver === key
+					return (
+						<div
+							key={key}
+							className={`nb-board-column${isCardOver ? ' nb-board-column--card-over' : ''}${isColOver ? ' nb-board-column--col-over' : ''}`}
+							onDragOver={e => {
+								e.preventDefault()
+								const type = e.dataTransfer.types.includes(DRAG_TYPE_CARD) ? DRAG_TYPE_CARD : DRAG_TYPE_COLUMN
+								if (type === DRAG_TYPE_CARD) setCardDragOver(key)
+								else setColDragOver(key)
+							}}
+							onDragLeave={e => {
+								const related = e.relatedTarget as Node | null
+								if (!e.currentTarget.contains(related)) {
+									setCardDragOver(null)
+									setColDragOver(null)
+								}
+							}}
+							onDrop={async e => {
+								e.preventDefault()
+								setCardDragOver(null)
+								setColDragOver(null)
+								const dragType = e.dataTransfer.getData('nb-drag-type')
+								if (dragType === DRAG_TYPE_CARD) {
+									const rowPath = e.dataTransfer.getData('nb-row-path')
+									if (rowPath) await moveCard(rowPath, col.value)
+								} else if (dragType === DRAG_TYPE_COLUMN) {
+									const fromValue = e.dataTransfer.getData('nb-col-value')
+									if (fromValue !== undefined) await moveColumn(fromValue, col.value)
+								}
+							}}
+						>
+							{/* Column header with drag handle */}
+							<div
+								className="nb-board-column-header"
+								draggable
+								onDragStart={e => {
+									e.stopPropagation()
+									e.dataTransfer.effectAllowed = 'move'
+									e.dataTransfer.setData('nb-drag-type', DRAG_TYPE_COLUMN)
+									e.dataTransfer.setData('nb-col-value', col.value)
+									e.dataTransfer.setData(DRAG_TYPE_COLUMN, '')
+								}}
+								onDragEnd={() => setColDragOver(null)}
+								title="Arraste para reordenar"
+							>
+								<span className="nb-board-column-drag-handle">⠿</span>
+								{col.color ? (
+									<span className="nb-board-column-badge" style={{ background: col.color }}>{col.label}</span>
+								) : (
+									<span className="nb-board-column-name">{col.label}</span>
+								)}
+								<span className="nb-board-column-count">{col.rows.length}</span>
+							</div>
 
-						{/* Cards */}
-						<div className="nb-board-cards">
-							{col.rows.map(row => (
-								<div
-									key={row._file.path}
-									className="nb-board-card"
-									draggable
-									onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; setDragRowPath(row._file.path) }}
-									onDragEnd={() => setDragRowPath(null)}
-									onClick={() => app.workspace.getLeaf().openFile(row._file)}
-								>
-									<div className="nb-board-card-title">{row._title}</div>
-									{visibleCols.length > 0 && (
-										<div className="nb-board-card-props">
-											{visibleCols.map(c => {
-												const val = row[c.id]
-												if (val === null || val === undefined || String(val).trim() === '') return null
-												const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val)
-												return (
-													<span key={c.id} className="nb-board-card-prop">
-														<span className="nb-board-card-prop-name">{c.name}:</span>
-														<span className="nb-board-card-prop-value">{display}</span>
-													</span>
-												)
-											})}
-										</div>
-									)}
-								</div>
-							))}
-						</div>
+							{/* Cards */}
+							<div className="nb-board-cards">
+								{col.rows.map(row => (
+									<div
+										key={row._file.path}
+										className="nb-board-card"
+										draggable
+										onDragStart={e => {
+											e.stopPropagation()
+											e.dataTransfer.effectAllowed = 'move'
+											e.dataTransfer.setData('nb-drag-type', DRAG_TYPE_CARD)
+											e.dataTransfer.setData('nb-row-path', row._file.path)
+											e.dataTransfer.setData(DRAG_TYPE_CARD, '')
+										}}
+										onClick={() => app.workspace.getLeaf().openFile(row._file)}
+									>
+										<div className="nb-board-card-title">{row._title}</div>
+										{visibleCols.length > 0 && (
+											<div className="nb-board-card-props">
+												{visibleCols.map(c => {
+													const val = row[c.id]
+													if (val === null || val === undefined || String(val).trim() === '') return null
+													const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val)
+													return (
+														<span key={c.id} className="nb-board-card-prop">
+															<span className="nb-board-card-prop-name">{c.name}:</span>
+															<span className="nb-board-card-prop-value">{display}</span>
+														</span>
+													)
+												})}
+											</div>
+										)}
+									</div>
+								))}
+							</div>
 
-						{/* Add card */}
-						<button className="nb-board-add-card" onClick={() => addCardToColumn(col.value)}>
-							+ Novo card
-						</button>
-					</div>
-				))}
+							{/* Add card */}
+							<button className="nb-board-add-card" onClick={() => addCardToColumn(col.value)}>
+								+ Novo card
+							</button>
+						</div>
+					)
+				})}
 			</div>
 		</div>
 	)

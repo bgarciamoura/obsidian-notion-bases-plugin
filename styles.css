@@ -2329,9 +2329,27 @@
 	transition: background 0.15s;
 }
 
-.nb-board-column--drag-over {
+.nb-board-column--card-over {
 	background: var(--background-modifier-hover);
 	border-color: var(--interactive-accent);
+}
+
+.nb-board-column--col-over {
+	border: 2px dashed var(--interactive-accent);
+	opacity: 0.8;
+}
+
+.nb-board-column-drag-handle {
+	cursor: grab;
+	color: var(--text-faint);
+	font-size: 14px;
+	padding: 0 2px;
+	flex-shrink: 0;
+	user-select: none;
+}
+
+.nb-board-column-drag-handle:active {
+	cursor: grabbing;
 }
 
 .nb-board-column-header {

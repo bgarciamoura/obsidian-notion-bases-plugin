@@ -92,6 +92,7 @@ export interface ViewConfig {
 	aggregations?: Record<string, AggregationType>
 	wrapText?: boolean
 	groupByColumnId?: string
+	boardColumnOrder?: string[]
 }
 
 // ── Embed multi-view state (stored in hosting note frontmatter) ─────────────
