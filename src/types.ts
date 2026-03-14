@@ -82,7 +82,7 @@ export type AggregationType = 'none' | 'count' | 'count_values' | 'sum' | 'avg' 
 export interface ViewConfig {
 	id: string
 	name?: string
-	type: 'table' | 'list' | 'board' | 'gallery' | 'calendar'
+	type: 'table' | 'list' | 'board' | 'gallery' | 'calendar' | 'timeline'
 	filters: FilterConfig[]
 	sorts: SortConfig[]
 	hiddenColumns: string[]
@@ -98,6 +98,10 @@ export interface ViewConfig {
 	galleryCoverField?: string
 	galleryCardSize?: 'small' | 'medium' | 'large'
 	calendarDateField?: string
+	timelineStartField?: string
+	timelineEndField?: string
+	timelineZoom?: 'days' | 'weeks' | 'months'
+	timelineGroupByField?: string
 }
 
 // ── Embed multi-view state (stored in hosting note frontmatter) ─────────────
