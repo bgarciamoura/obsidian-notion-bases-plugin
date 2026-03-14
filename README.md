@@ -1,5 +1,5 @@
 
-# Notion Bases — Database views for Obsidian
+# Obsidian Obsidian Notion Bases — Database views for Obsidian
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/bgarciamoura/obsidian-notion-bases-plugin)
 ![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=7c3aed&label=downloads&query=%24%5B%22obsidian-notion-bases%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json)
@@ -8,7 +8,7 @@
 
 **Turn any folder in your vault into a powerful database — right inside Obsidian.**
 
-Notion Bases brings the database experience from Notion directly into your vault. Every note in a folder becomes a row. Every frontmatter field becomes a column. Six different views. No external tools, no syncing, no lock-in — your data lives in plain Markdown files, forever yours.
+Obsidian Notion Bases brings the database experience from Notion directly into your vault. Every note in a folder becomes a row. Every frontmatter field becomes a column. Six different views. No external tools, no syncing, no lock-in — your data lives in plain Markdown files, forever yours.
 
 ---
 
@@ -84,7 +84,7 @@ Horizontal bar chart with three zoom levels (days / weeks / months). Drag the le
 **Community plugins (recommended)**
 
 1. Open **Settings → Community plugins** and disable Safe mode if prompted
-2. Click **Browse**, search for **Notion Bases** and install
+2. Click **Browse**, search for **Obsidian Notion Bases** and install
 3. Enable the plugin
 
 **Manual installation**
@@ -149,7 +149,7 @@ Open any file in any text editor and your data is right there.
 
 ## Support the project
 
-If Notion Bases saves you time or makes your vault more powerful, consider supporting its development!
+If Obsidian Notion Bases saves you time or makes your vault more powerful, consider supporting its development!
 
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Donate-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/bgarciamoura)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/bgarciamoura)
