@@ -21,6 +21,7 @@ const TYPE_ICONS: Record<ColumnType, string> = {
 	formula:     'ƒ',
 	relation:    '🔗',
 	lookup:      '↗',
+	image:       '🖼',
 }
 
 const TYPE_LABELS: Record<ColumnType, string> = {
@@ -38,6 +39,7 @@ const TYPE_LABELS: Record<ColumnType, string> = {
 	formula:     'Fórmula',
 	relation:    'Relação',
 	lookup:      'Lookup',
+	image:       'Imagem',
 }
 
 interface ColumnHeaderProps {
@@ -86,13 +88,20 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const fmtPanelRef = useRef<HTMLDivElement>(null)
 	const fmtDragOffset = useRef<{ x: number; y: number } | null>(null)
 
+	// Image config state
+	const [editingImageConfig, setEditingImageConfig] = useState(false)
+	const [imagePanelPos, setImagePanelPos] = useState<{ x: number; y: number } | null>(null)
+	const [imageFolderInput, setImageFolderInput] = useState(col.imageSourceFolder ?? '')
+	const imgPanelRef = useRef<HTMLDivElement>(null)
+	const imgDragOffset = useRef<{ x: number; y: number } | null>(null)
+
 	// Fechar menu ao clicar fora
 	useEffect(() => {
 		if (!menuOpen) return
 		const handler = (e: MouseEvent) => {
 			const target = e.target as Node
 			const inMenu = menuRef.current?.contains(target)
-			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target) || fmtPanelRef.current?.contains(target)
+			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target) || fmtPanelRef.current?.contains(target) || imgPanelRef.current?.contains(target)
 			if (!inMenu && !inPanel) {
 				setMenuOpen(false)
 				setEditingFormula(false)
@@ -235,6 +244,38 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		}
 	}, [col.numberFormat, editingNumberFmt])
 
+	// Sync image folder input with col
+	useEffect(() => {
+		if (!editingImageConfig) setImageFolderInput(col.imageSourceFolder ?? '')
+	}, [col.imageSourceFolder, editingImageConfig])
+
+	// Position panel when image config opens
+	useEffect(() => {
+		if (!editingImageConfig) return
+		if (menuRef.current) {
+			const rect = menuRef.current.getBoundingClientRect()
+			const pw = 280, ph = 160
+			let x = rect.left
+			let y = rect.bottom + 4
+			if (x + pw > window.innerWidth) x = window.innerWidth - pw - 8
+			if (y + ph > window.innerHeight) y = rect.top - ph - 4
+			setImagePanelPos({ x, y })
+		}
+	}, [editingImageConfig])
+
+	// Drag for image config panel
+	useEffect(() => {
+		if (!editingImageConfig) return
+		const onMove = (e: MouseEvent) => {
+			if (!imgDragOffset.current) return
+			setImagePanelPos({ x: e.clientX - imgDragOffset.current.x, y: e.clientY - imgDragOffset.current.y })
+		}
+		const onUp = () => { imgDragOffset.current = null }
+		document.addEventListener('mousemove', onMove)
+		document.addEventListener('mouseup', onUp)
+		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+	}, [editingImageConfig])
+
 	// Drag for number format panel
 	useEffect(() => {
 		if (!editingNumberFmt) return
@@ -247,6 +288,23 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		document.addEventListener('mouseup', onUp)
 		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
 	}, [editingNumberFmt])
+
+	const handleSaveImageConfig = async () => {
+		await updateCol({ imageSourceFolder: imageFolderInput.trim() || undefined })
+		setEditingImageConfig(false)
+		setMenuOpen(false)
+	}
+
+	const handleCloseImageConfig = () => {
+		setEditingImageConfig(false)
+		setMenuOpen(false)
+	}
+
+	const handleImageTitleBarMouseDown = (e: React.MouseEvent) => {
+		if (!imagePanelPos) return
+		imgDragOffset.current = { x: e.clientX - imagePanelPos.x, y: e.clientY - imagePanelPos.y }
+		e.preventDefault()
+	}
 
 	const updateCol = async (changes: Partial<ColumnSchema>) => {
 		const newSchema = schema.map(s => s.id === col.id ? { ...s, ...changes } : s)
@@ -281,6 +339,8 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			setEditingFormula(true)
 		} else if (type === 'lookup' || type === 'relation') {
 			setEditingLookup(true)
+		} else if (type === 'image') {
+			setEditingImageConfig(true)
 		} else {
 			setMenuOpen(false)
 		}
@@ -629,6 +689,33 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		document.body
 	) : null
 
+	const imageCfgPanel = editingImageConfig && imagePanelPos ? createPortal(
+		<div ref={imgPanelRef} className="nb-formula-floating-panel" style={{ top: imagePanelPos.y, left: imagePanelPos.x, minWidth: 280 }}>
+			<div className="nb-formula-titlebar" onMouseDown={handleImageTitleBarMouseDown}>
+				<span className="nb-formula-titlebar-icon">🖼</span>
+				<span className="nb-formula-titlebar-title">Imagem: {col.name}</span>
+				<button className="nb-formula-close" onClick={handleCloseImageConfig} title="Fechar">×</button>
+			</div>
+			<div className="nb-formula-body" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+				<label style={{ fontSize: 'var(--font-ui-small)', color: 'var(--text-muted)' }}>
+					Pasta de origem (opcional)
+				</label>
+				<input
+					type="text"
+					className="nb-header-rename-input"
+					value={imageFolderInput}
+					onChange={e => setImageFolderInput(e.target.value)}
+					placeholder="Ex: imagens/capas"
+				/>
+				<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+					<button className="nb-menu-item" onClick={handleCloseImageConfig} style={{ flex: 1 }}>Cancelar</button>
+					<button className="nb-menu-item" onClick={handleSaveImageConfig} style={{ flex: 1, color: 'var(--interactive-accent)' }}>Salvar</button>
+				</div>
+			</div>
+		</div>,
+		document.body
+	) : null
+
 	return (
 		<div className="nb-column-header" ref={menuRef}>
 			{/* Label da coluna */}
@@ -648,7 +735,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			) : (
 				<button
 					className="nb-header-label"
-					onClick={() => { setMenuOpen(v => !v); setEditingFormula(false); setEditingLookup(false); setEditingNumberFmt(false) }}
+					onClick={() => { setMenuOpen(v => !v); setEditingFormula(false); setEditingLookup(false); setEditingNumberFmt(false); setEditingImageConfig(false) }}
 					title={col.name}
 				>
 					<span className="nb-header-icon">{TYPE_ICONS[col.type]}</span>
@@ -657,7 +744,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			)}
 
 			{/* Menu dropdown */}
-			{menuOpen && !editingFormula && !editingLookup && !editingNumberFmt && (
+			{menuOpen && !editingFormula && !editingLookup && !editingNumberFmt && !editingImageConfig && (
 				<div className="nb-column-menu">
 					<button className="nb-menu-item" onClick={() => { setMenuOpen(false); setRenaming(true) }}>
 						<span className="nb-menu-item-icon">✏️</span>
@@ -692,9 +779,16 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						</button>
 					)}
 
+					{col.type === 'image' && (
+						<button className="nb-menu-item" onClick={() => setEditingImageConfig(true)}>
+							<span className="nb-menu-item-icon">🖼</span>
+							<span>Configurar pasta de imagens</span>
+						</button>
+					)}
+
 					<div className="nb-menu-separator" />
 					<div className="nb-menu-label">Tipo de campo</div>
-					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'url', 'email', 'phone', 'status', 'formula', 'relation', 'lookup'] as ColumnType[]).map(type => (
+					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'url', 'email', 'phone', 'status', 'formula', 'relation', 'lookup', 'image'] as ColumnType[]).map(type => (
 						<button
 							key={type}
 							className={`nb-menu-item nb-menu-type-item ${col.type === type ? 'nb-menu-item--active' : ''}`}
@@ -721,6 +815,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			{formulaPanel}
 			{lookupPanel}
 			{numberFmtPanel}
+			{imageCfgPanel}
 		</div>
 	)
 }

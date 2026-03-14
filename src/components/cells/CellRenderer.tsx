@@ -282,6 +282,18 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 		case 'lookup':
 			return <LookupCell value={value} col={col} />
 
+		case 'image':
+			return (
+				<ImageCell
+					col={col}
+					value={value as string | null}
+					isEditing={isEditing}
+					onStartEdit={startEditing}
+					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCancel={() => setEditingCell(null)}
+				/>
+			)
+
 		default:
 			return <span className="nb-cell-text">{String(value ?? '')}</span>
 	}
@@ -1004,5 +1016,108 @@ function RelationCell({ value, options, isEditing, onStartEdit, onCommit, onCanc
 			</div>
 			{dropdown}
 		</div>
+	)
+}
+
+// ── ImageCell ────────────────────────────────────────────────────────────────
+
+const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp'])
+
+function ImageCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
+	col: ColumnSchema
+	value: string | null
+	isEditing: boolean
+	onStartEdit: () => void
+	onCommit: (v: string | null) => void
+	onCancel: () => void
+}) {
+	const app = useApp()
+	const [images, setImages] = useState<TFile[]>([])
+	const [dropdownPos, setDropdownPos] = useState<{ x: number; y: number } | null>(null)
+	const cellRef = useRef<HTMLDivElement>(null)
+	const dropdownRef = useRef<HTMLDivElement>(null)
+
+	useEffect(() => {
+		if (!isEditing) return
+		const folder = col.imageSourceFolder
+		const allFiles = app.vault.getFiles()
+		const filtered = folder
+			? allFiles.filter(f => IMAGE_EXTS.has(f.extension.toLowerCase()) && (f.path.startsWith(folder + '/') || f.parent?.path === folder))
+			: allFiles.filter(f => IMAGE_EXTS.has(f.extension.toLowerCase()))
+		setImages(filtered.sort((a, b) => a.name.localeCompare(b.name)))
+		if (cellRef.current) {
+			const rect = cellRef.current.getBoundingClientRect()
+			let x = rect.left
+			const y = rect.bottom + 4
+			if (x + 280 > window.innerWidth) x = window.innerWidth - 288
+			setDropdownPos({ x, y })
+		}
+	}, [isEditing, col.imageSourceFolder])
+
+	useEffect(() => {
+		if (!isEditing) return
+		const h = (e: MouseEvent) => {
+			if (dropdownRef.current?.contains(e.target as Node)) return
+			if (cellRef.current?.contains(e.target as Node)) return
+			onCancel()
+		}
+		document.addEventListener('mousedown', h)
+		return () => document.removeEventListener('mousedown', h)
+	}, [isEditing, onCancel])
+
+	const imageFile = value ? app.vault.getFileByPath(value) : null
+	const imageUrl = imageFile ? app.vault.getResourcePath(imageFile) : null
+
+	const openImage = (e: React.MouseEvent) => {
+		e.stopPropagation()
+		if (imageFile) app.workspace.getLeaf(true).openFile(imageFile)
+	}
+
+	return (
+		<>
+			<div ref={cellRef} className="nb-cell-image" onClick={onStartEdit}>
+				{imageUrl ? (
+					<div className="nb-image-cell-content">
+						<img src={imageUrl} alt="" className="nb-image-cell-thumb" />
+						<a className="nb-image-cell-link" onClick={openImage} title={value ?? ''}>
+							{imageFile?.name ?? value ?? ''}
+						</a>
+					</div>
+				) : (
+					<span className="nb-cell-text nb-cell-placeholder">Selecionar imagem…</span>
+				)}
+			</div>
+			{isEditing && dropdownPos && createPortal(
+				<div ref={dropdownRef} className="nb-image-picker" style={{ position: 'fixed', top: dropdownPos.y, left: dropdownPos.x }}>
+					<div className="nb-image-picker-header">
+						<span>Selecionar imagem</span>
+						{value && <button className="nb-image-picker-clear" onClick={e => { e.stopPropagation(); onCommit(null) }}>Limpar</button>}
+					</div>
+					{images.length === 0 ? (
+						<div className="nb-image-picker-empty">
+							{col.imageSourceFolder ? `Nenhuma imagem encontrada em "${col.imageSourceFolder}"` : 'Nenhuma imagem encontrada no vault'}
+						</div>
+					) : (
+						<div className="nb-image-picker-grid">
+							{images.map(img => {
+								const url = app.vault.getResourcePath(img)
+								return (
+									<div
+										key={img.path}
+										className={`nb-image-picker-item${value === img.path ? ' nb-image-picker-item--selected' : ''}`}
+										onClick={e => { e.stopPropagation(); onCommit(img.path) }}
+										title={img.path}
+									>
+										<img src={url} alt={img.name} className="nb-image-picker-thumb" />
+										<span className="nb-image-picker-name">{img.name}</span>
+									</div>
+								)
+							})}
+						</div>
+					)}
+				</div>,
+				document.body
+			)}
+		</>
 	)
 }

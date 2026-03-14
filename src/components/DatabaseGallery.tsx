@@ -298,7 +298,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 								<span className="nb-menu-item-icon">—</span>
 								<span>Nenhuma</span>
 							</button>
-							{config.schema.filter(c => c.type === 'text' || c.type === 'title').map(col => (
+							{config.schema.filter(c => c.type === 'text' || c.type === 'title' || c.type === 'image').map(col => (
 								<button
 									key={col.id}
 									className={`nb-menu-item${activeView.galleryCoverField === col.id ? ' nb-menu-item--active' : ''}`}
@@ -415,7 +415,10 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 			{/* Gallery grid */}
 			<div className="nb-gallery" style={{ gridTemplateColumns: gridTemplate }}>
 				{displayRows.map(row => {
-					const coverValue = coverField
+					const coverImagePath = coverField?.type === 'image' ? (row[coverField.id] as string | null) ?? null : null
+					const coverImageFile = coverImagePath ? app.vault.getFileByPath(coverImagePath) : null
+					const coverImageUrl = coverImageFile ? app.vault.getResourcePath(coverImageFile) : null
+					const coverTextValue = coverField && coverField.type !== 'image'
 						? (coverField.type === 'title' ? row._title : String(row[coverField.id] ?? ''))
 						: null
 
@@ -426,9 +429,13 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 							onClick={() => app.workspace.getLeaf().openFile(row._file)}
 						>
 							{/* Cover */}
-							{coverValue ? (
+							{coverImageUrl ? (
+								<div className="nb-gallery-cover nb-gallery-cover--image">
+									<img src={coverImageUrl} alt="" />
+								</div>
+							) : coverTextValue ? (
 								<div className="nb-gallery-cover nb-gallery-cover--text">
-									<span>{coverValue}</span>
+									<span>{coverTextValue}</span>
 								</div>
 							) : (
 								<div className="nb-gallery-cover nb-gallery-cover--empty">

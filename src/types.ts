@@ -18,6 +18,7 @@ export type ColumnType =
 	| 'formula'
 	| 'relation'
 	| 'lookup'
+	| 'image'
 
 export interface SelectOption {
 	value: string
@@ -43,6 +44,7 @@ export interface ColumnSchema {
 	refColumnId?: string      // lookup
 	refMatchColumnId?: string // lookup
 	numberFormat?: NumberFormat
+	imageSourceFolder?: string
 }
 
 // ── View / filter / sort ────────────────────────────────────────────────────
