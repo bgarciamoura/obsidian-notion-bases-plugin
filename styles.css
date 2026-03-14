@@ -938,6 +938,76 @@
 	opacity: 1;
 }
 
+/* ── Link cell validation error ──────────────────────────────────────────── */
+
+.nb-link-edit-wrapper {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+.nb-cell-input--error {
+	border-color: var(--color-red) !important;
+	outline: none;
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-red) 20%, transparent);
+}
+
+.nb-cell-error-msg {
+	font-size: 10px;
+	color: var(--color-red);
+	padding: 2px 4px 0;
+	white-space: nowrap;
+}
+
+/* ── Status cell – criar novo status ─────────────────────────────────────── */
+
+.nb-status-new-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 6px;
+	border-top: 1px solid var(--background-modifier-border);
+	margin-top: 2px;
+}
+
+.nb-status-new-input {
+	flex: 1;
+	height: 24px;
+	padding: 0 6px;
+	font-size: var(--font-ui-small);
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	color: var(--text-normal);
+	outline: none;
+}
+
+.nb-status-new-input:focus {
+	border-color: var(--interactive-accent);
+}
+
+.nb-status-new-btn {
+	width: 24px;
+	height: 24px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 16px;
+	line-height: 1;
+	padding: 0;
+}
+
+.nb-status-new-btn:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
 /* ── Formula editor floating panel ───────────────────────────────────────── */
 
 .nb-formula-floating-panel {

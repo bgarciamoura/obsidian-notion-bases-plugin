@@ -23,6 +23,7 @@ interface CellContextType {
 	updateCell: (rowIndex: number, columnId: string, value: unknown) => Promise<void>
 	schema: ColumnSchema[]
 	relationOptions: Map<string, string[]>
+	updateSchema: (newSchema: ColumnSchema[]) => Promise<void>
 }
 
 export const CellContext = createContext<CellContextType | null>(null)
@@ -57,7 +58,15 @@ const DEFAULT_STATUS_OPTIONS: SelectOption[] = [
 	{ value: 'Cancelado', color: '#F44336' },
 ]
 
-function LinkCell({ value, href, isEditing, inputType, onStartEdit, onCommit, onCancel }: {
+function applyPhoneMask(v: string): string {
+	const digits = v.replace(/\D/g, '').slice(0, 11)
+	if (digits.length <= 2) return `(${digits}`
+	if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+	if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+	return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
+function LinkCell({ value, href, isEditing, inputType, onStartEdit, onCommit, onCancel, validate }: {
 	value: string | null
 	href: string | null
 	inputType: string
@@ -65,25 +74,40 @@ function LinkCell({ value, href, isEditing, inputType, onStartEdit, onCommit, on
 	onStartEdit: () => void
 	onCommit: (v: string | null) => void
 	onCancel: () => void
+	validate?: (v: string) => string | null
 }) {
+	const [error, setError] = useState<string | null>(null)
+
 	const openLink = (e: React.MouseEvent) => {
 		e.stopPropagation()
 		if (href) window.open(href, '_blank')
 	}
 
+	const handleCommit = (v: string | null) => {
+		if (v && validate) {
+			const err = validate(v)
+			if (err) { setError(err); return }
+		}
+		setError(null)
+		onCommit(v)
+	}
+
 	if (isEditing) {
 		return (
-			<input
-				className="nb-cell-input"
-				autoFocus
-				type={inputType}
-				defaultValue={value ?? ''}
-				onBlur={e => onCommit(e.target.value || null)}
-				onKeyDown={e => {
-					if (e.key === 'Enter') onCommit((e.target as HTMLInputElement).value || null)
-					if (e.key === 'Escape') onCancel()
-				}}
-			/>
+			<div className="nb-link-edit-wrapper">
+				<input
+					className={`nb-cell-input${error ? ' nb-cell-input--error' : ''}`}
+					autoFocus
+					type={inputType}
+					defaultValue={value ?? ''}
+					onBlur={e => handleCommit(e.target.value || null)}
+					onKeyDown={e => {
+						if (e.key === 'Enter') handleCommit((e.target as HTMLInputElement).value || null)
+						if (e.key === 'Escape') { setError(null); onCancel() }
+					}}
+				/>
+				{error && <span className="nb-cell-error-msg">{error}</span>}
+			</div>
 		)
 	}
 
@@ -225,15 +249,14 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 					onStartEdit={startEditing}
 					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
 					onCancel={() => setEditingCell(null)}
+					validate={v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : 'E-mail inválido'}
 				/>
 			)
 
 		case 'phone':
 			return (
-				<LinkCell
+				<PhoneCell
 					value={value as string | null}
-					href={value ? `tel:${value}` : null}
-					inputType="tel"
 					isEditing={isEditing}
 					onStartEdit={startEditing}
 					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
@@ -243,9 +266,9 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 
 		case 'status':
 			return (
-				<SelectCell
+				<StatusCell
 					value={value as string | null}
-					options={DEFAULT_STATUS_OPTIONS}
+					col={col}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
 					onCommit={v => { updateCell(rowIndex, columnId, v); setEditingCell(null) }}
@@ -394,6 +417,57 @@ function NumberCell({ value, isEditing, onStartEdit, onCommit, onCancel, format 
 	)
 }
 
+// ── PhoneCell ────────────────────────────────────────────────────────────────
+
+function PhoneCell({ value, isEditing, onStartEdit, onCommit, onCancel }: {
+	value: string | null
+	isEditing: boolean
+	onStartEdit: () => void
+	onCommit: (v: string | null) => void
+	onCancel: () => void
+}) {
+	const [draft, setDraft] = useState('')
+
+	useEffect(() => {
+		if (isEditing) setDraft(applyPhoneMask(value ?? ''))
+	}, [isEditing, value])
+
+	const openTel = (e: React.MouseEvent) => {
+		e.stopPropagation()
+		if (value) window.open(`tel:${value}`, '_blank')
+	}
+
+	if (isEditing) {
+		return (
+			<input
+				className="nb-cell-input"
+				autoFocus
+				type="tel"
+				value={draft}
+				onChange={e => setDraft(applyPhoneMask(e.target.value))}
+				onBlur={() => onCommit(draft || null)}
+				onKeyDown={e => {
+					if (e.key === 'Enter') onCommit(draft || null)
+					if (e.key === 'Escape') onCancel()
+				}}
+			/>
+		)
+	}
+
+	return (
+		<div className="nb-cell-clickable" onClick={onStartEdit}>
+			{value ? (
+				<span className="nb-cell-link-wrapper">
+					<span className="nb-cell-link" onClick={openTel}>{applyPhoneMask(value)}</span>
+					<span className="nb-cell-link-icon" onClick={openTel}>📞</span>
+				</span>
+			) : (
+				<span className="nb-cell-empty">—</span>
+			)}
+		</div>
+	)
+}
+
 // ── SelectCell ───────────────────────────────────────────────────────────────
 
 const SELECT_COLORS = [
@@ -462,6 +536,121 @@ function SelectCell({ value, options, isEditing, onStartEdit, onCommit, onCancel
 					</span>
 				</button>
 			))}
+		</div>,
+		document.body
+	) : null
+
+	return (
+		<div className="nb-cell-select-wrapper" ref={wrapperRef}>
+			<div className="nb-cell-clickable" onClick={onStartEdit}>
+				{value ? (
+					<span
+						className="nb-select-badge"
+						style={{ background: getOptionColor(options, value) }}
+					>
+						{value}
+					</span>
+				) : (
+					<span className="nb-cell-empty">—</span>
+				)}
+			</div>
+			{dropdown}
+		</div>
+	)
+}
+
+
+// ── StatusCell ───────────────────────────────────────────────────────────────
+
+function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: {
+	value: string | null
+	col: ColumnSchema
+	isEditing: boolean
+	onStartEdit: () => void
+	onCommit: (v: string | null) => void
+	onCancel: () => void
+}) {
+	const { updateSchema, schema } = useCellContext()
+	const wrapperRef = useRef<HTMLDivElement>(null)
+	const dropdownRef = useRef<HTMLDivElement>(null)
+	const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null)
+	const [newStatusName, setNewStatusName] = useState('')
+
+	const options = col.options?.length ? col.options : DEFAULT_STATUS_OPTIONS
+
+	useEffect(() => {
+		if (!isEditing) return
+		const handler = (e: MouseEvent) => {
+			const inWrapper = wrapperRef.current?.contains(e.target as Node)
+			const inDropdown = dropdownRef.current?.contains(e.target as Node)
+			if (!inWrapper && !inDropdown) onCancel()
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [isEditing, onCancel])
+
+	useEffect(() => {
+		if (!isEditing) return
+		setNewStatusName('')
+		if (wrapperRef.current) {
+			const rect = wrapperRef.current.getBoundingClientRect()
+			setDropPos({ top: rect.bottom, left: rect.left, width: rect.width })
+		}
+	}, [isEditing])
+
+	const addNewStatus = async () => {
+		const name = newStatusName.trim()
+		if (!name) return
+		const color = SELECT_COLORS[options.length % SELECT_COLORS.length]
+		const newOption: SelectOption = { value: name, color }
+		const newOptions = [...options, newOption]
+		const newSchema = schema.map(c => c.id === col.id ? { ...c, options: newOptions } : c)
+		await updateSchema(newSchema)
+		setNewStatusName('')
+		onCommit(name)
+	}
+
+	const dropdown = isEditing && dropPos ? createPortal(
+		<div
+			ref={dropdownRef}
+			className="nb-select-dropdown"
+			style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, minWidth: dropPos.width, zIndex: 9999 }}
+		>
+			<button className="nb-select-option nb-select-clear" onClick={() => onCommit(null)}>
+				Limpar
+			</button>
+			{options.map(opt => (
+				<button
+					key={opt.value}
+					className={`nb-select-option ${value === opt.value ? 'nb-select-option--active' : ''}`}
+					onClick={() => onCommit(opt.value)}
+				>
+					<span
+						className="nb-select-badge"
+						style={{ background: getOptionColor(options, opt.value) }}
+					>
+						{opt.value}
+					</span>
+				</button>
+			))}
+			<div className="nb-status-new-row">
+				<input
+					className="nb-status-new-input"
+					placeholder="Novo status..."
+					value={newStatusName}
+					onChange={e => setNewStatusName(e.target.value)}
+					onKeyDown={e => {
+						if (e.key === 'Enter') { e.preventDefault(); addNewStatus() }
+						if (e.key === 'Escape') onCancel()
+						e.stopPropagation()
+					}}
+				/>
+				<button
+					className="nb-status-new-btn"
+					onClick={addNewStatus}
+					disabled={!newStatusName.trim()}
+				>+</button>
+			</div>
 		</div>,
 		document.body
 	) : null

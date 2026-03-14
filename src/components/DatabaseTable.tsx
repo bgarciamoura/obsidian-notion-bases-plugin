@@ -81,6 +81,35 @@ function validateTypeChange(rows: NoteRow[], columnId: string, fromType: ColumnT
 			return `${multi.length} linha(s) têm múltiplos valores selecionados. Remova os extras antes de mudar para seleção única.`
 	}
 
+	if (toType === 'email') {
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+		const bad = values.filter(v => {
+			const s = String(v).trim()
+			return s !== '' && !emailRegex.test(s)
+		})
+		if (bad.length > 0)
+			return `${bad.length} célula(s) contêm valores que não são e-mails válidos (ex: "${String(bad[0])}")`
+	}
+
+	if (toType === 'url') {
+		const bad = values.filter(v => {
+			const s = String(v).trim()
+			try { new URL(s); return false } catch { return true }
+		})
+		if (bad.length > 0)
+			return `${bad.length} célula(s) contêm valores que não são URLs válidas (ex: "${String(bad[0])}")`
+	}
+
+	if (toType === 'phone') {
+		const phoneRegex = /^[\d\s()\-+]+$/
+		const bad = values.filter(v => {
+			const s = String(v).trim()
+			return s !== '' && !phoneRegex.test(s)
+		})
+		if (bad.length > 0)
+			return `${bad.length} célula(s) contêm valores que não são telefones válidos (ex: "${String(bad[0])}")`
+	}
+
 	return null
 }
 
@@ -1444,7 +1473,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		})()}
 
 		{/* Tabela */}
-			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema, relationOptions }}>
+			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema, relationOptions, updateSchema }}>
 			<div className="nb-table-wrapper">
 				<table ref={tableRef} className="nb-table">
 					<thead className="nb-thead">
