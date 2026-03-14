@@ -85,6 +85,7 @@ export interface ViewConfig {
 	activePills?: { id: string; columnId: string; operator: FilterOperator; value: string; conjunction?: 'and' | 'or' }[]
 	pinnedColumnId?: string | null
 	columnOrder?: string[]
+	rowHeight?: 'compact' | 'medium' | 'tall'
 }
 
 // ── Database config (stored in _database.md frontmatter) ───────────────────

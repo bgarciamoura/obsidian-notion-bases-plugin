@@ -540,7 +540,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 	const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
+	const [rowHeightMenuOpen, setRowHeightMenuOpen] = useState(false)
 	const actionsMenuRef = useRef<HTMLDivElement>(null)
+	const rowHeightMenuRef = useRef<HTMLDivElement>(null)
 	const tableRef = useRef<HTMLTableElement>(null)
 	const lastCreatedPath = useRef<string | null>(null)
 	const [pinnedColumnId, setPinnedColumnId] = useState<string | null>(null)
@@ -965,6 +967,19 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		return () => document.removeEventListener('mousedown', handler)
 	}, [actionsMenuOpen])
 
+	// ── Fechar menu de altura ao clicar fora ─────────────────────────────────
+
+	useEffect(() => {
+		if (!rowHeightMenuOpen) return
+		const handler = (e: MouseEvent) => {
+			if (rowHeightMenuRef.current && !rowHeightMenuRef.current.contains(e.target as Node)) {
+				setRowHeightMenuOpen(false)
+			}
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [rowHeightMenuOpen])
+
 	// ── Fechar painel de ordenação ao clicar fora ────────────────────
 
 	useEffect(() => {
@@ -1096,6 +1111,11 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		saveActivePills(next)
 		if (openFilterPill === filterId) setOpenFilterPill(null)
 		if (openOperatorPicker === filterId) setOpenOperatorPicker(null)
+	}
+
+	const setRowHeight = async (h: 'compact' | 'medium' | 'tall') => {
+		await saveView({ ...activeView, rowHeight: h })
+		setRowHeightMenuOpen(false)
 	}
 
 	const updateFilter = (filterId: string, operator: FilterOperator, value: string) => {
@@ -1239,6 +1259,36 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						onKeyDown={e => { if (e.key === 'Enter' && shouldCollapse && searchExpanded) collapseSearch() }}
 						onBlur={() => { if (shouldCollapse && searchExpanded) collapseSearch() }}
 					/>
+				</div>
+
+				{/* Botão Altura das linhas */}
+				<div className="nb-fields-menu-wrapper" ref={rowHeightMenuRef}>
+					<button
+						className={`nb-toolbar-btn nb-toolbar-btn--icon ${rowHeightMenuOpen ? 'nb-toolbar-btn--active' : ''}`}
+						onClick={() => setRowHeightMenuOpen(v => !v)}
+						title="Altura das linhas"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+							<line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/>
+						</svg>
+					</button>
+					{rowHeightMenuOpen && (
+						<div className="nb-fields-dropdown nb-rowheight-dropdown">
+							<div className="nb-fields-dropdown-label">Altura das linhas</div>
+							{(['compact', 'medium', 'tall'] as const).map(h => (
+								<button
+									key={h}
+									className={`nb-menu-item ${(activeView.rowHeight ?? 'medium') === h ? 'nb-menu-item--active' : ''}`}
+									onClick={() => setRowHeight(h)}
+								>
+									<span className="nb-menu-item-icon">
+										{h === 'compact' ? '▤' : h === 'medium' ? '▥' : '▦'}
+									</span>
+									<span>{h === 'compact' ? 'Compacto' : h === 'medium' ? 'Médio' : 'Alto'}</span>
+								</button>
+							))}
+						</div>
+					)}
 				</div>
 
 				{/* Botão Campos */}
@@ -1501,7 +1551,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 		{/* Tabela */}
 			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema, relationOptions, updateSchema }}>
-			<div className="nb-table-wrapper">
+			<div className="nb-table-wrapper"
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				style={{ '--nb-row-height': activeView.rowHeight === 'compact' ? '28px' : activeView.rowHeight === 'tall' ? '64px' : '36px' } as any}>
 				<table ref={tableRef} className="nb-table">
 					<thead className="nb-thead">
 						{table.getHeaderGroups().map(group => {
@@ -1634,7 +1686,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 												}}
 												onClick={e => e.stopPropagation()}
 											>
-												{flexRender(cell.column.columnDef.cell, cell.getContext())}
+												<div className="nb-td-inner">
+													{flexRender(cell.column.columnDef.cell, cell.getContext())}
+												</div>
 											</td>
 										)
 									})}
