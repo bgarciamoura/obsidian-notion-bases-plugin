@@ -2486,3 +2486,127 @@
 	margin: 0;
 	cursor: pointer;
 }
+
+/* ── Gallery ─────────────────────────────────────────────────────────────── */
+
+.nb-gallery {
+	display: grid;
+	gap: 12px;
+	padding: 12px 0 16px;
+	align-items: start;
+}
+
+.nb-gallery-card {
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	overflow: hidden;
+	cursor: pointer;
+	transition: box-shadow 0.15s, border-color 0.15s;
+	display: flex;
+	flex-direction: column;
+}
+
+.nb-gallery-card:hover {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 2px 8px var(--background-modifier-box-shadow);
+}
+
+.nb-gallery-cover {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	flex-shrink: 0;
+}
+
+.nb-gallery-card--small .nb-gallery-cover { height: 80px; }
+.nb-gallery-card--medium .nb-gallery-cover { height: 120px; }
+.nb-gallery-card--large .nb-gallery-cover { height: 160px; }
+
+.nb-gallery-cover--text {
+	background: var(--background-modifier-border);
+	padding: 8px 12px;
+	text-align: center;
+}
+
+.nb-gallery-cover--text span {
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-line-clamp: 4;
+	-webkit-box-orient: vertical;
+	word-break: break-word;
+}
+
+.nb-gallery-cover--empty {
+	background: var(--background-modifier-border);
+}
+
+.nb-gallery-cover-icon {
+	font-size: 28px;
+	opacity: 0.3;
+}
+
+.nb-gallery-body {
+	padding: 10px 12px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	flex: 1;
+}
+
+.nb-gallery-title {
+	font-size: var(--font-ui-small);
+	font-weight: 600;
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.nb-gallery-props {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.nb-gallery-prop {
+	display: flex;
+	gap: 4px;
+	font-size: var(--font-ui-smaller);
+}
+
+.nb-gallery-prop-name {
+	color: var(--text-faint);
+	flex-shrink: 0;
+}
+
+.nb-gallery-prop-value {
+	color: var(--text-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.nb-gallery-card--add {
+	border-style: dashed;
+	min-height: 80px;
+	cursor: pointer;
+}
+
+.nb-gallery-card--add:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nb-gallery-add-inner {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	padding: 24px;
+	color: var(--text-faint);
+	font-size: var(--font-ui-small);
+}

@@ -80,7 +80,7 @@ export type AggregationType = 'none' | 'count' | 'count_values' | 'sum' | 'avg' 
 export interface ViewConfig {
 	id: string
 	name?: string
-	type: 'table' | 'list' | 'board'
+	type: 'table' | 'list' | 'board' | 'gallery'
 	filters: FilterConfig[]
 	sorts: SortConfig[]
 	hiddenColumns: string[]
@@ -93,6 +93,8 @@ export interface ViewConfig {
 	wrapText?: boolean
 	groupByColumnId?: string
 	boardColumnOrder?: string[]
+	galleryCoverField?: string
+	galleryCardSize?: 'small' | 'medium' | 'large'
 }
 
 // ── Embed multi-view state (stored in hosting note frontmatter) ─────────────
