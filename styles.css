@@ -130,7 +130,7 @@
 	gap: 4px;
 	padding: 4px 8px;
 	background: none;
-	border: 1px solid transparent;
+	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-s);
 	color: var(--text-muted);
 	font-size: var(--font-ui-small);
