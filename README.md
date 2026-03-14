@@ -174,4 +174,4 @@ npm run dev
 
 ## License
 
-[0BSD](LICENSE) — do whatever you want with it.
+[GPL v3](LICENSE) — free to use and modify, but any distribution must remain open source under the same license.
