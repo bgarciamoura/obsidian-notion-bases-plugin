@@ -129,9 +129,8 @@
 	align-items: center;
 	gap: 4px;
 	padding: 4px 8px;
-	background: var(--background-primary);
-	box-shadow: none;
-	border: 1px solid var(--background-modifier-border);
+	background: none;
+	border: 1px solid transparent;
 	border-radius: var(--radius-s);
 	color: var(--text-muted);
 	font-size: var(--font-ui-small);
@@ -140,7 +139,7 @@
 }
 
 .nb-toolbar-btn:hover {
-	background: var(--background-modifier-hover) !important;
+	background: var(--background-modifier-hover);
 	color: var(--text-normal);
 }
 
@@ -548,12 +547,6 @@
 	justify-content: center;
 }
 
-/* Especificidade maior que button:not(.clickable-icon) do Obsidian */
-.nb-th-add-col .nb-add-col-btn {
-	background: none !important;
-	box-shadow: none !important;
-	border: none;
-}
 
 .nb-add-col-btn:hover {
 	color: var(--interactive-accent);
