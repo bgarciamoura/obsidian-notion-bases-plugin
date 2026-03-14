@@ -82,7 +82,7 @@ export interface ViewConfig {
 	sorts: SortConfig[]
 	hiddenColumns: string[]
 	columnWidths: Record<string, number>
-	activePills?: { id: string; columnId: string; operator: FilterOperator; value: string }[]
+	activePills?: { id: string; columnId: string; operator: FilterOperator; value: string; conjunction?: 'and' | 'or' }[]
 	pinnedColumnId?: string | null
 	columnOrder?: string[]
 }

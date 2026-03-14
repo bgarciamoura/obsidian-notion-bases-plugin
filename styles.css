@@ -1581,6 +1581,42 @@
 	color: var(--text-muted);
 }
 
+/* ── Conjunção AND/OR entre filtros ────────────────────────────────────────── */
+.nb-pill-conjunction {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 20px;
+	padding: 0 6px;
+	margin-left: 14px;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	cursor: pointer;
+	user-select: none;
+	transition: background 0.15s, color 0.15s;
+}
+
+.nb-pill-conjunction:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.nb-pill-conjunction--or {
+	background: var(--color-orange-rgb, 220, 140, 60);
+	background: rgba(var(--color-orange-rgb, 220, 140, 60), 0.15);
+	color: var(--color-orange);
+	border-color: rgba(var(--color-orange-rgb, 220, 140, 60), 0.3);
+}
+
+.nb-pill-conjunction--or:hover {
+	background: rgba(var(--color-orange-rgb, 220, 140, 60), 0.25);
+}
+
 /* ── Estados especiais ───────────────────────────────────────────────────── */
 
 .nb-empty-state,

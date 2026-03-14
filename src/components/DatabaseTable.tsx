@@ -26,7 +26,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { TFile, Notice } from 'obsidian'
-import { ReactNode, useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { Fragment, ReactNode, useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
@@ -131,6 +131,7 @@ interface ActiveFilter {
 	icon: string
 	operator: FilterOperator
 	value: string
+	conjunction: 'and' | 'or'
 }
 
 const TEXT_OPERATORS: FilterOperator[] = ['contains', 'not_contains', 'starts_with', 'ends_with', 'is', 'is_not', 'is_empty', 'is_not_empty']
@@ -634,10 +635,10 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			const pills = sourceView?.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
-					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value }]
+					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') as 'and' | 'or' }]
 				})
 				setActiveFilters(restored as ActiveFilter[])
 			}
@@ -895,12 +896,20 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	// ── Instância da tabela ──────────────────────────────────────────────────
 
-	const filteredRows = useMemo(
-		() => activeFilters.length === 0
-			? rows
-			: rows.filter(row => activeFilters.every(f => matchesFilter(row, f))),
-		[rows, activeFilters]
-	)
+	const filteredRows = useMemo(() => {
+		if (activeFilters.length === 0) return rows
+		const groups: ActiveFilter[][] = []
+		let current: ActiveFilter[] = []
+		for (const f of activeFilters) {
+			if (f.conjunction === 'or' && current.length > 0) {
+				groups.push(current)
+				current = []
+			}
+			current.push(f)
+		}
+		if (current.length > 0) groups.push(current)
+		return rows.filter(row => groups.some(group => group.every(f => matchesFilter(row, f))))
+	}, [rows, activeFilters])
 
 	const table = useReactTable({
 		data: filteredRows,
@@ -1059,7 +1068,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const getColumnIcon = getColumnIconStatic
 
 	const saveActivePills = useCallback(async (filters: { columnId: string }[]) => {
-		const pills = (filters as ActiveFilter[]).map(f => ({ id: f.id, columnId: f.columnId, operator: f.operator, value: f.value }))
+		const pills = (filters as ActiveFilter[]).map(f => ({ id: f.id, columnId: f.columnId, operator: f.operator, value: f.value, conjunction: f.conjunction }))
 		await saveView({ ...activeView, activePills: pills })
 	}, [saveView, activeView])
 
@@ -1075,7 +1084,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
 		const filterId = crypto.randomUUID()
-		const next: ActiveFilter[] = [...activeFilters, { id: filterId, columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '' }]
+		const next: ActiveFilter[] = [...activeFilters, { id: filterId, columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '', conjunction: 'and' as const }]
 		setActiveFilters(next)
 		saveActivePills(next)
 		setFilterMenuOpen(false)
@@ -1092,6 +1101,14 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const updateFilter = (filterId: string, operator: FilterOperator, value: string) => {
 		const next = activeFilters.map(f =>
 			f.id === filterId ? { ...f, operator, value } : f
+		)
+		setActiveFilters(next)
+		saveActivePills(next)
+	}
+
+	const toggleConjunction = (filterId: string) => {
+		const next = activeFilters.map(f =>
+			f.id === filterId ? { ...f, conjunction: f.conjunction === 'and' ? 'or' as const : 'and' as const } : f
 		)
 		setActiveFilters(next)
 		saveActivePills(next)
@@ -1403,15 +1420,25 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 					onDragEnd={handlePillDragEnd}
 				>
 					<SortableContext items={activeFilters.map(f => f.id)} strategy={horizontalListSortingStrategy}>
-						{activeFilters.map(filter => (
-							<SortablePill
-								key={filter.id}
-								filter={filter}
-								isActive={openFilterPill === filter.id}
-								onToggle={() => setOpenFilterPill(v => v === filter.id ? null : filter.id)}
-								onRemove={() => removeFilter(filter.id)}
-								btnRef={el => { filterPillRefs.current[filter.id] = el }}
-							/>
+						{activeFilters.map((filter, idx) => (
+							<Fragment key={filter.id}>
+								{idx > 0 && (
+									<button
+										className={`nb-pill-conjunction ${filter.conjunction === 'or' ? 'nb-pill-conjunction--or' : ''}`}
+										onClick={() => toggleConjunction(filter.id)}
+										title="Clique para alternar entre E / OU"
+									>
+										{filter.conjunction === 'or' ? 'OU' : 'E'}
+									</button>
+								)}
+								<SortablePill
+									filter={filter}
+									isActive={openFilterPill === filter.id}
+									onToggle={() => setOpenFilterPill(v => v === filter.id ? null : filter.id)}
+									onRemove={() => removeFilter(filter.id)}
+									btnRef={el => { filterPillRefs.current[filter.id] = el }}
+								/>
+							</Fragment>
 						))}
 					</SortableContext>
 				</DndContext>
