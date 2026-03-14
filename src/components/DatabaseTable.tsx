@@ -30,7 +30,7 @@ import { Fragment, ReactNode, useState, useMemo, useEffect, useCallback, useRef 
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
-import { ColumnSchema, ColumnType, DatabaseConfig, FilterOperator, NoteRow, SortConfig, ViewConfig, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW } from '../types'
+import { ColumnSchema, ColumnType, DatabaseConfig, FilterOperator, NoteRow, SortConfig, ViewConfig, AggregationType, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW } from '../types'
 import { evaluateFormulas } from '../formula-engine'
 import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
@@ -523,6 +523,44 @@ interface DatabaseTableProps {
 	onViewChange?: (view: ViewConfig) => Promise<void>
 }
 
+// ── AggDropdown ──────────────────────────────────────────────────────────────
+
+const NUMERIC_TYPES = ['number', 'formula']
+
+function AggDropdown({ colType, current, onSelect, anchorEl }: {
+	colType: string
+	current: AggregationType
+	onSelect: (t: AggregationType) => void
+	anchorEl: HTMLElement | null
+}) {
+	const rect = anchorEl?.getBoundingClientRect()
+	const top = rect ? rect.bottom + window.scrollY : 0
+	const left = rect ? rect.left + window.scrollX : 0
+	const isNumeric = NUMERIC_TYPES.includes(colType)
+	const options: { type: AggregationType; label: string; numericOnly?: boolean }[] = [
+		{ type: 'none', label: 'Nenhum' },
+		{ type: 'count', label: 'Contar' },
+		{ type: 'count_values', label: 'Contar valores' },
+		{ type: 'sum', label: 'Soma', numericOnly: true },
+		{ type: 'avg', label: 'Média', numericOnly: true },
+		{ type: 'min', label: 'Mín', numericOnly: true },
+		{ type: 'max', label: 'Máx', numericOnly: true },
+	]
+	return (
+		<div className="nb-agg-dropdown" style={{ position: 'absolute', top, left, zIndex: 9999 }}>
+			{options.filter(o => !o.numericOnly || isNumeric).map(o => (
+				<button
+					key={o.type}
+					className={`nb-menu-item ${current === o.type ? 'nb-menu-item--active' : ''}`}
+					onClick={() => onSelect(o.type)}
+				>
+					{o.label}
+				</button>
+			))}
+		</div>
+	)
+}
+
 export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: DatabaseTableProps) {
 	const app = useApp()
 	const [config, setConfig] = useState<DatabaseConfig>(DEFAULT_DATABASE_CONFIG)
@@ -541,6 +579,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 	const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
 	const [rowHeightMenuOpen, setRowHeightMenuOpen] = useState(false)
+	const [openAggCol, setOpenAggCol] = useState<string | null>(null)
 	const actionsMenuRef = useRef<HTMLDivElement>(null)
 	const rowHeightMenuRef = useRef<HTMLDivElement>(null)
 	const tableRef = useRef<HTMLTableElement>(null)
@@ -980,6 +1019,20 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		return () => document.removeEventListener('mousedown', handler)
 	}, [rowHeightMenuOpen])
 
+	// ── Fechar dropdown de agregação ao clicar fora ──────────────────────────
+
+	useEffect(() => {
+		if (!openAggCol) return
+		const handler = (e: MouseEvent) => {
+			const target = e.target as Node
+			const open = document.querySelector('.nb-agg-dropdown')
+			const btn = document.querySelector(`[data-agg-col="${openAggCol}"]`)
+			if (!open?.contains(target) && !btn?.contains(target)) setOpenAggCol(null)
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [openAggCol])
+
 	// ── Fechar painel de ordenação ao clicar fora ────────────────────
 
 	useEffect(() => {
@@ -1116,6 +1169,33 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const setRowHeight = async (h: 'compact' | 'medium' | 'tall') => {
 		await saveView({ ...activeView, rowHeight: h })
 		setRowHeightMenuOpen(false)
+	}
+
+	const setAggregation = async (columnId: string, type: AggregationType) => {
+		const next = { ...(activeView.aggregations ?? {}), [columnId]: type }
+		await saveView({ ...activeView, aggregations: next })
+		setOpenAggCol(null)
+	}
+
+	const computeAgg = (columnId: string, type: AggregationType): string => {
+		if (type === 'none') return ''
+		const vals = filteredRows.map(r => columnId === '_title' ? r._title : r[columnId])
+		const total = filteredRows.length
+		if (type === 'count') return `${total} ${total === 1 ? 'linha' : 'linhas'}`
+		const nonEmpty = vals.filter(v => v !== null && v !== undefined && String(v).trim() !== '')
+		if (type === 'count_values') return `${nonEmpty.length} preenchido${nonEmpty.length !== 1 ? 's' : ''}`
+		const nums = nonEmpty.map(v => parseFloat(String(v))).filter(n => !isNaN(n))
+		if (nums.length === 0) return '—'
+		if (type === 'sum') return String(Math.round(nums.reduce((a, b) => a + b, 0) * 1e10) / 1e10)
+		if (type === 'avg') return String(Math.round(nums.reduce((a, b) => a + b, 0) / nums.length * 1e10) / 1e10)
+		if (type === 'min') return String(Math.min(...nums))
+		if (type === 'max') return String(Math.max(...nums))
+		return ''
+	}
+
+	const aggLabel: Record<AggregationType, string> = {
+		none: 'Nenhum', count: '', count_values: '',
+		sum: 'Soma', avg: 'Média', min: 'Mín', max: 'Máx',
 	}
 
 	const updateFilter = (filterId: string, operator: FilterOperator, value: string) => {
@@ -1704,7 +1784,49 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 							</td>
 						</tr>
 					</tbody>
-				</table>
+					<tfoot className="nb-tfoot">
+					<tr>
+						<td className="nb-td nb-agg-td nb-td--sticky" style={{ left: 0, zIndex: 1, width: 40 }} />
+						{table.getVisibleLeafColumns().filter(col => col.id !== '_select').map(col => {
+							const sticky = stickyMap.get(col.id)
+							const aggType = (activeView.aggregations ?? {})[col.id] ?? 'none'
+							const aggValue = computeAgg(col.id, aggType)
+							return (
+								<td
+									key={col.id}
+									data-agg-col={col.id}
+									className={[
+										'nb-td', 'nb-agg-td',
+										sticky ? 'nb-td--sticky' : '',
+										sticky?.isLast ? 'nb-td--sticky-last' : '',
+									].filter(Boolean).join(' ')}
+									style={{ width: col.getSize(), ...(sticky ? { left: sticky.left, zIndex: 1 } : {}) }}
+									onClick={() => setOpenAggCol(v => v === col.id ? null : col.id)}
+								>
+									{aggType !== 'none' ? (
+										<div className="nb-agg-cell">
+											<span className="nb-agg-label">{aggLabel[aggType]}</span>
+											<span className="nb-agg-value">{aggValue}</span>
+										</div>
+									) : (
+										<div className="nb-agg-empty" />
+									)}
+									{openAggCol === col.id && createPortal(
+										<AggDropdown
+											colType={config.schema.find(s => s.id === col.id)?.type ?? 'text'}
+											current={aggType}
+											onSelect={t => setAggregation(col.id, t)}
+											anchorEl={document.querySelector(`[data-agg-col="${col.id}"]`) as HTMLElement}
+										/>,
+										document.body
+									)}
+								</td>
+							)
+						})}
+						<td className="nb-td nb-agg-td nb-td-empty" />
+					</tr>
+				</tfoot>
+			</table>
 			</div>
 
 			{/* Barra de contagem de linhas */}

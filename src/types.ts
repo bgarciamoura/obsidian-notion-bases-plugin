@@ -75,6 +75,8 @@ export interface SortConfig {
 	direction: 'asc' | 'desc'
 }
 
+export type AggregationType = 'none' | 'count' | 'count_values' | 'sum' | 'avg' | 'min' | 'max'
+
 export interface ViewConfig {
 	id: string
 	type: 'table'
@@ -86,6 +88,7 @@ export interface ViewConfig {
 	pinnedColumnId?: string | null
 	columnOrder?: string[]
 	rowHeight?: 'compact' | 'medium' | 'tall'
+	aggregations?: Record<string, AggregationType>
 }
 
 // ── Database config (stored in _database.md frontmatter) ───────────────────

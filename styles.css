@@ -1599,6 +1599,94 @@
 	color: var(--text-muted);
 }
 
+/* ── Linha de agregação ─────────────────────────────────────────────────────── */
+
+.nb-tfoot {
+	position: sticky;
+	bottom: 0;
+	z-index: 2;
+}
+
+.nb-agg-td {
+	height: 28px;
+	background: var(--background-primary);
+	border-top: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	padding: 0;
+	user-select: none;
+	transition: background 0.1s;
+}
+
+.nb-agg-td:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nb-agg-td:hover .nb-agg-empty::after {
+	content: 'Calcular';
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+	padding: 0 10px;
+}
+
+.nb-agg-empty {
+	display: flex;
+	align-items: center;
+	height: 100%;
+}
+
+.nb-agg-cell {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0 10px;
+	height: 100%;
+}
+
+.nb-agg-label {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+	white-space: nowrap;
+}
+
+.nb-agg-value {
+	font-size: var(--font-ui-smaller);
+	font-weight: 500;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+
+.nb-agg-dropdown {
+	min-width: 180px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+	padding: 6px;
+	z-index: 9999;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.nb-agg-dropdown .nb-menu-item {
+	border-radius: 5px;
+	padding: 6px 10px;
+	width: 100%;
+	opacity: 1 !important;
+	color: var(--text-normal) !important;
+	background: var(--background-modifier-hover);
+}
+
+.nb-agg-dropdown .nb-menu-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nb-agg-dropdown .nb-menu-item--active {
+	background: var(--background-modifier-active-hover);
+	color: var(--text-accent);
+	font-weight: 500;
+}
+
 /* ── Conjunção AND/OR entre filtros ────────────────────────────────────────── */
 .nb-pill-conjunction {
 	display: inline-flex;
