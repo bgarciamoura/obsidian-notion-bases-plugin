@@ -57,6 +57,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const [dateFieldMenuOpen, setDateFieldMenuOpen] = useState(false)
+	const [dragOverDay, setDragOverDay] = useState<number | null>(null)
 
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
@@ -220,6 +221,35 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		await app.fileManager.processFrontMatter(newFile, fm => { fm[dateField.id] = dateStr })
 	}
 
+	const handleCardDragStart = (e: React.DragEvent, row: NoteRow) => {
+		e.dataTransfer.setData('nb-cal-path', row._file.path)
+		e.dataTransfer.effectAllowed = 'move'
+		e.stopPropagation()
+	}
+
+	const handleDayDragOver = (e: React.DragEvent, day: number) => {
+		if (!e.dataTransfer.types.includes('nb-cal-path')) return
+		e.preventDefault()
+		e.dataTransfer.dropEffect = 'move'
+		setDragOverDay(day)
+	}
+
+	const handleDayDragLeave = (e: React.DragEvent) => {
+		if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverDay(null)
+	}
+
+	const handleDayDrop = async (e: React.DragEvent, day: number) => {
+		e.preventDefault()
+		e.stopPropagation()
+		setDragOverDay(null)
+		const path = e.dataTransfer.getData('nb-cal-path')
+		if (!path || !dateField) return
+		const file = app.vault.getFileByPath(path)
+		if (!file) return
+		const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+		await app.fileManager.processFrontMatter(file, fm => { fm[dateField.id] = dateStr })
+	}
+
 	// ── Render ────────────────────────────────────────────────────────────────
 
 	if (!dbFile) return <div className="nb-empty-state"><p>Nenhum banco de dados aberto.</p></div>
@@ -358,13 +388,17 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 							if (day === null) {
 								return <div key={`empty-${idx}`} className="nb-cal-cell nb-cal-cell--outside" />
 							}
-							const isToday = day === todayDay
-							const dayRows = rowsByDay.get(day) ?? []
+							const isToday  = day === todayDay
+							const isDragOver = day === dragOverDay
+							const dayRows  = rowsByDay.get(day) ?? []
 							return (
 								<div
 									key={day}
-									className={`nb-cal-cell${isToday ? ' nb-cal-cell--today' : ''}`}
+									className={`nb-cal-cell${isToday ? ' nb-cal-cell--today' : ''}${isDragOver ? ' nb-cal-cell--drag-over' : ''}`}
 									onClick={() => handleDayClick(day)}
+									onDragOver={e => handleDayDragOver(e, day)}
+									onDragLeave={handleDayDragLeave}
+									onDrop={e => handleDayDrop(e, day)}
 									title="Clique para criar nota"
 								>
 									<div className="nb-cal-cell-header">
@@ -375,6 +409,8 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 											<div
 												key={row._file.path}
 												className="nb-cal-card"
+												draggable
+												onDragStart={e => handleCardDragStart(e, row)}
 												onClick={e => { e.stopPropagation(); app.workspace.getLeaf().openFile(row._file) }}
 											>
 												<span className="nb-cal-card-title">{row._title}</span>
@@ -409,6 +445,8 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 									<div
 										key={row._file.path}
 										className="nb-cal-card nb-cal-card--no-date"
+										draggable
+										onDragStart={e => handleCardDragStart(e, row)}
 										onClick={() => app.workspace.getLeaf().openFile(row._file)}
 									>
 										<span className="nb-cal-card-title">{row._title}</span>
