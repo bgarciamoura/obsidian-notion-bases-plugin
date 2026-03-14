@@ -977,10 +977,16 @@
 	flex: 1;
 }
 
-/* Remove o hover individual do botão quando está dentro da row */
+/* Remove o hover e o active individual do botão quando está dentro da row */
 .nb-status-option-row .nb-status-option-btn:hover,
-.nb-status-option-row .nb-status-option-btn:focus {
+.nb-status-option-row .nb-status-option-btn:focus,
+.nb-status-option-row .nb-status-option-btn.nb-select-option--active {
 	background: none !important;
+}
+
+/* Aplica o active na linha inteira */
+.nb-status-option-row:has(.nb-select-option--active) {
+	background: var(--background-modifier-active-hover);
 }
 
 .nb-status-delete-btn {
