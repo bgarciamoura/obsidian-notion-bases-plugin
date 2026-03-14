@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { createRoot, Root } from 'react-dom/client'
 import { AppContext } from './context'
 import { DatabaseManager } from './database-manager'
-import { DatabaseTable } from './components/DatabaseTable'
+import { DatabaseRoot } from './components/DatabaseRoot'
 import type NotionBasesPlugin from './main'
 
 export const DATABASE_VIEW_TYPE = 'notion-bases-view'
@@ -98,7 +98,7 @@ export class DatabaseView extends ItemView {
 			createElement(
 				AppContext.Provider,
 				{ value: this.app },
-				createElement(DatabaseTable, { dbFile, manager })
+				createElement(DatabaseRoot, { dbFile, manager })
 			)
 		)
 	}

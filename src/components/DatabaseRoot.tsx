@@ -1,0 +1,369 @@
+import { TFile } from 'obsidian'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { useApp } from '../context'
+import { DatabaseManager } from '../database-manager'
+import { DatabaseConfig, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW, EmbedState, ViewConfig } from '../types'
+import { DatabaseTable } from './DatabaseTable'
+import { DatabaseList } from './DatabaseList'
+
+interface DatabaseRootProps {
+	dbFile: TFile | null
+	manager: DatabaseManager
+	// Mode A — forced single view (type: declared in embed block)
+	externalView?: ViewConfig
+	onViewChange?: (view: ViewConfig) => Promise<void>
+	// Mode B — free multi-view embed (no type: in block; fully independent views)
+	embedState?: EmbedState
+	onEmbedStateChange?: (state: EmbedState) => Promise<void>
+}
+
+const VIEW_ICONS: Record<string, string> = { table: '⊞', list: '≡' }
+const VIEW_LABELS: Record<string, string> = { table: 'Tabela', list: 'Lista' }
+
+export function DatabaseRoot({
+	dbFile, manager,
+	externalView, onViewChange,
+	embedState, onEmbedStateChange,
+}: DatabaseRootProps) {
+	const app = useApp()
+
+	// ── Shared config (used for direct mode tabs + free embed initialization) ─
+	const [config, setConfig] = useState<DatabaseConfig>(DEFAULT_DATABASE_CONFIG)
+
+	// ── Direct mode state ─────────────────────────────────────────────────────
+	const [activeViewId, setActiveViewId] = useState('')
+	const [addMenuOpen, setAddMenuOpen] = useState(false)
+	const addMenuRef = useRef<HTMLDivElement>(null)
+
+	// ── Free embed state (managed internally, persisted via callback) ─────────
+	const [embedViews, setEmbedViews] = useState<ViewConfig[]>(embedState?.views ?? [])
+	const [embedActiveId, setEmbedActiveId] = useState(embedState?.activeViewId ?? '')
+	const [embedInitialized, setEmbedInitialized] = useState(!!embedState)
+	const [embedAddMenuOpen, setEmbedAddMenuOpen] = useState(false)
+	const embedAddMenuRef = useRef<HTMLDivElement>(null)
+
+	const isForcedEmbed = !!externalView
+	const isFreeEmbed = !!onEmbedStateChange && !isForcedEmbed
+	const isDirectMode = !isForcedEmbed && !isFreeEmbed
+
+	// ── Inline rename state ───────────────────────────────────────────────────
+	const [renamingViewId, setRenamingViewId] = useState<string | null>(null)
+	const [renameValue, setRenameValue] = useState('')
+	const renameInputRef = useRef<HTMLInputElement>(null)
+
+	// ── Load database config ──────────────────────────────────────────────────
+
+	useEffect(() => {
+		if (!dbFile || isForcedEmbed) return
+		manager.readConfig(dbFile).then(cfg => {
+			setConfig(cfg)
+			if (isDirectMode) {
+				setActiveViewId(prev => (prev && cfg.views.some(v => v.id === prev)) ? prev : (cfg.views[0]?.id ?? ''))
+			} else if (isFreeEmbed && !embedInitialized) {
+				// First render: copy database views into embed with new IDs
+				const initialViews: ViewConfig[] = cfg.views.map(v => ({
+					...v,
+					id: crypto.randomUUID(),
+				}))
+				const initialState: EmbedState = {
+					activeViewId: initialViews[0]?.id ?? '',
+					views: initialViews,
+				}
+				setEmbedViews(initialViews)
+				setEmbedActiveId(initialViews[0]?.id ?? '')
+				setEmbedInitialized(true)
+				onEmbedStateChange!(initialState)
+			}
+		})
+	}, [dbFile, manager, isForcedEmbed])
+
+	// Sync direct mode tabs when database file changes
+	useEffect(() => {
+		if (!dbFile || !isDirectMode) return
+		const onChange = (file: TFile) => {
+			if (file === dbFile) manager.readConfig(dbFile).then(setConfig)
+		}
+		app.metadataCache.on('changed', onChange)
+		return () => app.metadataCache.off('changed', onChange)
+	}, [dbFile, manager, app, isDirectMode])
+
+	// Close menus on outside click
+	useEffect(() => {
+		if (!addMenuOpen) return
+		const h = (e: MouseEvent) => { if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) setAddMenuOpen(false) }
+		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+	}, [addMenuOpen])
+
+	useEffect(() => {
+		if (!embedAddMenuOpen) return
+		const h = (e: MouseEvent) => { if (embedAddMenuRef.current && !embedAddMenuRef.current.contains(e.target as Node)) setEmbedAddMenuOpen(false) }
+		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+	}, [embedAddMenuOpen])
+
+	// ── Inline rename helpers ─────────────────────────────────────────────────
+
+	const startRename = (viewId: string, currentName: string) => {
+		setRenamingViewId(viewId)
+		setRenameValue(currentName)
+		// Focus the input on next paint
+		requestAnimationFrame(() => {
+			renameInputRef.current?.select()
+		})
+	}
+
+	const commitRename = useCallback(async (views: ViewConfig[], newName: string, saveViews: (v: ViewConfig[]) => Promise<void>) => {
+		if (!renamingViewId) return
+		const trimmed = newName.trim()
+		if (trimmed) {
+			const updated = views.map(v => v.id === renamingViewId ? { ...v, name: trimmed } : v)
+			await saveViews(updated)
+		}
+		setRenamingViewId(null)
+	}, [renamingViewId])
+
+	// ── Mode A: forced single view ────────────────────────────────────────────
+
+	if (isForcedEmbed) {
+		if (externalView!.type === 'list') {
+			return <DatabaseList dbFile={dbFile} manager={manager} externalView={externalView!} onViewChange={onViewChange!} />
+		}
+		return <DatabaseTable dbFile={dbFile} manager={manager} externalView={externalView} onViewChange={onViewChange} />
+	}
+
+	// ── Mode B: free multi-view embed ─────────────────────────────────────────
+
+	if (isFreeEmbed) {
+		const embedActiveView = embedViews.find(v => v.id === embedActiveId) ?? embedViews[0] ?? DEFAULT_VIEW
+
+		const handleEmbedViewChange = async (updated: ViewConfig) => {
+			const newViews = embedViews.map(v => v.id === updated.id ? updated : v)
+			setEmbedViews(newViews)
+			await onEmbedStateChange!({ activeViewId: embedActiveId, views: newViews })
+		}
+
+		const addEmbedView = async (type: ViewConfig['type']) => {
+			const newView: ViewConfig = {
+				...DEFAULT_VIEW,
+				id: crypto.randomUUID(),
+				type,
+				name: VIEW_LABELS[type] ?? type,
+				filters: [], sorts: [], hiddenColumns: [], columnWidths: {},
+			}
+			const newViews = [...embedViews, newView]
+			setEmbedViews(newViews)
+			setEmbedActiveId(newView.id)
+			setEmbedAddMenuOpen(false)
+			await onEmbedStateChange!({ activeViewId: newView.id, views: newViews })
+		}
+
+		const removeEmbedView = async (viewId: string) => {
+			if (embedViews.length <= 1) return
+			const newViews = embedViews.filter(v => v.id !== viewId)
+			const newActiveId = embedActiveId === viewId ? newViews[0].id : embedActiveId
+			setEmbedViews(newViews)
+			setEmbedActiveId(newActiveId)
+			await onEmbedStateChange!({ activeViewId: newActiveId, views: newViews })
+		}
+
+		const switchEmbedTab = (viewId: string) => {
+			setEmbedActiveId(viewId)
+			onEmbedStateChange!({ activeViewId: viewId, views: embedViews })
+		}
+
+		const saveEmbedViewNames = async (updatedViews: ViewConfig[]) => {
+			setEmbedViews(updatedViews)
+			await onEmbedStateChange!({ activeViewId: embedActiveId, views: updatedViews })
+		}
+
+		return (
+			<Fragment>
+				<div className="nb-view-tabs nb-view-tabs--embed">
+					{embedViews.map(view => (
+						<button
+							key={view.id}
+							className={`nb-view-tab${view.id === embedActiveId ? ' nb-view-tab--active' : ''}`}
+							onClick={() => renamingViewId !== view.id && switchEmbedTab(view.id)}
+						>
+							<span className="nb-view-tab-icon">{VIEW_ICONS[view.type] ?? '□'}</span>
+							{renamingViewId === view.id ? (
+								<input
+									ref={renameInputRef}
+									className="nb-view-tab-rename-input"
+									value={renameValue}
+									onChange={e => setRenameValue(e.target.value)}
+									onBlur={() => commitRename(embedViews, renameValue, saveEmbedViewNames)}
+									onKeyDown={e => {
+										if (e.key === 'Enter') { e.preventDefault(); commitRename(embedViews, renameValue, saveEmbedViewNames) }
+										if (e.key === 'Escape') { e.preventDefault(); setRenamingViewId(null) }
+									}}
+									onClick={e => e.stopPropagation()}
+								/>
+							) : (
+								<span
+									onDoubleClick={e => { e.stopPropagation(); startRename(view.id, view.name ?? VIEW_LABELS[view.type] ?? view.type) }}
+									title="Duplo clique para renomear"
+								>
+									{view.name ?? VIEW_LABELS[view.type] ?? view.type}
+								</span>
+							)}
+							{embedViews.length > 1 && renamingViewId !== view.id && (
+								<span
+									className="nb-view-tab-remove"
+									onClick={e => { e.stopPropagation(); removeEmbedView(view.id) }}
+									title="Remover view"
+								>
+									×
+								</span>
+							)}
+						</button>
+					))}
+					<div className="nb-view-tab-add" ref={embedAddMenuRef}>
+						<button className="nb-view-tab-add-btn" onClick={() => setEmbedAddMenuOpen(v => !v)} title="Adicionar view">
+							+
+						</button>
+						{embedAddMenuOpen && (
+							<div className="nb-view-add-menu nb-fields-dropdown">
+								<div className="nb-fields-dropdown-label">Adicionar view</div>
+								{(['table', 'list'] as ViewConfig['type'][]).map(type => (
+									<button key={type} className="nb-menu-item" onClick={() => addEmbedView(type)}>
+										<span className="nb-menu-item-icon">{VIEW_ICONS[type]}</span>
+										<span>{VIEW_LABELS[type]}</span>
+									</button>
+								))}
+							</div>
+						)}
+					</div>
+				</div>
+				{embedActiveView.type === 'list'
+					? <DatabaseList key={embedActiveId} dbFile={dbFile} manager={manager} externalView={embedActiveView} onViewChange={handleEmbedViewChange} />
+					: <DatabaseTable key={embedActiveId} dbFile={dbFile} manager={manager} externalView={embedActiveView} onViewChange={handleEmbedViewChange} />
+				}
+			</Fragment>
+		)
+	}
+
+	// ── Mode C: direct mode ───────────────────────────────────────────────────
+
+	const handleViewChange = useCallback(async (updatedView: ViewConfig) => {
+		if (!dbFile) return
+		const newViews = config.views.map(v => v.id === updatedView.id ? updatedView : v)
+		const newConfig = { ...config, views: newViews }
+		setConfig(newConfig)
+		await manager.writeConfig(dbFile, newConfig)
+	}, [config, dbFile, manager])
+
+	const addView = useCallback(async (type: ViewConfig['type']) => {
+		if (!dbFile) return
+		const needsMigration = config.views.length === 1
+		const newSchema = needsMigration
+			? config.schema.map(c => ({ ...c, visible: true }))
+			: config.schema
+		const migratedFirstView = needsMigration
+			? { ...config.views[0], hiddenColumns: [...(config.views[0].hiddenColumns ?? []), ...config.schema.filter(c => !c.visible).map(c => c.id)] }
+			: config.views[0]
+		const newView: ViewConfig = {
+			...DEFAULT_VIEW,
+			id: crypto.randomUUID(),
+			type,
+			name: VIEW_LABELS[type] ?? type,
+			filters: [], sorts: [], hiddenColumns: [], columnWidths: {},
+		}
+		const newViews = needsMigration ? [migratedFirstView, newView] : [...config.views, newView]
+		const newConfig = { schema: newSchema, views: newViews }
+		setConfig(newConfig)
+		setActiveViewId(newView.id)
+		setAddMenuOpen(false)
+		await manager.writeConfig(dbFile, newConfig)
+	}, [config, dbFile, manager])
+
+	const removeView = useCallback(async (viewId: string) => {
+		if (!dbFile || config.views.length <= 1) return
+		const newViews = config.views.filter(v => v.id !== viewId)
+		const newConfig = { ...config, views: newViews }
+		setConfig(newConfig)
+		if (activeViewId === viewId) setActiveViewId(newViews[0].id)
+		await manager.writeConfig(dbFile, newConfig)
+	}, [config, dbFile, manager, activeViewId])
+
+	const activeView = config.views.find(v => v.id === activeViewId) ?? config.views[0] ?? DEFAULT_VIEW
+	const isSingleTableView = config.views.length === 1 && activeView.type === 'table'
+
+	const saveDirectViewNames = async (updatedViews: ViewConfig[]) => {
+		if (!dbFile) return
+		const newConfig = { ...config, views: updatedViews }
+		setConfig(newConfig)
+		await manager.writeConfig(dbFile, newConfig)
+	}
+
+	return (
+		<Fragment>
+			<div className="nb-view-tabs">
+				{config.views.map(view => (
+					<button
+						key={view.id}
+						className={`nb-view-tab${view.id === activeViewId ? ' nb-view-tab--active' : ''}`}
+						onClick={() => renamingViewId !== view.id && setActiveViewId(view.id)}
+					>
+						<span className="nb-view-tab-icon">{VIEW_ICONS[view.type] ?? '□'}</span>
+						{renamingViewId === view.id ? (
+							<input
+								ref={renameInputRef}
+								className="nb-view-tab-rename-input"
+								value={renameValue}
+								onChange={e => setRenameValue(e.target.value)}
+								onBlur={() => commitRename(config.views, renameValue, saveDirectViewNames)}
+								onKeyDown={e => {
+									if (e.key === 'Enter') { e.preventDefault(); commitRename(config.views, renameValue, saveDirectViewNames) }
+									if (e.key === 'Escape') { e.preventDefault(); setRenamingViewId(null) }
+								}}
+								onClick={e => e.stopPropagation()}
+							/>
+						) : (
+							<span
+								onDoubleClick={e => { e.stopPropagation(); startRename(view.id, view.name ?? VIEW_LABELS[view.type] ?? view.type) }}
+								title="Duplo clique para renomear"
+							>
+								{view.name ?? VIEW_LABELS[view.type] ?? view.type}
+							</span>
+						)}
+						{config.views.length > 1 && renamingViewId !== view.id && (
+							<span
+								className="nb-view-tab-remove"
+								onClick={e => { e.stopPropagation(); removeView(view.id) }}
+								title="Remover view"
+							>
+								×
+							</span>
+						)}
+					</button>
+				))}
+				<div className="nb-view-tab-add" ref={addMenuRef}>
+					<button className="nb-view-tab-add-btn" onClick={() => setAddMenuOpen(v => !v)} title="Adicionar view">
+						+
+					</button>
+					{addMenuOpen && (
+						<div className="nb-view-add-menu nb-fields-dropdown">
+							<div className="nb-fields-dropdown-label">Adicionar view</div>
+							{(['table', 'list'] as ViewConfig['type'][]).map(type => (
+								<button key={type} className="nb-menu-item" onClick={() => addView(type)}>
+									<span className="nb-menu-item-icon">{VIEW_ICONS[type]}</span>
+									<span>{VIEW_LABELS[type]}</span>
+								</button>
+							))}
+						</div>
+					)}
+				</div>
+			</div>
+			{activeView.type === 'list'
+				? <DatabaseList key={activeViewId} dbFile={dbFile} manager={manager} externalView={activeView} onViewChange={handleViewChange} />
+				: <DatabaseTable
+					key={activeViewId}
+					dbFile={dbFile}
+					manager={manager}
+					externalView={isSingleTableView ? undefined : activeView}
+					onViewChange={isSingleTableView ? undefined : handleViewChange}
+				/>
+			}
+		</Fragment>
+	)
+}

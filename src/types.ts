@@ -79,7 +79,8 @@ export type AggregationType = 'none' | 'count' | 'count_values' | 'sum' | 'avg' 
 
 export interface ViewConfig {
 	id: string
-	type: 'table'
+	name?: string
+	type: 'table' | 'list'
 	filters: FilterConfig[]
 	sorts: SortConfig[]
 	hiddenColumns: string[]
@@ -90,6 +91,13 @@ export interface ViewConfig {
 	rowHeight?: 'compact' | 'medium' | 'tall'
 	aggregations?: Record<string, AggregationType>
 	wrapText?: boolean
+}
+
+// ── Embed multi-view state (stored in hosting note frontmatter) ─────────────
+
+export interface EmbedState {
+	activeViewId: string
+	views: ViewConfig[]  // embed's own view list, fully independent from the database
 }
 
 // ── Database config (stored in _database.md frontmatter) ───────────────────

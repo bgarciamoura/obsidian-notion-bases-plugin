@@ -2101,3 +2101,205 @@
 	outline: none;
 	border-color: var(--interactive-accent);
 }
+
+/* ── View tabs ────────────────────────────────────────────────────────────── */
+
+.nb-view-tabs {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 0 8px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	flex-shrink: 0;
+}
+
+.nb-view-tab {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	padding: 6px 10px;
+	border: none;
+	border-bottom: 2px solid transparent;
+	background: transparent;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+	border-radius: var(--radius-s) var(--radius-s) 0 0;
+	transition: color 0.1s, border-color 0.1s;
+	white-space: nowrap;
+}
+
+.nb-view-tab:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.nb-view-tab--active {
+	color: var(--text-normal);
+	border-bottom-color: var(--interactive-accent);
+	font-weight: 500;
+}
+
+.nb-view-tab-icon {
+	font-size: 13px;
+	line-height: 1;
+}
+
+.nb-view-tab-remove {
+	margin-left: 2px;
+	padding: 0 3px;
+	border-radius: var(--radius-s);
+	font-size: 13px;
+	color: var(--text-faint);
+	line-height: 1;
+	cursor: pointer;
+}
+
+.nb-view-tab-remove:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.nb-view-tab-rename-input {
+	background: var(--background-primary);
+	border: 1px solid var(--interactive-accent);
+	border-radius: var(--radius-s);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	padding: 0 4px;
+	height: 18px;
+	width: 80px;
+	outline: none;
+}
+
+.nb-view-tab-add {
+	position: relative;
+	margin-left: 4px;
+}
+
+.nb-view-tab-add-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	font-size: 16px;
+	cursor: pointer;
+	border-radius: var(--radius-s);
+}
+
+.nb-view-tab-add-btn:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.nb-view-add-menu {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	z-index: 100;
+}
+
+/* ── List view ────────────────────────────────────────────────────────────── */
+
+.nb-list {
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+	flex: 1;
+}
+
+.nb-list-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	transition: background 0.1s;
+	min-height: 36px;
+}
+
+.nb-list-row:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nb-list-row-icon {
+	font-size: 14px;
+	flex-shrink: 0;
+	color: var(--text-muted);
+}
+
+.nb-list-row-title {
+	font-size: var(--font-ui-small);
+	font-weight: 500;
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 120px;
+	max-width: 300px;
+}
+
+.nb-list-row-props {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	flex: 1;
+}
+
+.nb-list-prop {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 7px;
+	background: var(--background-secondary);
+	border-radius: 10px;
+	font-size: var(--font-ui-smaller);
+	white-space: nowrap;
+	max-width: 200px;
+	overflow: hidden;
+}
+
+.nb-list-prop-name {
+	color: var(--text-muted);
+	flex-shrink: 0;
+}
+
+.nb-list-prop-value {
+	color: var(--text-normal);
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.nb-list-add-row {
+	margin: 6px 12px;
+	align-self: flex-start;
+}
+
+/* pill operator select (used in list filter pills) */
+.nb-pill-op-select {
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+	padding: 0 2px;
+}
+
+/* embed tabs: sem borda inferior, mais compactas */
+.nb-view-tabs--embed {
+	border-bottom-color: transparent;
+	padding: 0 4px;
+	gap: 1px;
+}
+
+.nb-view-tabs--embed .nb-view-tab {
+	padding: 4px 8px;
+	font-size: var(--font-ui-smaller);
+}
