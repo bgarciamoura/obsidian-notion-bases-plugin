@@ -1,5 +1,5 @@
 
-# Obsidian Obsidian Notion Bases — Database views for Obsidian
+# Obsidian Notion Bases — Database views for Obsidian
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/bgarciamoura/obsidian-notion-bases-plugin)
 ![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=7c3aed&label=downloads&query=%24%5B%22obsidian-notion-bases%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json)
@@ -10,6 +10,8 @@
 
 Obsidian Notion Bases brings the database experience from Notion directly into your vault. Every note in a folder becomes a row. Every frontmatter field becomes a column. Six different views. No external tools, no syncing, no lock-in — your data lives in plain Markdown files, forever yours.
 
+![Hero — Table view overview](docs/images/hero.png)
+
 ---
 
 ## Views
@@ -17,20 +19,32 @@ Obsidian Notion Bases brings the database experience from Notion directly into y
 ### 📊 Table
 The core view. A fully interactive spreadsheet with inline editing, resizable/reorderable/pinnable columns, aggregation footer, row height options, text wrap, and bulk row actions.
 
+![Table view](docs/images/view-table.png)
+
 ### 📋 List
 A minimal, single-line list of rows — title plus property chips. Great for quick overviews and task-like databases.
+
+![List view](docs/images/view-list.png)
 
 ### 🗂 Board (Kanban)
 Drag cards between columns grouped by any `select` or `status` field. Configurable card properties, hide empty columns, add cards directly to a specific column.
 
+![Board view](docs/images/view-board.png)
+
 ### 🖼 Gallery
 A responsive image/card grid. Choose a cover field (text or image), configure card size (small / medium / large), and display any properties below the title.
+
+![Gallery view](docs/images/view-gallery.png)
 
 ### 📅 Calendar
 Monthly calendar. Position notes by any `date` field. Click a day to create a note with the date pre-filled. Drag cards to reschedule them. Notes without a date appear in a collapsible "No date" section.
 
+![Calendar view](docs/images/view-calendar.png)
+
 ### ⏱ Timeline (Gantt)
 Horizontal bar chart with three zoom levels (days / weeks / months). Drag the left or right edge of a bar to resize the start or end date. Group rows by any `select` / `status` field. Scroll-to-today on load.
+
+![Timeline view](docs/images/view-timeline.png)
 
 ---
 
@@ -52,6 +66,8 @@ Horizontal bar chart with three zoom levels (days / weeks / months). Drag the le
 - **Tab drag-to-reorder** — drag view tabs to change their order
 - **Smart schema inference** — infers column types from existing frontmatter automatically
 - **Database embed** — embed any database inside a regular note with a simple code block
+
+![Inline editing](docs/images/feature-inline-edit.gif)
 
 ---
 
@@ -122,6 +138,8 @@ path: Projects
 type: table
 ```
 ````
+
+![Embed in note](docs/images/feature-embed.png)
 
 ---
 
