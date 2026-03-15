@@ -57,12 +57,12 @@ export class DatabaseManager {
 		if (!folder) return []
 
 		if (includeSubfolders) {
-			const prefix = folder.path === '/' ? '' : folder.path + '/'
+			const prefix = (!folder.path || folder.path === '/') ? '' : folder.path + '/'
 			return this.app.vault.getFiles()
 				.filter(f =>
 					f.extension === 'md' &&
 					f.path !== dbFile.path &&
-					f.path.startsWith(prefix)
+					(prefix === '' || f.path.startsWith(prefix))
 				)
 				.sort((a, b) => a.basename.localeCompare(b.basename))
 		}
