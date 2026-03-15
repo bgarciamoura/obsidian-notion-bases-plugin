@@ -22,6 +22,13 @@ export default tseslint.config(
 		},
 	},
 	...obsidianmd.configs.recommendedWithLocalesEn,
+	{
+		files: ["**/*.ts", "**/*.tsx"],
+		extends: [tseslint.configs.recommendedTypeChecked[0]],
+		rules: {
+			"@typescript-eslint/require-await": "error",
+		},
+	},
 	globalIgnores([
 		"node_modules",
 		"dist",

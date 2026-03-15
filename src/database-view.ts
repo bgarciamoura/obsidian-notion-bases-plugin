@@ -67,6 +67,7 @@ export class DatabaseView extends ItemView {
 		// Se onOpen renderizar, causa um render em branco antes do setState.
 	}
 
+	// eslint-disable-next-line @typescript-eslint/require-await -- Obsidian's ItemView interface requires onClose to return Promise<void>
 	async onClose(): Promise<void> {
 		this.root?.unmount()
 		this.root = null
