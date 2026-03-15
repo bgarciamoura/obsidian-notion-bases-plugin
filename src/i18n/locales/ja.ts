@@ -260,6 +260,8 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	tooltip_unpin_column: '列の固定を解除',
 	tooltip_resize_column: 'ドラッグしてサイズ変更；ダブルクリックで内容に合わせる',
 	tooltip_wrap_text: 'テキストの折り返し',
+	tooltip_include_subfolders: 'サブフォルダーを含める',
+	folder_column: 'フォルダー',
 	tooltip_manage_fields: 'フィールドを管理',
 	tooltip_batch_actions: '一括操作',
 	tooltip_remove_filter: 'フィルターを削除',

@@ -260,6 +260,8 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	tooltip_unpin_column: 'Détacher les colonnes',
 	tooltip_resize_column: 'Glisser pour redimensionner ; double-clic pour ajuster au contenu',
 	tooltip_wrap_text: 'Retour à la ligne',
+	tooltip_include_subfolders: 'Inclure les sous-dossiers',
+	folder_column: 'Dossier',
 	tooltip_manage_fields: 'Gérer les champs',
 	tooltip_batch_actions: 'Actions groupées',
 	tooltip_remove_filter: 'Supprimer le filtre',

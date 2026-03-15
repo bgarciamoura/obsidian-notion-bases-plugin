@@ -260,6 +260,8 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	tooltip_unpin_column: 'Desafixar colunas',
 	tooltip_resize_column: 'Arrastar para redimensionar; clique duplo para ajustar ao conteúdo',
 	tooltip_wrap_text: 'Wrap de texto',
+	tooltip_include_subfolders: 'Incluir subpastas',
+	folder_column: 'Pasta',
 	tooltip_manage_fields: 'Gerenciar campos',
 	tooltip_batch_actions: 'Ações em lote',
 	tooltip_remove_filter: 'Remover filtro',

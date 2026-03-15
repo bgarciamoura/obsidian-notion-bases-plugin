@@ -260,6 +260,8 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	tooltip_unpin_column: 'Desfijar columnas',
 	tooltip_resize_column: 'Arrastra para redimensionar; doble clic para ajustar al contenido',
 	tooltip_wrap_text: 'Ajuste de texto',
+	tooltip_include_subfolders: 'Incluir subcarpetas',
+	folder_column: 'Carpeta',
 	tooltip_manage_fields: 'Gestionar campos',
 	tooltip_batch_actions: 'Acciones en lote',
 	tooltip_remove_filter: 'Eliminar filtro',

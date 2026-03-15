@@ -168,7 +168,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 		if (!dbFile) { setLoading(false); return }
 		setLoading(true)
 		const cfg = manager.readConfig(dbFile)
-		const notes = manager.getNotesInDatabase(dbFile)
+		const notes = manager.getNotesInDatabase(dbFile, activeView.includeSubfolders)
 		if (cfg.schema.length === 0 && notes.length > 0) {
 			cfg.schema = manager.inferSchema(notes)
 			await manager.writeConfig(dbFile, cfg)
@@ -193,7 +193,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 		setConfig(cfg)
 		setRows(noteRows)
 		setLoading(false)
-	}, [dbFile, manager])
+	}, [dbFile, manager, activeView.includeSubfolders])
 
 	useEffect(() => { filtersInitialized.current = false }, [dbFile])
 	useEffect(() => { void loadData() }, [loadData])
@@ -307,6 +307,18 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 					)}
 				</div>
 
+				{/* Include subfolders toggle */}
+				<button
+					className={`nb-toolbar-btn nb-toolbar-btn--icon nb-subfolder-toggle ${activeView.includeSubfolders ? 'nb-toolbar-btn--active' : ''}`}
+					onClick={() => { void saveView({ ...activeView, includeSubfolders: !activeView.includeSubfolders }) }}
+					title={t('tooltip_include_subfolders')}
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+						<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+						<line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
+					</svg>
+				</button>
+
 				{/* Row count */}
 				<span className="nb-row-count">
 					{displayRows.length} {displayRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}
@@ -390,6 +402,13 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 					>
 						<span className="nb-list-row-icon">📄</span>
 						<span className="nb-list-row-title">{row._title}</span>
+						{(() => {
+							const dbFolder = dbFile?.parent?.path ?? ''
+							const fileFolder = row._file.parent?.path ?? ''
+							const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
+								? fileFolder.slice(dbFolder.length + 1) : ''
+							return relPath ? <span className="nb-folder-path" style={{ marginLeft: 4 }}>{relPath}</span> : null
+						})()}
 						{visibleCols.length > 0 && (
 							<span className="nb-list-row-props">
 								{visibleCols.map(col => {

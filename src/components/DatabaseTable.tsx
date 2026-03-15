@@ -643,7 +643,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		setLoading(true)
 
 		const cfg = manager.readConfig(dbFile)
-		const notes = manager.getNotesInDatabase(dbFile)
+		const notes = manager.getNotesInDatabase(dbFile, activeView.includeSubfolders)
 
 		// Inferir schema se vazio
 		if (cfg.schema.length === 0 && notes.length > 0) {
@@ -706,7 +706,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		setConfig(cfg)
 		setRows(noteRows)
 		setLoading(false)
-	}, [dbFile, manager, app])
+	}, [dbFile, manager, app, activeView.includeSubfolders])
 
 	useEffect(() => { filtersInitialized.current = false }, [dbFile])
 
@@ -884,16 +884,48 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 					</div>
 				)
 			},
-			cell: info => (
-				<CellRenderer
-					col={{ id: '_title', name: 'Nome', type: 'title', visible: true }}
-					value={info.getValue<string>()}
-					rowIndex={info.row.index}
-					columnId="_title"
-					file={info.row.original._file}
-				/>
-			),
+			cell: info => {
+				const dbFolder = dbFile?.parent?.path ?? ''
+				const fileFolder = info.row.original._file.parent?.path ?? ''
+				const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
+					? fileFolder.slice(dbFolder.length + 1)
+					: ''
+				return (
+					<div>
+						<CellRenderer
+							col={{ id: '_title', name: 'Nome', type: 'title', visible: true }}
+							value={info.getValue<string>()}
+							rowIndex={info.row.index}
+							columnId="_title"
+							file={info.row.original._file}
+						/>
+						{relPath && <div className="nb-folder-path">{relPath}</div>}
+					</div>
+				)
+			},
 		})
+
+		// Coluna virtual _folder (só quando includeSubfolders está ativo)
+		if (activeView.includeSubfolders && !activeView.hiddenColumns.includes('_folder')) {
+			const dbFolder = dbFile?.parent?.path ?? ''
+			cols.push({
+				id: '_folder',
+				accessorFn: row => {
+					const fileFolder = row._file.parent?.path ?? ''
+					return fileFolder.length > dbFolder.length ? fileFolder.slice(dbFolder.length + 1) : ''
+				},
+				size: activeView.columnWidths['_folder'] ?? 150,
+				enableColumnFilter: true,
+				enableSorting: true,
+				sortingFn: 'text',
+				header: () => (
+					<div className="nb-header-title">
+						<span>{t('folder_column')}</span>
+					</div>
+				),
+				cell: info => <span className="nb-folder-path">{info.getValue<string>()}</span>,
+			})
+		}
 
 		// Colunas do schema
 		const visibleSchema = orderedSchema.filter(col =>
@@ -1254,6 +1286,10 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		await saveView({ ...activeView, wrapText: !activeView.wrapText })
 	}
 
+	const toggleIncludeSubfolders = async () => {
+		await saveView({ ...activeView, includeSubfolders: !activeView.includeSubfolders })
+	}
+
 	const setAggregation = async (columnId: string, type: AggregationType) => {
 		const next = { ...(activeView.aggregations ?? {}), [columnId]: type }
 		await saveView({ ...activeView, aggregations: next })
@@ -1462,6 +1498,18 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 						<path d="M3 18h12a3 3 0 0 0 0-6h-3"/><polyline points="9 15 6 18 9 21"/>
+					</svg>
+				</button>
+
+				{/* Botão Include subfolders */}
+				<button
+					className={`nb-toolbar-btn nb-toolbar-btn--icon nb-subfolder-toggle ${activeView.includeSubfolders ? 'nb-toolbar-btn--active' : ''}`}
+					onClick={() => { void toggleIncludeSubfolders() }}
+					title={t('tooltip_include_subfolders')}
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+						<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+						<line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
 					</svg>
 				</button>
 

@@ -260,6 +260,8 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	tooltip_unpin_column: 'Spalten lösen',
 	tooltip_resize_column: 'Ziehen zum Ändern der Größe; Doppelklick zum Anpassen',
 	tooltip_wrap_text: 'Textumbruch',
+	tooltip_include_subfolders: 'Unterordner einbeziehen',
+	folder_column: 'Ordner',
 	tooltip_manage_fields: 'Felder verwalten',
 	tooltip_batch_actions: 'Stapelaktionen',
 	tooltip_remove_filter: 'Filter entfernen',

@@ -52,9 +52,20 @@ export class DatabaseManager {
 
 	// ── Notas / linhas ─────────────────────────────────────────────────────
 
-	getNotesInDatabase(dbFile: TFile): TFile[] {
+	getNotesInDatabase(dbFile: TFile, includeSubfolders?: boolean): TFile[] {
 		const folder = dbFile.parent
 		if (!folder) return []
+
+		if (includeSubfolders) {
+			const prefix = folder.path === '/' ? '' : folder.path + '/'
+			return this.app.vault.getFiles()
+				.filter(f =>
+					f.extension === 'md' &&
+					f.path !== dbFile.path &&
+					f.path.startsWith(prefix)
+				)
+				.sort((a, b) => a.basename.localeCompare(b.basename))
+		}
 
 		return folder.children
 			.filter((child): child is TFile =>

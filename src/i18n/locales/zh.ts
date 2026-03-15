@@ -260,6 +260,8 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	tooltip_unpin_column: '取消固定列',
 	tooltip_resize_column: '拖动调整大小；双击适应内容',
 	tooltip_wrap_text: '文字换行',
+	tooltip_include_subfolders: '包含子文件夹',
+	folder_column: '文件夹',
 	tooltip_manage_fields: '管理字段',
 	tooltip_batch_actions: '批量操作',
 	tooltip_remove_filter: '移除筛选',

@@ -258,6 +258,8 @@ const en = {
 	tooltip_unpin_column: 'Unpin columns',
 	tooltip_resize_column: 'Drag to resize; double-click to fit content',
 	tooltip_wrap_text: 'Wrap text',
+	tooltip_include_subfolders: 'Include subfolders',
+	folder_column: 'Folder',
 	tooltip_manage_fields: 'Manage fields',
 	tooltip_batch_actions: 'Batch actions',
 	tooltip_remove_filter: 'Remove filter',

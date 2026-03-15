@@ -102,6 +102,7 @@ export interface ViewConfig {
 	timelineEndField?: string
 	timelineZoom?: 'days' | 'weeks' | 'months'
 	timelineGroupByField?: string
+	includeSubfolders?: boolean
 }
 
 // ── Embed multi-view state (stored in hosting note frontmatter) ─────────────
