@@ -1,4 +1,5 @@
 import { App, TFile, normalizePath } from 'obsidian'
+import { t } from './i18n'
 import {
 	ColumnSchema,
 	ColumnType,
@@ -101,7 +102,7 @@ export class DatabaseManager {
 
 	async createNote(dbFile: TFile): Promise<TFile> {
 		const folderPath = dbFile.parent?.path ?? ''
-		const base = normalizePath(`${folderPath}/Sem título`)
+		const base = normalizePath(`${folderPath}/${t('db_untitled_note')}`)
 		let path = `${base}.md`
 		let i = 1
 		while (this.app.vault.getFileByPath(path)) {
@@ -160,10 +161,10 @@ export class DatabaseManager {
 	async duplicateNotes(files: TFile[]): Promise<void> {
 		for (const file of files) {
 			const folderPath = file.parent?.path ?? ''
-			let path = normalizePath(`${folderPath}/${file.basename} (cópia).md`)
+			let path = normalizePath(`${folderPath}/${file.basename} ${t('db_copy_suffix')}.md`)
 			let i = 2
 			while (this.app.vault.getFileByPath(path)) {
-				path = normalizePath(`${folderPath}/${file.basename} (cópia ${i++}).md`)
+				path = normalizePath(`${folderPath}/${file.basename} ${t('db_copy_suffix_n').replace('$n', String(i++))}.md`)
 			}
 			const content = await this.app.vault.read(file)
 			await this.app.vault.create(path, content)
@@ -187,7 +188,7 @@ export class DatabaseManager {
 		)
 
 		if (this.app.vault.getFileByPath(path)) {
-			throw new Error(`Já existe um banco de dados em "${folderPath || '/'}"`)
+			throw new Error(t('db_already_exists').replace('$folder', folderPath || '/'))
 		}
 
 		const content = [
@@ -204,7 +205,7 @@ export class DatabaseManager {
 			'---',
 			'',
 			'> [!tip] Notion Bases',
-			'> Este arquivo é um banco de dados. Abra-o para ver a visualização de tabela.',
+			t('db_tip_body'),
 			'',
 		].join('\n')
 

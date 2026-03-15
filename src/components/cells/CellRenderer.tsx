@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { TFile } from 'obsidian'
 import { ColumnSchema, NoteRow, NumberFormat, SelectOption } from '../../types'
 import { useApp } from '../../context'
+import { t } from '../../i18n'
 
 interface CellProps {
 	col: ColumnSchema
@@ -52,10 +53,10 @@ function formatNumber(value: number, fmt: NumberFormat | undefined): string {
 // ── Componente principal ─────────────────────────────────────────────────────
 
 const DEFAULT_STATUS_OPTIONS: SelectOption[] = [
-	{ value: 'Não iniciado', color: '#9E9E9E' },
-	{ value: 'Em andamento', color: '#2196F3' },
-	{ value: 'Concluído', color: '#4CAF50' },
-	{ value: 'Cancelado', color: '#F44336' },
+	{ value: t('status_not_started'), color: '#9E9E9E' },
+	{ value: t('status_in_progress'), color: '#2196F3' },
+	{ value: t('status_done'), color: '#4CAF50' },
+	{ value: t('status_cancelled'), color: '#F44336' },
 ]
 
 function applyPhoneMask(v: string): string {
@@ -249,7 +250,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 					onStartEdit={startEditing}
 					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
 					onCancel={() => setEditingCell(null)}
-					validate={v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : 'E-mail inválido'}
+					validate={v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : t('email_invalid')}
 				/>
 			)
 
@@ -532,7 +533,7 @@ function SelectCell({ value, options, isEditing, onStartEdit, onCommit, onCancel
 			style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, minWidth: dropPos.width, zIndex: 9999 }}
 		>
 			<button className="nb-select-option nb-select-clear" onClick={() => onCommit(null)}>
-				Limpar
+				{t('select_clear')}
 			</button>
 			{options.map(opt => (
 				<button
@@ -676,7 +677,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 					</button>
 					<button
 						className={`nb-status-color-swatch ${colorPickerFor === opt.value ? 'nb-status-color-swatch--active' : ''}`}
-						title="Trocar cor"
+						title={t('tooltip_change_color')}
 						style={{ background: getOptionColor(options, opt.value) }}
 						onClick={e => {
 							e.stopPropagation()
@@ -687,7 +688,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 					/>
 					<button
 						className="nb-status-delete-btn"
-						title="Excluir status"
+						title={t('tooltip_delete_status')}
 						onClick={(e) => {
 							e.stopPropagation()
 							const newOptions = options.filter(o => o.value !== opt.value)
@@ -701,7 +702,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 			<div className="nb-status-new-row">
 				<input
 					className="nb-status-new-input"
-					placeholder="Novo status..."
+					placeholder={t('status_new_placeholder')}
 					value={newStatusName}
 					onChange={e => setNewStatusName(e.target.value)}
 					onKeyDown={e => {
@@ -739,7 +740,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 			</div>
 			<div className="nb-status-color-custom">
 				<label className="nb-status-color-custom-label">
-					Personalizada
+					'Personalizada'
 					<input
 						type="color"
 						className="nb-status-color-input"
@@ -921,7 +922,7 @@ function CheckboxCell({ value, onCommit }: {
 function FormulaCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 	const display = value === null || value === undefined ? '—' : String(value as string | number | boolean)
 	return (
-		<div className="nb-cell-formula" title={`Fórmula: ${col.formula ?? ''}`}>
+		<div className="nb-cell-formula" title={t('formula_panel_title') + ': ' + (col.formula ?? '')}>
 			{display}
 		</div>
 	)
@@ -932,7 +933,7 @@ function FormulaCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 function LookupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 	const display = value === null || value === undefined ? '—' : String(value as string | number | boolean)
 	return (
-		<div className="nb-cell-formula nb-cell-lookup" title={`Lookup de ${col.refDatabasePath ?? ''}`}>
+		<div className="nb-cell-formula nb-cell-lookup" title={t('lookup_panel_title') + ' de ' + (col.refDatabasePath ?? '')}>
 			{display}
 		</div>
 	)
@@ -986,12 +987,12 @@ function RelationCell({ value, options, isEditing, onStartEdit, onCommit, onCanc
 			<input
 				ref={inputRef}
 				className="nb-relation-search"
-				placeholder="Buscar..."
+				placeholder={t('relation_search_placeholder')}
 				value={search}
 				onChange={e => setSearch(e.target.value)}
 				onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
 			/>
-			<button className="nb-select-option nb-select-clear" onClick={() => onCommit(null)}>Limpar</button>
+			<button className="nb-select-option nb-select-clear" onClick={() => onCommit(null)}>{t('relation_clear')}</button>
 			{filtered.map(opt => (
 				<button
 					key={opt}
@@ -1001,7 +1002,7 @@ function RelationCell({ value, options, isEditing, onStartEdit, onCommit, onCanc
 					<span className="nb-relation-badge">{opt}</span>
 				</button>
 			))}
-			{filtered.length === 0 && <div className="nb-relation-empty">Nenhum resultado</div>}
+			{filtered.length === 0 && <div className="nb-relation-empty">{t('relation_no_results')}</div>}
 		</div>,
 		document.body
 	) : null
@@ -1084,18 +1085,18 @@ function ImageCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 						</a>
 					</div>
 				) : (
-					<span className="nb-cell-text nb-cell-placeholder">Selecionar imagem…</span>
+					<span className="nb-cell-text nb-cell-placeholder">{t('image_select_placeholder')}</span>
 				)}
 			</div>
 			{isEditing && dropdownPos && createPortal(
 				<div ref={dropdownRef} className="nb-image-picker" style={{ position: 'fixed', top: dropdownPos.y, left: dropdownPos.x }}>
 					<div className="nb-image-picker-header">
-						<span>Selecionar imagem</span>
-						{value && <button className="nb-image-picker-clear" onClick={e => { e.stopPropagation(); onCommit(null) }}>Limpar</button>}
+						<span>{t('image_picker_title')}</span>
+						{value && <button className="nb-image-picker-clear" onClick={e => { e.stopPropagation(); onCommit(null) }}>{t('image_picker_clear')}</button>}
 					</div>
 					{images.length === 0 ? (
 						<div className="nb-image-picker-empty">
-							{col.imageSourceFolder ? `Nenhuma imagem encontrada em "${col.imageSourceFolder}"` : 'Nenhuma imagem encontrada no vault'}
+							{col.imageSourceFolder ? `${t('image_picker_empty_folder')} "${col.imageSourceFolder}"` : t('image_picker_empty_vault')}
 						</div>
 					) : (
 						<div className="nb-image-picker-grid">

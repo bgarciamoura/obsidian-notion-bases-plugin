@@ -12,6 +12,7 @@ import {
 	getColumnIconStatic, getDefaultOperator,
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
 } from './filter-utils'
+import { t } from '../i18n'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -20,12 +21,12 @@ const ROW_H     = 34
 const GROUP_H   = 28
 const HEADER_H  = 56   // two rows of 28px each
 
-const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+const MONTHS_SHORT = () => [t('month_short_jan'),t('month_short_feb'),t('month_short_mar'),t('month_short_apr'),t('month_short_may'),t('month_short_jun'),t('month_short_jul'),t('month_short_aug'),t('month_short_sep'),t('month_short_oct'),t('month_short_nov'),t('month_short_dec')]
 
 type ZoomLevel = 'days' | 'weeks' | 'months'
 const UNIT_W:    Record<ZoomLevel, number> = { days: 30,  weeks: 80,  months: 100 }
 const TOTAL_U:   Record<ZoomLevel, number> = { days: 730, weeks: 156, months: 48  }
-const ZOOM_LBL:  Record<ZoomLevel, string> = { days: 'Dias', weeks: 'Semanas', months: 'Meses' }
+const ZOOM_LBL = (): Record<ZoomLevel, string> => ({ days: t('zoom_days'), weeks: t('zoom_weeks'), months: t('zoom_months') })
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
@@ -69,7 +70,7 @@ function computeHeader(zoom: ZoomLevel, origin: Date, unitW: number, total: numb
 	if (zoom === 'months') {
 		for (let i = 0; i < total; i++) {
 			const d = addMonths(origin, i)
-			bottom.push({ key: `m${i}`, left: i * unitW, width: unitW, label: MONTHS_SHORT[d.getMonth()] })
+			bottom.push({ key: `m${i}`, left: i * unitW, width: unitW, label: MONTHS_SHORT()[d.getMonth()] })
 		}
 		let curY = -1, sl = 0
 		for (let i = 0; i <= total; i++) {
@@ -93,7 +94,7 @@ function computeHeader(zoom: ZoomLevel, origin: Date, unitW: number, total: numb
 			if (my !== curMY && curMY !== '') {
 				const d0 = addDays(origin, Math.round(sl / unitW) * 7)
 				top.push({ key: curMY, left: sl, width: i * unitW - sl,
-					label: `${MONTHS_SHORT[d0.getMonth()]} ${d0.getFullYear()}` })
+					label: `${MONTHS_SHORT()[d0.getMonth()]} ${d0.getFullYear()}` })
 				sl = i * unitW
 			}
 			if (curMY === '' || my !== curMY) curMY = my
@@ -110,7 +111,7 @@ function computeHeader(zoom: ZoomLevel, origin: Date, unitW: number, total: numb
 			if (my !== curMY && curMY !== '') {
 				const d0 = addDays(origin, Math.round(sl / unitW))
 				top.push({ key: curMY, left: sl, width: i * unitW - sl,
-					label: `${MONTHS_SHORT[d0.getMonth()]} ${d0.getFullYear()}` })
+					label: `${MONTHS_SHORT()[d0.getMonth()]} ${d0.getFullYear()}` })
 				sl = i * unitW
 			}
 			if (curMY === '' || my !== curMY) curMY = my
@@ -191,7 +192,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 			const pills = externalView.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: t('name_column'), columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
 					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
@@ -337,7 +338,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 		const result: TLItem[] = []
 		for (const key of keys) {
 			const opt = groupField.options?.find(o => o.value === key)
-			result.push({ kind: 'group', label: key || 'Sem valor', color: opt?.color })
+			result.push({ kind: 'group', label: key || t('no_value'), color: opt?.color })
 			for (const row of groups.get(key)!) result.push(makeItem(row))
 		}
 		return result
@@ -373,8 +374,8 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 
 	// ── Render ────────────────────────────────────────────────────────────────
 
-	if (!dbFile) return <div className="nb-empty-state"><p>Nenhum banco de dados aberto.</p></div>
-	if (loading)  return <div className="nb-loading">Carregando...</div>
+	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
+	if (loading)  return <div className="nb-loading">{t('loading')}</div>
 
 	const todayInRange = todayPx >= 0 && todayPx <= canvasWidth
 
@@ -383,7 +384,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 		label: string; valueKey: 'timelineStartField' | 'timelineEndField'; open: boolean
 		setOpen: (v: boolean) => void; menuRef: React.RefObject<HTMLDivElement>
 	}) => {
-		const fieldName = config.schema.find(c => c.id === activeView[valueKey])?.name ?? 'Nenhum'
+		const fieldName = config.schema.find(c => c.id === activeView[valueKey])?.name ?? t('none_value')
 		return (
 			<div className="nb-fields-menu-wrapper" ref={ref}>
 				<button className={`nb-toolbar-btn${open ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setOpen(!open)}>
@@ -391,10 +392,10 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 				</button>
 				{open && (
 					<div className="nb-fields-dropdown">
-						<div className="nb-fields-dropdown-label">Campo de {label.toLowerCase()}</div>
+						<div className="nb-fields-dropdown-label">{label}</div>
 						<button className={`nb-menu-item${!activeView[valueKey] ? ' nb-menu-item--active' : ''}`}
 							onClick={() => { void saveView({ ...activeView, [valueKey]: undefined }); setOpen(false) }}>
-							<span className="nb-menu-item-icon">—</span><span>Nenhum</span>
+							<span className="nb-menu-item-icon">—</span><span>{t('none_value')}</span>
 						</button>
 						{config.schema.filter(c => c.type === 'date').map(col => (
 							<button key={col.id} className={`nb-menu-item${activeView[valueKey] === col.id ? ' nb-menu-item--active' : ''}`}
@@ -412,20 +413,20 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 		<div className="nb-container">
 			{/* Toolbar */}
 			<div className="nb-toolbar">
-				<DateFieldDropdown label="Início" valueKey="timelineStartField" open={startMenuOpen} setOpen={setStartMenuOpen} menuRef={startMenuRef} />
-				<DateFieldDropdown label="Fim"    valueKey="timelineEndField"   open={endMenuOpen}   setOpen={setEndMenuOpen}   menuRef={endMenuRef} />
+				<DateFieldDropdown label={t('start_field')} valueKey="timelineStartField" open={startMenuOpen} setOpen={setStartMenuOpen} menuRef={startMenuRef} />
+				<DateFieldDropdown label={t('end_field')}    valueKey="timelineEndField"   open={endMenuOpen}   setOpen={setEndMenuOpen}   menuRef={endMenuRef} />
 
 				{/* Agrupar por */}
 				<div className="nb-fields-menu-wrapper" ref={groupMenuRef}>
 					<button className={`nb-toolbar-btn${groupMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setGroupMenuOpen(v => !v)}>
-						Agrupar: <strong>{groupField?.name ?? 'Nenhum'}</strong>
+						{t('group_field')}: <strong>{groupField?.name ?? t('none_value')}</strong>
 					</button>
 					{groupMenuOpen && (
 						<div className="nb-fields-dropdown">
-							<div className="nb-fields-dropdown-label">Agrupar por</div>
+							<div className="nb-fields-dropdown-label">{t('group_by_label')}</div>
 							<button className={`nb-menu-item${!activeView.timelineGroupByField ? ' nb-menu-item--active' : ''}`}
 								onClick={() => { void saveView({ ...activeView, timelineGroupByField: undefined }); setGroupMenuOpen(false) }}>
-								<span className="nb-menu-item-icon">—</span><span>Nenhum</span>
+								<span className="nb-menu-item-icon">—</span><span>{t('none_value')}</span>
 							</button>
 							{config.schema.filter(c => c.type === 'select' || c.type === 'status').map(col => (
 								<button key={col.id} className={`nb-menu-item${activeView.timelineGroupByField === col.id ? ' nb-menu-item--active' : ''}`}
@@ -439,10 +440,10 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 
 				{/* Campos */}
 				<div className="nb-fields-menu-wrapper" ref={fieldsMenuRef}>
-					<button className={`nb-toolbar-btn${fieldsMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFieldsMenuOpen(v => !v)}>Campos</button>
+					<button className={`nb-toolbar-btn${fieldsMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFieldsMenuOpen(v => !v)}>{t('fields')}</button>
 					{fieldsMenuOpen && (
 						<div className="nb-fields-dropdown">
-							<div className="nb-fields-dropdown-label">Campos nas barras</div>
+							<div className="nb-fields-dropdown-label">{t('fields_on_bars')}</div>
 							{config.schema.map(col => (
 								<label key={col.id} className="nb-field-row">
 									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
@@ -456,9 +457,9 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 
 				{/* Navegação */}
 				<div className="nb-cal-nav">
-					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={handlePrev} title="Scroll anterior">‹</button>
-					<button className="nb-toolbar-btn nb-cal-today-btn" onClick={handleToday}>Hoje</button>
-					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={handleNext} title="Scroll próximo">›</button>
+					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={handlePrev} title={t('timeline_scroll_prev')}>‹</button>
+					<button className="nb-toolbar-btn nb-cal-today-btn" onClick={handleToday}>{t('calendar_today')}</button>
+					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={handleNext} title={t('timeline_scroll_next')}>›</button>
 				</div>
 
 				{/* Zoom */}
@@ -466,16 +467,16 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 					{(['days', 'weeks', 'months'] as ZoomLevel[]).map(z => (
 						<button key={z} className={`nb-tl-zoom-btn${zoom === z ? ' nb-tl-zoom-btn--active' : ''}`}
 							onClick={() => { void saveView({ ...activeView, timelineZoom: z }) }}>
-							{ZOOM_LBL[z]}
+							{ZOOM_LBL()[z]}
 						</button>
 					))}
 				</div>
 
-				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? 'item' : 'itens'}</span>
+				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? t('item_singular') : t('item_plural')}</span>
 
 				{/* Filtros */}
 				<div className="nb-fields-menu-wrapper" ref={filterMenuRef} style={{ marginLeft: 'auto' }}>
-					<button className={`nb-toolbar-btn nb-toolbar-btn--icon${filterMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFilterMenuOpen(v => !v)} title="Filtros">
+					<button className={`nb-toolbar-btn nb-toolbar-btn--icon${filterMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFilterMenuOpen(v => !v)} title={t('filters')}>
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 							<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
 						</svg>
@@ -483,9 +484,9 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 					</button>
 					{filterMenuOpen && (
 						<div className="nb-fields-dropdown nb-filter-menu-dropdown">
-							<div className="nb-fields-dropdown-label">Filtrar por</div>
+							<div className="nb-fields-dropdown-label">{t('filter_by')}</div>
 							<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
-								<span className="nb-menu-item-icon">📄</span><span>Nome</span>
+								<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
 							</button>
 							{config.schema.map(col => (
 								<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
@@ -504,7 +505,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 						<Fragment key={f.id}>
 							{idx > 0 && (
 								<button className={`nb-pill-conjunction${f.conjunction === 'or' ? ' nb-pill-conjunction--or' : ''}`} onClick={() => toggleConj(f.id)}>
-									{f.conjunction === 'or' ? 'OU' : 'E'}
+									{f.conjunction === 'or' ? t('conjunction_or') : t('conjunction_and')}
 								</button>
 							)}
 							<span className="nb-filter-pill">
@@ -526,7 +527,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 			{/* Timeline body */}
 			{!startField ? (
 				<div className="nb-cal-no-field">
-					<p>Selecione um campo de início no toolbar para exibir a timeline.</p>
+					<p>{t('timeline_no_start_field')}</p>
 				</div>
 			) : (
 				<div className="nb-tl-body" ref={scrollRef}>
@@ -628,7 +629,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 			{noIntervalRows.length > 0 && (
 				<div className="nb-tl-no-interval">
 					<div className="nb-tl-no-interval-title" onClick={() => setNoIntervalOpen(v => !v)}>
-						{noIntervalOpen ? '▾' : '▸'} Sem intervalo ({noIntervalRows.length})
+						{noIntervalOpen ? '▾' : '▸'} {t('timeline_no_interval')} ({noIntervalRows.length})
 					</div>
 					{noIntervalOpen && (
 						<div className="nb-tl-no-interval-list">

@@ -1,4 +1,5 @@
 import { ColumnSchema, NoteRow } from './types'
+import { t as i18n } from './i18n'
 
 // ── Erros ─────────────────────────────────────────────────────────────────────
 
@@ -34,7 +35,7 @@ function tokenize(src: string): Tok[] {
 		if (src[i] === '"' || src[i] === "'") {
 			const q = src[i++]
 			while (i < src.length && src[i] !== q) { if (src[i] === '\\') i++; i++ }
-			if (i >= src.length) throw new FormulaError(`String não fechada na posição ${p}`)
+			if (i >= src.length) throw new FormulaError(i18n('formula_err_unclosed_string').replace('$pos', String(p)))
 			i++ // closing quote
 			out.push({ type: 'STR', val: src.slice(p + 1, i - 1), pos: p }); continue
 		}
@@ -44,7 +45,7 @@ function tokenize(src: string): Tok[] {
 			i++
 			const start = i
 			while (i < src.length && src[i] !== ']') i++
-			if (i >= src.length) throw new FormulaError(`Colchete não fechado na posição ${p}`)
+			if (i >= src.length) throw new FormulaError(i18n('formula_err_unclosed_bracket').replace('$pos', String(p)))
 			const name = src.slice(start, i++)
 			out.push({ type: 'BRACKET_IDENT', val: name, pos: p }); continue
 		}
@@ -75,7 +76,7 @@ function tokenize(src: string): Tok[] {
 				break
 			case '!':
 				if (src[i + 1] === '=') { out.push({ type: 'NEQ', val: '!=', pos: i }); i += 2 }
-				else throw new FormulaError(`Caractere inesperado '!' na posição ${i}`)
+				else throw new FormulaError(i18n('formula_err_unexpected_bang').replace('$pos', String(i)))
 				break
 			case '<':
 				if (src[i + 1] === '>') { out.push({ type: 'NEQ', val: '<>', pos: i }); i += 2 }
@@ -86,7 +87,7 @@ function tokenize(src: string): Tok[] {
 				if (src[i + 1] === '=') { out.push({ type: 'GTE', val: '>=', pos: i }); i += 2 }
 				else { out.push({ type: 'GT', val: '>', pos: i++ }) }
 				break
-			default: throw new FormulaError(`Caractere inesperado '${src[i]}' na posição ${i}`)
+			default: throw new FormulaError(i18n('formula_err_unexpected_char').replace('$char', src[i]).replace('$pos', String(i)))
 		}
 	}
 	out.push({ type: 'EOF', val: '', pos: i })
@@ -114,14 +115,14 @@ class Parser {
 	private eat() { return this.toks[this.p++] }
 	private expect(t: TT) {
 		const tok = this.eat()
-		if (tok.type !== t) throw new FormulaError(`Esperado ${t}, encontrado '${tok.val}' na posição ${tok.pos}`)
+		if (tok.type !== t) throw new FormulaError(i18n('formula_err_expected_token').replace('$expected', String(t)).replace('$found', tok.val).replace('$pos', String(tok.pos)))
 		return tok
 	}
 	private is(t: TT) { return this.cur().type === t }
 
 	parse(): Node {
 		const n = this.expr()
-		if (!this.is('EOF')) throw new FormulaError(`Token inesperado '${this.cur().val}' na posição ${this.cur().pos}`)
+		if (!this.is('EOF')) throw new FormulaError(i18n('formula_err_unexpected_token').replace('$token', this.cur().val).replace('$pos', String(this.cur().pos)))
 		return n
 	}
 
@@ -185,7 +186,7 @@ class Parser {
 			this.expect('RPAREN')
 			return n
 		}
-		throw new FormulaError(`Token inesperado '${t.val}' na posição ${t.pos}`)
+		throw new FormulaError(i18n('formula_err_unexpected_token').replace('$token', t.val).replace('$pos', String(t.pos)))
 	}
 }
 
@@ -243,7 +244,7 @@ function resolveCol(name: string, ctx: Ctx): unknown {
 		const isFormula = ctx.schema.some(c =>
 			(c.id === name || c.name.toLowerCase() === name.toLowerCase()) && c.type === 'formula'
 		)
-		if (isFormula) throw new FormulaError(`Referência circular: "${name}" é uma coluna fórmula`)
+		if (isFormula) throw new FormulaError(i18n('formula_err_circular_ref').replace('$name', name))
 		throw new FormulaError(`Coluna desconhecida: "${name}"`)
 	}
 	return getColVal(id, ctx.row)
@@ -292,12 +293,12 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 
 		case 'call': {
 			const { fn, args } = n
-			if (!KNOWN_FNS.has(fn)) throw new FormulaError(`Função desconhecida: ${fn}()`)
+			if (!KNOWN_FNS.has(fn)) throw new FormulaError(i18n('formula_err_unknown_fn').replace('$fn', fn))
 
 			// ── Lógicas ──
 			// eslint-disable-next-line no-unused-labels
 			case_IF: if (fn === 'IF') {
-				if (args.length < 2 || args.length > 3) throw new FormulaError('IF(condição, se_verdadeiro, [se_falso])')
+				if (args.length < 2 || args.length > 3) throw new FormulaError(i18n('formula_err_if_args'))
 				return truthy(evalNode(args[0], ctx)) ? evalNode(args[1], ctx) : (args[2] ? evalNode(args[2], ctx) : null)
 			}
 			// eslint-disable-next-line no-unused-labels
@@ -336,7 +337,7 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 			}
 			// eslint-disable-next-line no-unused-labels
 			case_AVG: if (fn === 'AVG' || fn === 'AVERAGE') {
-				if (args.length !== 1 || args[0].k !== 'col') throw new FormulaError('AVG(coluna) — requer referência de coluna')
+				if (args.length !== 1 || args[0].k !== 'col') throw new FormulaError(i18n('formula_err_avg_args'))
 				const id = resolveColId(args[0].name, ctx)
 				if (!id) throw new FormulaError(`Coluna desconhecida em AVG`)
 				const vals = ctx.allRows.map(r => toNum(getColVal(id, r)))
@@ -344,7 +345,7 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 			}
 			// eslint-disable-next-line no-unused-labels
 			case_COUNT: if (fn === 'COUNT' || fn === 'COUNTA') {
-				if (args.length !== 1 || args[0].k !== 'col') throw new FormulaError('COUNT(coluna) — requer referência de coluna')
+				if (args.length !== 1 || args[0].k !== 'col') throw new FormulaError(i18n('formula_err_count_args'))
 				const id = resolveColId(args[0].name, ctx)
 				if (!id) throw new FormulaError(`Coluna desconhecida em COUNT`)
 				return ctx.allRows.filter(r => { const v = getColVal(id, r); return v !== null && v !== undefined && v !== '' }).length
@@ -402,7 +403,7 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 			}
 			// eslint-disable-next-line no-unused-labels
 			case_MID: if (fn === 'MID') {
-				if (args.length !== 3) throw new FormulaError('MID(texto, início, comprimento)')
+				if (args.length !== 3) throw new FormulaError(i18n('formula_err_mid_args'))
 				const s = toStr(evalNode(args[0], ctx))
 				const start = toNum(evalNode(args[1], ctx)) - 1
 				return s.slice(start, start + toNum(evalNode(args[2], ctx)))
@@ -427,7 +428,7 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 			case_ABS: if (fn === 'ABS') { return Math.abs(toNum(evalNode(args[0], ctx))) }
 			// eslint-disable-next-line no-unused-labels
 			case_MOD: if (fn === 'MOD') {
-				if (args.length !== 2) throw new FormulaError('MOD(número, divisor)')
+				if (args.length !== 2) throw new FormulaError(i18n('formula_err_mod_args'))
 				return toNum(evalNode(args[0], ctx)) % toNum(evalNode(args[1], ctx))
 			}
 			// eslint-disable-next-line no-unused-labels
@@ -437,7 +438,7 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 			}
 			// eslint-disable-next-line no-unused-labels
 			case_SQRT: if (fn === 'SQRT') {
-				if (args.length !== 1) throw new FormulaError('SQRT(número)')
+				if (args.length !== 1) throw new FormulaError(i18n('formula_err_sqrt_args'))
 				return Math.sqrt(toNum(evalNode(args[0], ctx)))
 			}
 
@@ -460,7 +461,7 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 			// eslint-disable-next-line no-unused-labels
 			case_VALUE: if (fn === 'VALUE') { return args.length === 1 ? toNum(evalNode(args[0], ctx)) : null }
 
-			throw new FormulaError(`Função não implementada: ${fn}()`)
+			throw new FormulaError(i18n('formula_err_not_implemented').replace('$fn', fn))
 		}
 	}
 }

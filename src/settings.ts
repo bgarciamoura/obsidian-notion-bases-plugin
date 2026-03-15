@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting } from 'obsidian'
 import NotionBasesPlugin from './main'
 import { ViewConfig } from './types'
+import { t } from './i18n'
 
 export interface NotionBasesSettings {
 	databaseFileName: string
@@ -27,8 +28,8 @@ export class NotionBasesSettingTab extends PluginSettingTab {
 		containerEl.empty()
 
 		new Setting(containerEl)
-			.setName('Nome do arquivo de banco de dados')
-			.setDesc('Nome do arquivo especial que identifica um banco de dados na pasta.')
+			.setName(t('settings_db_filename_name'))
+			.setDesc(t('settings_db_filename_desc'))
 			.addText(text =>
 				text
 					.setPlaceholder('_database.md')
@@ -40,8 +41,8 @@ export class NotionBasesSettingTab extends PluginSettingTab {
 			)
 
 		new Setting(containerEl)
-			.setName('Altura padrão das linhas')
-			.setDesc('Altura em pixels de cada linha da tabela.')
+			.setName(t('settings_row_height_name'))
+			.setDesc(t('settings_row_height_desc'))
 			.addSlider(slider =>
 				slider
 					.setLimits(28, 80, 4)

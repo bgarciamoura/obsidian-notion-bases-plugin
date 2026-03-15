@@ -12,6 +12,7 @@ import {
 	getColumnIconStatic, getDefaultOperator,
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
 } from './filter-utils'
+import { t } from '../i18n'
 
 interface DatabaseCalendarProps {
 	dbFile: TFile | null
@@ -20,8 +21,8 @@ interface DatabaseCalendarProps {
 	onViewChange: (view: ViewConfig) => Promise<void>
 }
 
-const DAYS_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-const MONTHS_LONG = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const DAYS_SHORT = () => [t('day_sun'), t('day_mon'), t('day_tue'), t('day_wed'), t('day_thu'), t('day_fri'), t('day_sat')]
+const MONTHS_LONG = () => [t('month_january'), t('month_february'), t('month_march'), t('month_april'), t('month_may'), t('month_june'), t('month_july'), t('month_august'), t('month_september'), t('month_october'), t('month_november'), t('month_december')]
 
 function buildCalendarGrid(year: number, month: number): (number | null)[] {
 	const firstDay = new Date(year, month, 1).getDay()
@@ -91,7 +92,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 			const pills = externalView.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: t('name_column'), columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
 					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
@@ -252,8 +253,8 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 
 	// ── Render ────────────────────────────────────────────────────────────────
 
-	if (!dbFile) return <div className="nb-empty-state"><p>Nenhum banco de dados aberto.</p></div>
-	if (loading) return <div className="nb-loading">Carregando...</div>
+	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
+	if (loading) return <div className="nb-loading">{t('loading')}</div>
 
 	const todayDay = today.getFullYear() === currentYear && today.getMonth() === currentMonth ? today.getDate() : null
 
@@ -264,17 +265,17 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 				{/* Campo de data */}
 				<div className="nb-fields-menu-wrapper" ref={dateFieldMenuRef}>
 					<button className={`nb-toolbar-btn${dateFieldMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setDateFieldMenuOpen(v => !v)}>
-						Data: <strong>{dateField?.name ?? 'Nenhum'}</strong>
+						{t('date_field')}: <strong>{dateField?.name ?? t('none_value')}</strong>
 					</button>
 					{dateFieldMenuOpen && (
 						<div className="nb-fields-dropdown">
-							<div className="nb-fields-dropdown-label">Campo de data</div>
+							<div className="nb-fields-dropdown-label">{t('date_field_label')}</div>
 							<button
 								className={`nb-menu-item${!activeView.calendarDateField ? ' nb-menu-item--active' : ''}`}
 								onClick={() => { void saveView({ ...activeView, calendarDateField: undefined }); setDateFieldMenuOpen(false) }}
 							>
 								<span className="nb-menu-item-icon">—</span>
-								<span>Nenhum</span>
+								<span>{t('none_value')}</span>
 							</button>
 							{config.schema.filter(c => c.type === 'date').map(col => (
 								<button
@@ -297,7 +298,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 					</button>
 					{fieldsMenuOpen && (
 						<div className="nb-fields-dropdown">
-							<div className="nb-fields-dropdown-label">Campos</div>
+							<div className="nb-fields-dropdown-label">{t('fields_label')}</div>
 							{config.schema.map(col => (
 								<label key={col.id} className="nb-field-row">
 									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
@@ -311,17 +312,17 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 
 				{/* Navegação */}
 				<div className="nb-cal-nav">
-					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToPrevMonth} title="Mês anterior">‹</button>
-					<button className="nb-toolbar-btn nb-cal-today-btn" onClick={goToToday}>Hoje</button>
-					<span className="nb-cal-month-label">{MONTHS_LONG[currentMonth]} {currentYear}</span>
-					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToNextMonth} title="Próximo mês">›</button>
+					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToPrevMonth} title={t('calendar_prev_month')}>‹</button>
+					<button className="nb-toolbar-btn nb-cal-today-btn" onClick={goToToday}>{t('calendar_today')}</button>
+					<span className="nb-cal-month-label">{MONTHS_LONG()[currentMonth]} {currentYear}</span>
+					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToNextMonth} title={t('calendar_next_month')}>›</button>
 				</div>
 
-				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? 'item' : 'itens'}</span>
+				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? t('item_singular') : t('item_plural')}</span>
 
 				{/* Filtros */}
 				<div className="nb-fields-menu-wrapper" ref={filterMenuRef} style={{ marginLeft: 'auto' }}>
-					<button className={`nb-toolbar-btn nb-toolbar-btn--icon${filterMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFilterMenuOpen(v => !v)} title="Filtros">
+					<button className={`nb-toolbar-btn nb-toolbar-btn--icon${filterMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFilterMenuOpen(v => !v)} title={t('filters')}>
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 							<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
 						</svg>
@@ -329,9 +330,9 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 					</button>
 					{filterMenuOpen && (
 						<div className="nb-fields-dropdown nb-filter-menu-dropdown">
-							<div className="nb-fields-dropdown-label">Filtrar por</div>
+							<div className="nb-fields-dropdown-label">{t('filter_by')}</div>
 							<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
-								<span className="nb-menu-item-icon">📄</span><span>Nome</span>
+								<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
 							</button>
 							{config.schema.map(col => (
 								<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
@@ -351,7 +352,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 						<Fragment key={f.id}>
 							{idx > 0 && (
 								<button className={`nb-pill-conjunction${f.conjunction === 'or' ? ' nb-pill-conjunction--or' : ''}`} onClick={() => toggleConjunction(f.id)}>
-									{f.conjunction === 'or' ? 'OU' : 'E'}
+									{f.conjunction === 'or' ? t('conjunction_or') : t('conjunction_and')}
 								</button>
 							)}
 							<span className="nb-filter-pill">
@@ -373,13 +374,13 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 			{/* Calendar body */}
 			{!dateField ? (
 				<div className="nb-cal-no-field">
-					<p>Selecione um campo de data no toolbar para exibir o calendário.</p>
+					<p>{t('calendar_no_date_field')}</p>
 				</div>
 			) : (
 				<>
 					<div className="nb-cal-grid">
 						{/* Day headers */}
-						{DAYS_SHORT.map(d => (
+						{DAYS_SHORT().map(d => (
 							<div key={d} className="nb-cal-day-header">{d}</div>
 						))}
 
@@ -399,7 +400,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 									onDragOver={e => handleDayDragOver(e, day)}
 									onDragLeave={handleDayDragLeave}
 									onDrop={e => { void handleDayDrop(e, day) }}
-									title="Clique para criar nota"
+									title={t('calendar_click_to_create')}
 								>
 									<div className="nb-cal-cell-header">
 										<span className={`nb-cal-day-num${isToday ? ' nb-cal-day-num--today' : ''}`}>{day}</span>
@@ -439,7 +440,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 					{/* No-date rows */}
 					{noDateRows.length > 0 && (
 						<div className="nb-cal-no-date">
-							<div className="nb-cal-no-date-title">Sem data ({noDateRows.length})</div>
+							<div className="nb-cal-no-date-title">{t('calendar_no_date_section')} ({noDateRows.length})</div>
 							<div className="nb-cal-no-date-list">
 								{noDateRows.map(row => (
 									<div

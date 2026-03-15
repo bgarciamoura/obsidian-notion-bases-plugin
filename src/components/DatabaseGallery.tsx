@@ -13,6 +13,7 @@ import {
 	getColumnIconStatic, getDefaultOperator,
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
 } from './filter-utils'
+import { t } from '../i18n'
 
 interface DatabaseGalleryProps {
 	dbFile: TFile | null
@@ -21,7 +22,7 @@ interface DatabaseGalleryProps {
 	onViewChange: (view: ViewConfig) => Promise<void>
 }
 
-const CARD_SIZE_LABELS: Record<string, string> = { small: 'Pequeno', medium: 'Médio', large: 'Grande' }
+const CARD_SIZE_LABELS = (): Record<string, string> => ({ small: t('size_small'), medium: t('size_medium'), large: t('size_large') })
 const CARD_SIZE_COLS: Record<string, string> = { small: 'repeat(auto-fill, minmax(160px, 1fr))', medium: 'repeat(auto-fill, minmax(220px, 1fr))', large: 'repeat(auto-fill, minmax(300px, 1fr))' }
 
 // ── Sort Panel ──────────────────────────────────────────────────────────────
@@ -61,30 +62,30 @@ function GallerySortPanel({ sorts, schema, onSortChange, onClose, anchorRect, pa
 	return createPortal(
 		<div ref={panelRef} className="nb-sort-panel" style={{ position: 'fixed', top: pos.y, left: pos.x }}>
 			<div className="nb-sort-panel-titlebar" onMouseDown={handleDragStart}>
-				<span className="nb-sort-panel-title">Ordenar por</span>
-				<button className="nb-sort-panel-close" onClick={onClose} title="Fechar">×</button>
+				<span className="nb-sort-panel-title">{t('sort_by')}</span>
+				<button className="nb-sort-panel-close" onClick={onClose} title={t('tooltip_close')}>×</button>
 			</div>
-			{sorts.length === 0 && <div className="nb-sort-panel-empty">Nenhuma ordenação ativa</div>}
+			{sorts.length === 0 && <div className="nb-sort-panel-empty">{t('no_active_sorts')}</div>}
 			{sorts.map((sort, idx) => {
 				const name = sort.columnId === '_title' ? 'Nome' : (schema.find(c => c.id === sort.columnId)?.name ?? sort.columnId)
 				return (
 					<div key={sort.columnId} className="nb-sort-row">
 						<div className="nb-sort-row-priority">
-							<button className="nb-sort-priority-btn" onClick={() => move(idx, -1)} disabled={idx === 0} title="Mover para cima">↑</button>
-							<button className="nb-sort-priority-btn" onClick={() => move(idx, 1)} disabled={idx === sorts.length - 1} title="Mover para baixo">↓</button>
+							<button className="nb-sort-priority-btn" onClick={() => move(idx, -1)} disabled={idx === 0} title={t('tooltip_move_up')}>↑</button>
+							<button className="nb-sort-priority-btn" onClick={() => move(idx, 1)} disabled={idx === sorts.length - 1} title={t('tooltip_move_down')}>↓</button>
 						</div>
 						<span className="nb-sort-row-name">{name}</span>
 						<button className="nb-sort-dir-btn" onClick={() => onSortChange(sorts.map(s => s.columnId === sort.columnId ? { ...s, direction: s.direction === 'asc' ? 'desc' : 'asc' } : s))}>
-							{sort.direction === 'asc' ? 'A → Z' : 'Z → A'}
+							{sort.direction === 'asc' ? t('sort_asc') : t('sort_desc')}
 						</button>
-						<button className="nb-sort-remove-btn" onClick={() => onSortChange(sorts.filter(s => s.columnId !== sort.columnId))} title="Remover">×</button>
+						<button className="nb-sort-remove-btn" onClick={() => onSortChange(sorts.filter(s => s.columnId !== sort.columnId))} title={t('tooltip_remove')}>×</button>
 					</div>
 				)
 			})}
 			{available.length > 0 && (
 				<div className="nb-sort-add-row">
 					<select className="nb-sort-add-select" value="" onChange={e => { if (e.target.value) { onSortChange([...sorts, { columnId: e.target.value, direction: 'asc' }]); e.target.value = '' } }}>
-						<option value="">+ Adicionar ordenação...</option>
+						<option value="">{t('add_sort')}</option>
 						{available.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 					</select>
 				</div>
@@ -145,7 +146,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 			const pills = externalView.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: t('name_column'), columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
 					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
@@ -257,8 +258,8 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 
 	// ── Render ───────────────────────────────────────────────────────────────
 
-	if (!dbFile) return <div className="nb-empty-state"><p>Nenhum banco de dados aberto.</p></div>
-	if (loading) return <div className="nb-loading">Carregando...</div>
+	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
+	if (loading) return <div className="nb-loading">{t('loading')}</div>
 
 	return (
 		<div className="nb-container">
@@ -267,11 +268,11 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 				{/* Campos */}
 				<div className="nb-fields-menu-wrapper" ref={fieldsMenuRef}>
 					<button className={`nb-toolbar-btn${fieldsMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFieldsMenuOpen(v => !v)}>
-						Campos
+						{t('fields')}
 					</button>
 					{fieldsMenuOpen && (
 						<div className="nb-fields-dropdown">
-							<div className="nb-fields-dropdown-label">Campos</div>
+							<div className="nb-fields-dropdown-label">{t('fields_label')}</div>
 							{config.schema.map(col => (
 								<label key={col.id} className="nb-field-row">
 									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
@@ -286,17 +287,17 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 				{/* Capa */}
 				<div className="nb-fields-menu-wrapper" ref={coverMenuRef}>
 					<button className={`nb-toolbar-btn${coverMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setCoverMenuOpen(v => !v)}>
-						Capa: <strong>{coverField?.name ?? 'Nenhuma'}</strong>
+						{t('cover')}: <strong>{coverField?.name ?? t('no_cover')}</strong>
 					</button>
 					{coverMenuOpen && (
 						<div className="nb-fields-dropdown">
-							<div className="nb-fields-dropdown-label">Campo de capa</div>
+							<div className="nb-fields-dropdown-label">{t('cover_field_label')}</div>
 							<button
 								className={`nb-menu-item${!activeView.galleryCoverField ? ' nb-menu-item--active' : ''}`}
 								onClick={() => { void saveView({ ...activeView, galleryCoverField: undefined }); setCoverMenuOpen(false) }}
 							>
 								<span className="nb-menu-item-icon">—</span>
-								<span>Nenhuma</span>
+								<span>{t('no_cover')}</span>
 							</button>
 							{config.schema.filter(c => c.type === 'text' || c.type === 'title' || c.type === 'image').map(col => (
 								<button
@@ -315,18 +316,18 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 				{/* Tamanho */}
 				<div className="nb-fields-menu-wrapper" ref={sizeMenuRef}>
 					<button className={`nb-toolbar-btn${sizeMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setSizeMenuOpen(v => !v)}>
-						{CARD_SIZE_LABELS[cardSize]}
+						{CARD_SIZE_LABELS()[cardSize]}
 					</button>
 					{sizeMenuOpen && (
 						<div className="nb-fields-dropdown">
-							<div className="nb-fields-dropdown-label">Tamanho dos cards</div>
+							<div className="nb-fields-dropdown-label">{t('card_size_label')}</div>
 							{(['small', 'medium', 'large'] as const).map(size => (
 								<button
 									key={size}
 									className={`nb-menu-item${cardSize === size ? ' nb-menu-item--active' : ''}`}
 									onClick={() => { void saveView({ ...activeView, galleryCardSize: size }); setSizeMenuOpen(false) }}
 								>
-									{CARD_SIZE_LABELS[size]}
+									{CARD_SIZE_LABELS()[size]}
 								</button>
 							))}
 						</div>
@@ -335,12 +336,12 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 
 				{/* Row count */}
 				<span className="nb-row-count">
-					{displayRows.length} {displayRows.length === 1 ? 'item' : 'itens'}
+					{displayRows.length} {displayRows.length === 1 ? t('item_singular') : t('item_plural')}
 				</span>
 
 				{/* Filtros */}
 				<div className="nb-fields-menu-wrapper" ref={filterMenuRef} style={{ marginLeft: 'auto' }}>
-					<button className={`nb-toolbar-btn nb-toolbar-btn--icon${filterMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFilterMenuOpen(v => !v)} title="Filtros">
+					<button className={`nb-toolbar-btn nb-toolbar-btn--icon${filterMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFilterMenuOpen(v => !v)} title={t('filters')}>
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 							<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
 						</svg>
@@ -348,9 +349,9 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 					</button>
 					{filterMenuOpen && (
 						<div className="nb-fields-dropdown nb-filter-menu-dropdown">
-							<div className="nb-fields-dropdown-label">Filtrar por</div>
+							<div className="nb-fields-dropdown-label">{t('filter_by')}</div>
 							<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
-								<span className="nb-menu-item-icon">📄</span><span>Nome</span>
+								<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
 							</button>
 							{config.schema.map(col => (
 								<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
@@ -371,7 +372,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 						setSortPanelOpen(v => !v)
 					}}
 				>
-					<span>Ordenar</span>
+					<span>{t('sort')}</span>
 					{activeView.sorts.length > 0 && <span className="nb-hidden-badge">{activeView.sorts.length}</span>}
 				</button>
 				{sortPanelOpen && sortAnchorRect && (
@@ -393,7 +394,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 						<Fragment key={f.id}>
 							{idx > 0 && (
 								<button className={`nb-pill-conjunction${f.conjunction === 'or' ? ' nb-pill-conjunction--or' : ''}`} onClick={() => toggleConjunction(f.id)}>
-									{f.conjunction === 'or' ? 'OU' : 'E'}
+									{f.conjunction === 'or' ? t('conjunction_or') : t('conjunction_and')}
 								</button>
 							)}
 							<span className="nb-filter-pill">
@@ -468,7 +469,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 
 				{/* Add card */}
 				<div className="nb-gallery-card nb-gallery-card--add" onClick={() => { void handleAddRow() }}>
-					<div className="nb-gallery-add-inner">+ Nova entrada</div>
+					<div className="nb-gallery-add-inner">{t('add_entry')}</div>
 				</div>
 			</div>
 		</div>

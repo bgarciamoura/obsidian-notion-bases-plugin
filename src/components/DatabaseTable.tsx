@@ -35,6 +35,7 @@ import { evaluateFormulas } from '../formula-engine'
 import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
+import { t } from '../i18n'
 
 // ── Validação de compatibilidade de tipos ────────────────────────────────────
 
@@ -53,7 +54,7 @@ function validateTypeChange(rows: NoteRow[], columnId: string, fromType: ColumnT
 			return s !== '' && (isNaN(Number(s)) || !isFinite(Number(s)))
 		})
 		if (bad.length > 0)
-			return `${bad.length} célula(s) contêm valores não numéricos (ex: "${String(bad[0])}")`
+			return `${bad.length} ${t('validate_non_numeric')}${String(bad[0])}"`
 	}
 
 	if (toType === 'date') {
@@ -62,7 +63,7 @@ function validateTypeChange(rows: NoteRow[], columnId: string, fromType: ColumnT
 			return s !== '' && isNaN(new Date(s).getTime())
 		})
 		if (bad.length > 0)
-			return `${bad.length} célula(s) contêm valores que não são datas válidas (ex: "${String(bad[0])}")`
+			return `${bad.length} ${t('validate_invalid_dates')}${String(bad[0])}"`
 	}
 
 	if (toType === 'checkbox') {
@@ -72,13 +73,13 @@ function validateTypeChange(rows: NoteRow[], columnId: string, fromType: ColumnT
 			return !validBool.has(String(v).toLowerCase().trim())
 		})
 		if (bad.length > 0)
-			return `${bad.length} célula(s) contêm valores incompatíveis com checkbox (ex: "${String(bad[0])}")`
+			return `${bad.length} ${t('validate_invalid_checkbox')}${String(bad[0])}"`
 	}
 
 	if (fromType === 'multiselect' && toType === 'select') {
 		const multi = values.filter(v => Array.isArray(v) && (v as unknown[]).length > 1)
 		if (multi.length > 0)
-			return `${multi.length} linha(s) têm múltiplos valores selecionados. Remova os extras antes de mudar para seleção única.`
+			return `${multi.length} ${t('validate_multiselect_to_select')}`
 	}
 
 	if (toType === 'email') {
@@ -88,7 +89,7 @@ function validateTypeChange(rows: NoteRow[], columnId: string, fromType: ColumnT
 			return s !== '' && !emailRegex.test(s)
 		})
 		if (bad.length > 0)
-			return `${bad.length} célula(s) contêm valores que não são e-mails válidos (ex: "${String(bad[0])}")`
+			return `${bad.length} ${t('validate_invalid_email')}${String(bad[0])}"`
 	}
 
 	if (toType === 'url') {
@@ -97,7 +98,7 @@ function validateTypeChange(rows: NoteRow[], columnId: string, fromType: ColumnT
 			try { new URL(s); return false } catch { return true }
 		})
 		if (bad.length > 0)
-			return `${bad.length} célula(s) contêm valores que não são URLs válidas (ex: "${String(bad[0])}")`
+			return `${bad.length} ${t('validate_invalid_url')}${String(bad[0])}"`
 	}
 
 	if (toType === 'phone') {
@@ -107,7 +108,7 @@ function validateTypeChange(rows: NoteRow[], columnId: string, fromType: ColumnT
 			return s !== '' && !phoneRegex.test(s)
 		})
 		if (bad.length > 0)
-			return `${bad.length} célula(s) contêm valores que não são telefones válidos (ex: "${String(bad[0])}")`
+			return `${bad.length} ${t('validate_invalid_phone')}${String(bad[0])}"`
 	}
 
 	return null
@@ -160,22 +161,19 @@ function getDefaultOperator(type: string): FilterOperator {
 	}
 }
 
-const OPERATOR_LABELS: Record<FilterOperator, string> = {
-	is: 'É',
-	is_not: 'Não é',
-	contains: 'Contém',
-	not_contains: 'Não contém',
-	starts_with: 'Começa com',
-	ends_with: 'Termina com',
-	gt: 'Maior que',
-	gte: 'Maior ou igual',
-	lt: 'Menor que',
-	lte: 'Menor ou igual',
-	is_checked: 'Está marcado',
-	is_unchecked: 'Não está marcado',
-	is_empty: 'Está vazio',
-	is_not_empty: 'Não está vazio',
-}
+const OPERATOR_LABELS = new Proxy({} as Record<FilterOperator, string>, {
+	get: (_, key) => {
+		const labels: Record<FilterOperator, string> = {
+			is: t('op_is'), is_not: t('op_is_not'), contains: t('op_contains'),
+			not_contains: t('op_not_contains'), starts_with: t('op_starts_with'),
+			ends_with: t('op_ends_with'), gt: t('op_gt'), gte: t('op_gte'),
+			lt: t('op_lt'), lte: t('op_lte'), is_checked: t('op_is_checked'),
+			is_unchecked: t('op_is_unchecked'), is_empty: t('op_is_empty'),
+			is_not_empty: t('op_is_not_empty'),
+		}
+		return labels[key as FilterOperator] ?? key
+	}
+})
 
 const NO_VALUE_OPERATORS = new Set<FilterOperator>(['is_empty', 'is_not_empty', 'is_checked', 'is_unchecked'])
 
@@ -317,11 +315,11 @@ function SortPanel({ sorts, schema, onSortChange, onClose, anchorRect, panelRef 
 			style={{ position: 'fixed', top: pos.y, left: pos.x }}
 		>
 			<div className="nb-sort-panel-titlebar" onMouseDown={handleDragStart}>
-				<span className="nb-sort-panel-title">Ordenar por</span>
-				<button className="nb-sort-panel-close" onClick={onClose} title="Fechar">×</button>
+				<span className="nb-sort-panel-title">{t('sort_by')}</span>
+				<button className="nb-sort-panel-close" onClick={onClose} title={t('tooltip_close')}>×</button>
 			</div>
 			{sorts.length === 0 && (
-				<div className="nb-sort-panel-empty">Nenhuma ordenação ativa</div>
+				<div className="nb-sort-panel-empty">{t('no_active_sorts')}</div>
 			)}
 			{sorts.map((sort, idx) => {
 				const name = sort.columnId === '_title'
@@ -330,14 +328,14 @@ function SortPanel({ sorts, schema, onSortChange, onClose, anchorRect, panelRef 
 				return (
 					<div key={sort.columnId} className="nb-sort-row">
 						<div className="nb-sort-row-priority">
-							<button className="nb-sort-priority-btn" onClick={() => move(idx, -1)} disabled={idx === 0} title="Mover para cima">↑</button>
-							<button className="nb-sort-priority-btn" onClick={() => move(idx, 1)} disabled={idx === sorts.length - 1} title="Mover para baixo">↓</button>
+							<button className="nb-sort-priority-btn" onClick={() => move(idx, -1)} disabled={idx === 0} title={t('tooltip_move_up')}>↑</button>
+							<button className="nb-sort-priority-btn" onClick={() => move(idx, 1)} disabled={idx === sorts.length - 1} title={t('tooltip_move_down')}>↓</button>
 						</div>
 						<span className="nb-sort-row-name">{name}</span>
 						<button className="nb-sort-dir-btn" onClick={() => toggleDir(sort.columnId)}>
-							{sort.direction === 'asc' ? 'A → Z' : 'Z → A'}
+							{sort.direction === 'asc' ? t('sort_asc') : t('sort_desc')}
 						</button>
-						<button className="nb-sort-remove-btn" onClick={() => remove(sort.columnId)} title="Remover">×</button>
+						<button className="nb-sort-remove-btn" onClick={() => remove(sort.columnId)} title={t('tooltip_remove')}>×</button>
 					</div>
 				)
 			})}
@@ -348,7 +346,7 @@ function SortPanel({ sorts, schema, onSortChange, onClose, anchorRect, panelRef 
 						value=""
 						onChange={e => { add(e.target.value); e.target.value = '' }}
 					>
-						<option value="">+ Adicionar ordenação...</option>
+						<option value="">{t('add_sort')}</option>
 						{availableColumns.map(c => (
 							<option key={c.id} value={c.id}>{c.name}</option>
 						))}
@@ -388,7 +386,7 @@ function ResizeHandle({ onResize, onAutoFit }: { onResize: (w: number) => void; 
 			className="nb-col-resizer"
 			onMouseDown={handleMouseDown}
 			onDoubleClick={e => { e.stopPropagation(); onAutoFit?.() }}
-			title="Arrastar para redimensionar; clique duplo para ajustar ao conteúdo"
+			title={t('tooltip_resize_column')}
 		/>
 	)
 }
@@ -449,7 +447,7 @@ function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, on
 					<button
 						className={sorted ? "nb-sort-btn nb-sort-btn--sorted" : "nb-sort-btn"}
 						onClick={e => { e.stopPropagation(); onToggleSort() }}
-						title={sorted === "asc" ? "Ordenar Z→A" : sorted === "desc" ? "Remover ordenação" : "Ordenar A→Z"}
+						title={sorted === "asc" ? t('sort_asc_title') : sorted === "desc" ? t('sort_desc_title') : t('sort_none_title')}
 					>
 						<span className={sorted === "asc" ? "nb-sort-chevron--active" : "nb-sort-chevron"}>⌃</span>
 						<span className={sorted === "desc" ? "nb-sort-chevron--active" : "nb-sort-chevron"}>⌄</span>
@@ -460,7 +458,7 @@ function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, on
 					<button
 						className={`nb-pin-btn${isPinned ? ' nb-pin-btn--active' : ''}`}
 						onClick={e => { e.stopPropagation(); onTogglePin() }}
-						title={isPinned ? 'Desafixar colunas' : 'Fixar colunas até aqui'}
+						title={isPinned ? t('tooltip_unpin_column') : t('tooltip_pin_column')}
 					>
 						📌
 					</button>
@@ -509,7 +507,7 @@ function SortablePill({ filter, isActive, onToggle, onRemove, btnRef }: {
 				<span
 					className="nb-filter-pill-remove"
 					onClick={e => { e.stopPropagation(); onRemove() }}
-					title="Remover filtro"
+					title={t('tooltip_remove_filter')}
 				>×</span>
 			</button>
 		</div>
@@ -538,13 +536,13 @@ function AggDropdown({ colType, current, onSelect, anchorEl }: {
 	const left = rect ? rect.left + window.scrollX : 0
 	const isNumeric = NUMERIC_TYPES.includes(colType)
 	const options: { type: AggregationType; label: string; numericOnly?: boolean }[] = [
-		{ type: 'none', label: 'Nenhum' },
-		{ type: 'count', label: 'Contar' },
-		{ type: 'count_values', label: 'Contar valores' },
-		{ type: 'sum', label: 'Soma', numericOnly: true },
-		{ type: 'avg', label: 'Média', numericOnly: true },
-		{ type: 'min', label: 'Mín', numericOnly: true },
-		{ type: 'max', label: 'Máx', numericOnly: true },
+		{ type: 'none', label: t('agg_none') },
+		{ type: 'count', label: t('agg_count') },
+		{ type: 'count_values', label: t('agg_count_values') },
+		{ type: 'sum', label: t('agg_sum'), numericOnly: true },
+		{ type: 'avg', label: t('agg_avg'), numericOnly: true },
+		{ type: 'min', label: t('agg_min'), numericOnly: true },
+		{ type: 'max', label: t('agg_max'), numericOnly: true },
 	]
 	return (
 		<div className="nb-agg-dropdown" style={{ position: 'absolute', top, left, zIndex: 9999 }}>
@@ -676,7 +674,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			const pills = sourceView?.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: t('name_column'), columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
 					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
@@ -766,7 +764,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		if (!col) return true
 		const error = validateTypeChange(rows, colId, col.type, newType)
 		if (error) {
-			new Notice(`Não é possível mudar o tipo: ${error}`, 6000)
+			new Notice(`${t('validate_type_change_prefix')}${error}`, 6000)
 			return false
 		}
 		return true
@@ -875,11 +873,11 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				return (
 					<div className="nb-header-title">
 						<span>📄</span>
-						<span>Nome</span>
+						<span>{t('name_column')}</span>
 						<button
 							className={`nb-sort-btn ${sorted ? 'nb-sort-btn--sorted' : ''}`}
 							onClick={e => { e.stopPropagation(); handleColumnToggleSort('_title') }}
-							title={sorted === 'asc' ? 'Ordenar Z→A' : sorted === 'desc' ? 'Remover ordenação' : 'Ordenar A→Z'}
+							title={sorted === 'asc' ? t('sort_asc_title') : sorted === 'desc' ? t('sort_desc_title') : t('sort_none_title')}
 						>
 							<span className={sorted === 'asc' ? 'nb-sort-chevron--active' : 'nb-sort-chevron'}>⌃</span>
 							<span className={sorted === 'desc' ? 'nb-sort-chevron--active' : 'nb-sort-chevron'}>⌄</span>
@@ -1267,7 +1265,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		if (type === 'none') return ''
 		const vals = filteredRows.map(r => columnId === '_title' ? r._title : r[columnId])
 		const total = filteredRows.length
-		if (type === 'count') return `${total} ${total === 1 ? 'linha' : 'linhas'}`
+		if (type === 'count') return `${total} ${total === 1 ? t('row_singular') : t('row_plural')}`
 		const nonEmpty = vals.filter(v => v !== null && v !== undefined && String(v as string | number | boolean).trim() !== '')
 		if (type === 'count_values') return `${nonEmpty.length} preenchido${nonEmpty.length !== 1 ? 's' : ''}`
 		const nums = nonEmpty.map(v => parseFloat(String(v as string | number | boolean))).filter(n => !isNaN(n))
@@ -1280,8 +1278,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	}
 
 	const aggLabel: Record<AggregationType, string> = {
-		none: 'Nenhum', count: '', count_values: '',
-		sum: 'Soma', avg: 'Média', min: 'Mín', max: 'Máx',
+		none: t('agg_none'), count: '', count_values: '',
+		sum: t('agg_sum'), avg: t('agg_avg'), min: t('agg_min'), max: t('agg_max'),
 	}
 
 	const updateFilter = (filterId: string, operator: FilterOperator, value: string) => {
@@ -1378,7 +1376,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		const id = `campo_${Date.now()}`
 		const newCol: ColumnSchema = {
 			id,
-			name: 'Novo campo',
+			name: t('new_field'),
 			type: 'text',
 			visible: true,
 			width: 150,
@@ -1391,14 +1389,14 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	if (!dbFile) {
 		return (
 			<div className="nb-empty-state">
-				<p>Nenhum banco de dados aberto.</p>
-				<p>Use o botão na ribbon ou o comando <strong>Criar novo banco de dados</strong>.</p>
+				<p>{t('no_database_open')}</p>
+				<p>{t('no_database_hint')}</p>
 			</div>
 		)
 	}
 
 	if (loading) {
-		return <div className="nb-loading">Carregando...</div>
+		return <div className="nb-loading">{t('loading')}</div>
 	}
 
 	const tableRows = table.getRowModel().rows
@@ -1419,7 +1417,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						ref={searchInputRef}
 						className="nb-search"
 						type="text"
-						placeholder="Buscar..."
+						placeholder={t('relation_search_placeholder')}
 						value={globalFilter}
 						onChange={e => { setGlobalFilter(e.target.value); if (shouldCollapse && searchExpanded) startSearchTimer() }}
 						onKeyDown={e => { if (e.key === 'Enter' && shouldCollapse && searchExpanded) collapseSearch() }}
@@ -1432,7 +1430,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 					<button
 						className={`nb-toolbar-btn nb-toolbar-btn--icon ${rowHeightMenuOpen ? 'nb-toolbar-btn--active' : ''}`}
 						onClick={() => setRowHeightMenuOpen(v => !v)}
-						title="Altura das linhas"
+						title={t('row_height_label')}
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 							<line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/>
@@ -1440,7 +1438,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 					</button>
 					{rowHeightMenuOpen && (
 						<div className="nb-fields-dropdown nb-rowheight-dropdown">
-							<div className="nb-fields-dropdown-label">Altura das linhas</div>
+							<div className="nb-fields-dropdown-label">{t('row_height_label')}</div>
 							{(['compact', 'medium', 'tall'] as const).map(h => (
 								<button
 									key={h}
@@ -1450,7 +1448,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 									<span className="nb-menu-item-icon">
 										{h === 'compact' ? '▤' : h === 'medium' ? '▥' : '▦'}
 									</span>
-									<span>{h === 'compact' ? 'Compacto' : h === 'medium' ? 'Médio' : 'Alto'}</span>
+									<span>{h === 'compact' ? t('height_compact') : h === 'medium' ? t('height_medium') : t('height_tall')}</span>
 								</button>
 							))}
 						</div>
@@ -1461,7 +1459,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				<button
 					className={`nb-toolbar-btn nb-toolbar-btn--icon ${activeView.wrapText ? 'nb-toolbar-btn--active' : ''}`}
 					onClick={() => { void toggleWrapText() }}
-					title="Wrap de texto"
+					title={t('tooltip_wrap_text')}
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 						<path d="M3 18h12a3 3 0 0 0 0-6h-3"/><polyline points="9 15 6 18 9 21"/>
@@ -1473,9 +1471,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 					<button
 						className={`nb-toolbar-btn ${fieldsMenuOpen ? 'nb-toolbar-btn--active' : ''}`}
 						onClick={() => setFieldsMenuOpen(v => !v)}
-						title="Gerenciar campos"
+						title={t('tooltip_manage_fields')}
 					>
-						Campos {config.schema.some(c => !c.visible) && (
+						{t('fields')} {config.schema.some(c => !c.visible) && (
 							<span className="nb-hidden-badge">
 								{config.schema.filter(c => !c.visible).length}
 							</span>
@@ -1484,7 +1482,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 					{fieldsMenuOpen && (
 						<div className="nb-fields-dropdown">
-							<div className="nb-fields-dropdown-label">Campos</div>
+							<div className="nb-fields-dropdown-label">{t('fields_label')}</div>
 							{config.schema.map(col => (
 								<label key={col.id} className="nb-field-row">
 									<input
@@ -1518,9 +1516,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 					<button
 						className={`nb-toolbar-btn ${actionsMenuOpen ? 'nb-toolbar-btn--active' : ''}`}
 						onClick={() => setActionsMenuOpen(v => !v)}
-						title="Ações em lote"
+						title={t('tooltip_batch_actions')}
 					>
-						Ações
+						{t('actions')}
 						{table.getSelectedRowModel().rows.length > 0 && (
 							<span className="nb-hidden-badge">
 								{table.getSelectedRowModel().rows.length}
@@ -1536,7 +1534,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 								disabled={table.getSelectedRowModel().rows.length === 0}
 							>
 								<span className="nb-menu-item-icon">🗑</span>
-								<span>Apagar todos selecionados</span>
+								<span>{t('delete_selected')}</span>
 							</button>
 							<button
 								className="nb-menu-item"
@@ -1544,7 +1542,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 								disabled={table.getSelectedRowModel().rows.length === 0}
 							>
 								<span className="nb-menu-item-icon">📁</span>
-								<span>Mover todos selecionados</span>
+								<span>{t('move_selected')}</span>
 							</button>
 							<button
 								className="nb-menu-item"
@@ -1552,16 +1550,16 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 								disabled={table.getSelectedRowModel().rows.length === 0}
 							>
 								<span className="nb-menu-item-icon">📋</span>
-								<span>Duplicar todos selecionados</span>
+								<span>{t('duplicate_selected')}</span>
 							</button>
 							<div className="nb-menu-separator" />
 							<button className="nb-menu-item" onClick={handleExportCsv}>
 								<span className="nb-menu-item-icon">⬇</span>
-								<span>Exportar CSV</span>
+								<span>{t('export_csv')}</span>
 							</button>
 							<button className="nb-menu-item" onClick={() => csvInputRef.current?.click()}>
 								<span className="nb-menu-item-icon">⬆</span>
-								<span>Importar CSV</span>
+								<span>{t('import_csv')}</span>
 							</button>
 							<input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={e => { void handleImportCsv(e) }} />
 						</div>
@@ -1569,7 +1567,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				</div>
 
 <span className="nb-row-count">
-					{tableRows.length} {tableRows.length === 1 ? 'item' : 'itens'}
+					{tableRows.length} {tableRows.length === 1 ? t('item_singular') : t('item_plural')}
 				</span>
 
 				{/* Botão Filtros */}
@@ -1577,7 +1575,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 					<button
 						className={`nb-toolbar-btn nb-toolbar-btn--icon ${filterMenuOpen ? 'nb-toolbar-btn--active' : ''}`}
 						onClick={() => setFilterMenuOpen(v => !v)}
-						title="Filtros"
+						title={t('filters')}
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 							<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
@@ -1589,14 +1587,14 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 					{filterMenuOpen && (
 						<div className="nb-fields-dropdown nb-filter-menu-dropdown">
-							<div className="nb-fields-dropdown-label">Filtrar por</div>
+							<div className="nb-fields-dropdown-label">{t('filter_by')}</div>
 							<button
 								className="nb-menu-item"
 								onClick={() => addFilter('_title', 'Nome', '📄', 'title')}
 								
 							>
 								<span className="nb-menu-item-icon">📄</span>
-								<span>Nome</span>
+								<span>{t('name_column')}</span>
 							</button>
 							{config.schema.map(col => (
 								<button
@@ -1612,7 +1610,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 							<div className="nb-menu-separator" />
 							<button className="nb-menu-item" onClick={() => setFilterMenuOpen(false)}>
 								<span className="nb-menu-item-icon">⚡</span>
-								<span>Adicionar filtro avançado</span>
+								<span>{t('add_filter_advanced')}</span>
 							</button>
 						</div>
 					)}
@@ -1629,7 +1627,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 							setSortPanelOpen(v => !v)
 						}}
 					>
-						<span>Ordenar</span>
+						<span>{t('sort')}</span>
 						{activeView.sorts.length > 0 && <span className="nb-hidden-badge">{activeView.sorts.length}</span>}
 					</button>
 					{sortPanelOpen && sortAnchorRect && (
@@ -1665,7 +1663,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 										onClick={() => toggleConjunction(filter.id)}
 										title="Clique para alternar entre E / OU"
 									>
-										{filter.conjunction === 'or' ? 'OU' : 'E'}
+										{filter.conjunction === 'or' ? t('conjunction_or') : t('conjunction_and')}
 									</button>
 								)}
 								<SortablePill
@@ -1718,14 +1716,14 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						<button
 							className="nb-filter-query-clear"
 							onClick={e => { e.stopPropagation(); removeFilter(filter.id) }}
-							title="Remover filtro"
+							title={t('tooltip_remove_filter')}
 						>×</button>
 					</div>
 					{!NO_VALUE_OPERATORS.has(filter.operator) && (
 						<input
 							className="nb-filter-value-input"
 							type={filter.columnType === 'number' ? 'number' : filter.columnType === 'date' ? 'date' : 'text'}
-							placeholder={filter.columnType === 'number' ? 'Número...' : filter.columnType === 'date' ? '' : 'Valor...'}
+							placeholder={filter.columnType === 'number' ? t('filter_number_placeholder') : filter.columnType === 'date' ? '' : t('filter_value_placeholder')}
 							value={filter.value}
 							autoFocus
 							onChange={e => updateFilter(filter.id, filter.operator, e.target.value)}
@@ -1802,7 +1800,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 																<button
 																	className={`nb-pin-btn${pinnedColumnId === '_title' ? ' nb-pin-btn--active' : ''}`}
 																	onClick={() => { void handleTogglePin('_title') }}
-																	title={pinnedColumnId === '_title' ? 'Desafixar colunas' : 'Fixar colunas até aqui'}
+																	title={pinnedColumnId === '_title' ? t('tooltip_unpin_column') : t('tooltip_pin_column')}
 																>📌</button>
 															</div>
 															<ResizeHandle onResize={w => { void handleColumnResize('_title', w) }} onAutoFit={() => { void handleColumnAutoFit('_title') }} />
@@ -1828,7 +1826,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 												)
 											})}
 											<th className="nb-th nb-th-add-col">
-												<button className="nb-add-col-btn" onClick={() => { void handleAddColumn() }} title="Adicionar campo">
+												<button className="nb-add-col-btn" onClick={() => { void handleAddColumn() }} title={t('add_field')}>
 													+
 												</button>
 											</th>
@@ -1846,7 +1844,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 									colSpan={columns.length + 1}
 									className="nb-empty-rows"
 								>
-									Nenhum item encontrado
+									{t('no_results')}
 								</td>
 							</tr>
 						) : (
@@ -1886,7 +1884,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						<tr>
 							<td colSpan={columns.length + 1} className="nb-add-row-td">
 								<button className="nb-add-row-btn" onClick={() => { void handleAddRow() }}>
-									+ Nova linha
+									{t('add_row')}
 								</button>
 							</td>
 						</tr>
@@ -1943,8 +1941,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 					const filtered = table.getFilteredRowModel().rows.length
 					const isFiltered = filtered !== total
 					return isFiltered
-						? <span className="nb-row-count">{filtered} de {total} registro{total !== 1 ? 's' : ''}</span>
-						: <span className="nb-row-count">{total} registro{total !== 1 ? 's' : ''}</span>
+						? <span className="nb-row-count">{filtered} de {total} {total !== 1 ? t('record_plural') : t('record_singular')}</span>
+						: <span className="nb-row-count">{total} {total !== 1 ? t('record_plural') : t('record_singular')}</span>
 				})()}
 			</div>
 

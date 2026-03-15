@@ -1,4 +1,5 @@
 import { FilterOperator, NoteRow, SortConfig } from '../types'
+import { t } from '../i18n'
 
 export interface ActiveFilter {
 	id: string
@@ -37,13 +38,18 @@ export function getDefaultOperator(type: string): FilterOperator {
 	}
 }
 
-export const OPERATOR_LABELS: Record<FilterOperator, string> = {
-	is: 'É', is_not: 'Não é', contains: 'Contém', not_contains: 'Não contém',
-	starts_with: 'Começa com', ends_with: 'Termina com',
-	gt: 'Maior que', gte: 'Maior ou igual', lt: 'Menor que', lte: 'Menor ou igual',
-	is_checked: 'Está marcado', is_unchecked: 'Não está marcado',
-	is_empty: 'Está vazio', is_not_empty: 'Não está vazio',
+export function getOperatorLabels(): Record<FilterOperator, string> {
+	return {
+		is: t('op_is'), is_not: t('op_is_not'), contains: t('op_contains'), not_contains: t('op_not_contains'),
+		starts_with: t('op_starts_with'), ends_with: t('op_ends_with'),
+		gt: t('op_gt'), gte: t('op_gte'), lt: t('op_lt'), lte: t('op_lte'),
+		is_checked: t('op_is_checked'), is_unchecked: t('op_is_unchecked'),
+		is_empty: t('op_is_empty'), is_not_empty: t('op_is_not_empty'),
+	}
 }
+export const OPERATOR_LABELS: Record<FilterOperator, string> = new Proxy({} as Record<FilterOperator, string>, {
+	get: (_, key) => getOperatorLabels()[key as FilterOperator] ?? key
+})
 
 export const NO_VALUE_OPERATORS = new Set<FilterOperator>(['is_empty', 'is_not_empty', 'is_checked', 'is_unchecked'])
 

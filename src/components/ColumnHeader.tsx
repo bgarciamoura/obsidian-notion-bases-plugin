@@ -4,6 +4,7 @@ import { TFile } from 'obsidian'
 import { ColumnSchema, ColumnType, NumberFormat } from '../types'
 import { validateFormulaSyntax } from '../formula-engine'
 import { useApp } from '../context'
+import { t } from '../i18n'
 import { DatabaseManager } from '../database-manager'
 
 const TYPE_ICONS: Record<ColumnType, string> = {
@@ -24,23 +25,23 @@ const TYPE_ICONS: Record<ColumnType, string> = {
 	image:       '🖼',
 }
 
-const TYPE_LABELS: Record<ColumnType, string> = {
-	title:       'Título',
-	text:        'Texto',
-	number:      'Número',
-	select:      'Seleção',
-	multiselect: 'Multi-seleção',
-	date:        'Data',
-	checkbox:    'Checkbox',
-	url:         'URL',
-	email:       'Email',
-	phone:       'Telefone',
-	status:      'Status',
-	formula:     'Fórmula',
-	relation:    'Relação',
-	lookup:      'Lookup',
-	image:       'Imagem',
-}
+const TYPE_LABELS = (): Record<ColumnType, string> => ({
+	title:       t('type_title'),
+	text:        t('type_text'),
+	number:      t('type_number'),
+	select:      t('type_select'),
+	multiselect: t('type_multiselect'),
+	date:        t('type_date'),
+	checkbox:    t('type_checkbox'),
+	url:         t('type_url'),
+	email:       t('type_email'),
+	phone:       t('type_phone'),
+	status:      t('type_status'),
+	formula:     t('type_formula'),
+	relation:    t('type_relation'),
+	lookup:      t('type_lookup'),
+	image:       t('type_image'),
+})
 
 interface ColumnHeaderProps {
 	col: ColumnSchema
@@ -421,24 +422,24 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const otherCols = schema.filter(c => c.id !== col.id && c.type !== 'formula')
 
 	const FORMULA_REF = [
-		{ group: 'Lógica', items: [
+		{ group: t('formula_group_logic'), items: [
 			{ fn: 'IF(cond, a, b)',          desc: 'Se cond for verdadeiro retorna a, senão b' },
 			{ fn: 'IFS(c1, v1, c2, v2…)',   desc: 'Testa condições em sequência' },
 			{ fn: 'AND(a, b, …)',            desc: 'Verdadeiro se todos forem verdadeiros' },
 			{ fn: 'OR(a, b, …)',             desc: 'Verdadeiro se algum for verdadeiro' },
 			{ fn: 'NOT(a)',                  desc: 'Inverte o valor lógico' },
 		]},
-		{ group: 'Comparadores', items: [
+		{ group: t('formula_group_comparators'), items: [
 			{ fn: '= <> != > < >= <=', desc: 'Compara dois valores; use com IF' },
 		]},
-		{ group: 'Agregadores', items: [
+		{ group: t('formula_group_aggregators'), items: [
 			{ fn: 'SUM(col)',   desc: 'Soma todos os valores da coluna' },
 			{ fn: 'AVG(col)',   desc: 'Média dos valores da coluna' },
 			{ fn: 'COUNT(col)', desc: 'Conta valores não vazios da coluna' },
 			{ fn: 'MIN(col)',   desc: 'Menor valor da coluna' },
 			{ fn: 'MAX(col)',   desc: 'Maior valor da coluna' },
 		]},
-		{ group: 'Texto', items: [
+		{ group: t('formula_group_text'), items: [
 			{ fn: 'CONCAT(a, b, …)',       desc: 'Concatena textos (ou use &)' },
 			{ fn: 'LEN(texto)',             desc: 'Número de caracteres' },
 			{ fn: 'UPPER / LOWER(texto)',   desc: 'Maiúsculas / minúsculas' },
@@ -448,7 +449,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			{ fn: 'MID(texto, início, n)',  desc: 'Substring a partir de início' },
 			{ fn: 'SUBSTITUTE(t, de, para)', desc: 'Substitui ocorrências' },
 		]},
-		{ group: 'Matemática', items: [
+		{ group: t('formula_group_math'), items: [
 			{ fn: 'ROUND(n, d)',  desc: 'Arredonda n com d casas decimais' },
 			{ fn: 'FLOOR / CEIL(n)', desc: 'Arredonda para baixo / cima' },
 			{ fn: 'ABS(n)',       desc: 'Valor absoluto' },
@@ -456,7 +457,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			{ fn: 'POWER(b, e)',  desc: 'Base elevado ao expoente' },
 			{ fn: 'SQRT(n)',      desc: 'Raiz quadrada' },
 		]},
-		{ group: 'Utilitários', items: [
+		{ group: t('formula_group_utils'), items: [
 			{ fn: 'ISNULL(v)',         desc: 'Verdadeiro se v for vazio ou nulo' },
 			{ fn: 'COALESCE(a, b, …)', desc: 'Primeiro valor não vazio' },
 			{ fn: 'TEXT(v)',            desc: 'Converte para texto' },
@@ -489,8 +490,8 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				onMouseDown={handleTitleBarMouseDown}
 			>
 				<span className="nb-formula-titlebar-icon">ƒ</span>
-				<span className="nb-formula-titlebar-title">Fórmula: {col.name}</span>
-				<button className="nb-formula-close" onClick={handleCloseFormula} title="Fechar">×</button>
+				<span className="nb-formula-titlebar-title">{t('formula_panel_title')}: {col.name}</span>
+				<button className="nb-formula-close" onClick={handleCloseFormula} title={t('tooltip_close')}>×</button>
 			</div>
 
 			{/* Conteúdo do painel */}
@@ -500,7 +501,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 					className={`nb-formula-textarea${formulaError ? ' nb-formula-textarea--error' : formulaValue.trim() ? ' nb-formula-textarea--ok' : ''}`}
 					value={formulaValue}
 					onChange={e => setFormulaValue(e.target.value)}
-					placeholder={'Ex: IF(status = "feito", 1, 0)'}
+					placeholder={t('formula_placeholder')}
 					rows={3}
 					spellCheck={false}
 					onKeyDown={e => {
@@ -518,13 +519,13 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				{!formulaError && formulaValue.trim() && (
 					<div className="nb-formula-feedback nb-formula-feedback--ok">
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-						Sintaxe válida
+						{t('formula_valid')}
 					</div>
 				)}
 
 				{otherCols.length > 0 && (
 					<div className="nb-formula-cols-hint">
-						<span className="nb-formula-cols-label">Colunas disponíveis:</span>
+						<span className="nb-formula-cols-label">{t('formula_available_cols')}</span>
 						<div className="nb-formula-cols-list">
 							{otherCols.map(c => (
 								<code
@@ -546,7 +547,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				<div className="nb-formula-ref">
 					<button className="nb-formula-ref-toggle" onClick={() => setRefOpen(v => !v)}>
 						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: refOpen ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }}><polyline points="9 18 15 12 9 6"/></svg>
-						Referência de funções
+						{t('formula_ref_toggle')}
 					</button>
 					{refOpen && (
 						<div className="nb-formula-ref-body">
@@ -574,9 +575,9 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						className="nb-formula-save"
 						disabled={!!formulaError}
 						onClick={() => { void handleSaveFormula() }}
-						title="Salvar (Ctrl+Enter)"
-					>Salvar</button>
-					<button className="nb-formula-cancel" onClick={handleCloseFormula}>Cancelar</button>
+						title={t('formula_save_hint')}
+					>{t('formula_save')}</button>
+					<button className="nb-formula-cancel" onClick={handleCloseFormula}>{t('formula_cancel')}</button>
 				</div>
 			</div>
 		</div>,
@@ -587,13 +588,13 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		<div ref={fmtPanelRef} className="nb-formula-floating-panel" style={{ top: fmtPanelPos.y, left: fmtPanelPos.x }}>
 			<div className="nb-formula-titlebar" onMouseDown={handleFmtTitleBarMouseDown}>
 				<span className="nb-formula-titlebar-icon">#</span>
-				<span className="nb-formula-titlebar-title">Formatar: {col.name}</span>
-				<button className="nb-formula-close" onClick={handleCloseNumberFmt} title="Fechar">×</button>
+				<span className="nb-formula-titlebar-title">{t('number_format_title')}: {col.name}</span>
+				<button className="nb-formula-close" onClick={handleCloseNumberFmt} title={t('tooltip_close')}>×</button>
 			</div>
 			<div className="nb-formula-body">
 				<div className="nb-numfmt-preview">{fmtPreview}</div>
 				<div className="nb-lookup-section">
-					<label className="nb-lookup-label">Casas decimais</label>
+					<label className="nb-lookup-label">{t('number_decimals_label')}</label>
 					<select className="nb-lookup-select" value={fmtDecimals} onChange={e => setFmtDecimals(Number(e.target.value))}>
 						{[0,1,2,3,4,5,6].map(n => <option key={n} value={n}>{n}</option>)}
 					</select>
@@ -607,37 +608,37 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						className="nb-cell-checkbox"
 					/>
 					<label htmlFor="nb-fmt-thousands" className="nb-lookup-label" style={{ cursor: 'pointer' }}>
-						Separador de milhar
+						{t('number_thousands_label')}
 					</label>
 				</div>
 				<div className="nb-lookup-section">
-					<label className="nb-lookup-label">Prefixo</label>
+					<label className="nb-lookup-label">{t('number_prefix_label')}</label>
 					<input
 						type="text"
 						className="nb-numfmt-text-input"
 						value={fmtPrefix}
 						onChange={e => setFmtPrefix(e.target.value)}
-						placeholder="Ex: R$, $, €"
+						placeholder={t('number_prefix_placeholder')}
 					/>
 				</div>
 				<div className="nb-lookup-section">
-					<label className="nb-lookup-label">Sufixo</label>
+					<label className="nb-lookup-label">{t('number_suffix_label')}</label>
 					<input
 						type="text"
 						className="nb-numfmt-text-input"
 						value={fmtSuffix}
 						onChange={e => setFmtSuffix(e.target.value)}
-						placeholder="Ex: %, kg, km"
+						placeholder={t('number_suffix_placeholder')}
 					/>
 				</div>
 				<div className="nb-formula-actions">
-					<button className="nb-formula-save" onClick={() => { void handleSaveNumberFmt() }}>Salvar</button>
-					<button className="nb-formula-cancel" onClick={handleCloseNumberFmt}>Cancelar</button>
+					<button className="nb-formula-save" onClick={() => { void handleSaveNumberFmt() }}>{t('formula_save')}</button>
+					<button className="nb-formula-cancel" onClick={handleCloseNumberFmt}>{t('formula_cancel')}</button>
 				</div>
 				{col.numberFormat && (
 					<div style={{ marginTop: '8px', textAlign: 'center' }}>
 						<button className="nb-formula-cancel" onClick={() => { void handleRemoveNumberFmt() }} style={{ color: 'var(--text-error)', width: '100%' }}>
-							Remover formatação
+							{t('number_remove_format')}
 						</button>
 					</div>
 				)}
@@ -650,39 +651,39 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		<div ref={lookupPanelRef} className="nb-formula-floating-panel" style={{ top: lookupPanelPos.y, left: lookupPanelPos.x }}>
 			<div className="nb-formula-titlebar" onMouseDown={handleLookupTitleBarMouseDown}>
 				<span className="nb-formula-titlebar-icon">{col.type === 'relation' ? '🔗' : '↗'}</span>
-				<span className="nb-formula-titlebar-title">{col.type === 'relation' ? 'Relação' : 'Lookup'}: {col.name}</span>
-				<button className="nb-formula-close" onClick={handleCloseLookup} title="Fechar">×</button>
+				<span className="nb-formula-titlebar-title">{col.type === 'relation' ? t('relation_panel_title') : t('lookup_panel_title')}: {col.name}</span>
+				<button className="nb-formula-close" onClick={handleCloseLookup} title={t('tooltip_close')}>×</button>
 			</div>
 			<div className="nb-formula-body">
 				<div className="nb-lookup-section">
-					<label className="nb-lookup-label">1. Tabela de referência</label>
+					<label className="nb-lookup-label">{t('lookup_ref_table')}</label>
 					<select className="nb-lookup-select" value={lookupDbPath} onChange={e => { setLookupDbPath(e.target.value); setLookupRefColId('') }}>
-						<option value="">Selecionar tabela...</option>
+						<option value="">{t('lookup_select_table')}</option>
 						{availableDbs.map(db => <option key={db.path} value={db.path}>{db.name}</option>)}
 					</select>
 				</div>
 				<div className="nb-lookup-section">
-					<label className="nb-lookup-label">2. {col.type === 'relation' ? 'Campo de origem dos valores' : 'Coluna a exibir'}</label>
+					<label className="nb-lookup-label">{col.type === 'relation' ? t('lookup_origin_col') : t('lookup_col_to_display')}</label>
 					<select className="nb-lookup-select" value={lookupRefColId} onChange={e => setLookupRefColId(e.target.value)} disabled={!lookupDbPath}>
-						<option value="">Selecionar coluna...</option>
-						<option value="_title">📄 Nome do arquivo</option>
+						<option value="">{t('lookup_select_col')}</option>
+						<option value="_title">{t('lookup_file_name')}</option>
 						{refDbSchema.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 					</select>
 				</div>
 				{col.type === 'lookup' && (
 					<div className="nb-lookup-section">
-						<label className="nb-lookup-label">3. Coluna de junção (nesta tabela)</label>
+						<label className="nb-lookup-label">{t('lookup_join_col')}</label>
 						<select className="nb-lookup-select" value={lookupMatchColId} onChange={e => setLookupMatchColId(e.target.value)}>
-							<option value="">Selecionar coluna...</option>
-							<option value="_title">📄 Nome do arquivo (junção por título)</option>
+							<option value="">{t('lookup_select_col')}</option>
+							<option value="_title">{t('lookup_join_col_title')}</option>
 							{schema.filter(c => c.id !== col.id && c.type !== 'formula' && c.type !== 'lookup').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 						</select>
-						<p className="nb-lookup-hint">O valor desta coluna deve ser igual ao nome do arquivo da nota na tabela referenciada (ex: "A" para encontrar "A.md")</p>
+						<p className="nb-lookup-hint">{t('lookup_hint')}</p>
 					</div>
 				)}
 				<div className="nb-formula-actions">
-					<button className="nb-formula-save" disabled={!lookupDbPath || !lookupRefColId || (col.type === 'lookup' && !lookupMatchColId)} onClick={() => { void handleSaveLookup() }}>Salvar</button>
-					<button className="nb-formula-cancel" onClick={handleCloseLookup}>Cancelar</button>
+					<button className="nb-formula-save" disabled={!lookupDbPath || !lookupRefColId || (col.type === 'lookup' && !lookupMatchColId)} onClick={() => { void handleSaveLookup() }}>{t('formula_save')}</button>
+					<button className="nb-formula-cancel" onClick={handleCloseLookup}>{t('formula_cancel')}</button>
 				</div>
 			</div>
 		</div>,
@@ -693,23 +694,23 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		<div ref={imgPanelRef} className="nb-formula-floating-panel" style={{ top: imagePanelPos.y, left: imagePanelPos.x, minWidth: 280 }}>
 			<div className="nb-formula-titlebar" onMouseDown={handleImageTitleBarMouseDown}>
 				<span className="nb-formula-titlebar-icon">🖼</span>
-				<span className="nb-formula-titlebar-title">Imagem: {col.name}</span>
-				<button className="nb-formula-close" onClick={handleCloseImageConfig} title="Fechar">×</button>
+				<span className="nb-formula-titlebar-title">{t('image_panel_title')}: {col.name}</span>
+				<button className="nb-formula-close" onClick={handleCloseImageConfig} title={t('tooltip_close')}>×</button>
 			</div>
 			<div className="nb-formula-body" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
 				<label style={{ fontSize: 'var(--font-ui-small)', color: 'var(--text-muted)' }}>
-					Pasta de origem (opcional)
+					{t('image_folder_label')}
 				</label>
 				<input
 					type="text"
 					className="nb-header-rename-input"
 					value={imageFolderInput}
 					onChange={e => setImageFolderInput(e.target.value)}
-					placeholder="Ex: imagens/capas"
+					placeholder={t('image_folder_placeholder')}
 				/>
 				<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-					<button className="nb-menu-item" onClick={handleCloseImageConfig} style={{ flex: 1 }}>Cancelar</button>
-					<button className="nb-menu-item" onClick={() => { void handleSaveImageConfig() }} style={{ flex: 1, color: 'var(--interactive-accent)' }}>Salvar</button>
+					<button className="nb-menu-item" onClick={handleCloseImageConfig} style={{ flex: 1 }}>{t('formula_cancel')}</button>
+					<button className="nb-menu-item" onClick={() => { void handleSaveImageConfig() }} style={{ flex: 1, color: 'var(--interactive-accent)' }}>{t('formula_save')}</button>
 				</div>
 			</div>
 		</div>,
@@ -748,46 +749,46 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				<div className="nb-column-menu">
 					<button className="nb-menu-item" onClick={() => { setMenuOpen(false); setRenaming(true) }}>
 						<span className="nb-menu-item-icon">✏️</span>
-						<span>Renomear</span>
+						<span>{t('rename_column')}</span>
 					</button>
 
 					{col.type === 'formula' && (
 						<button className="nb-menu-item" onClick={() => setEditingFormula(true)}>
 							<span className="nb-menu-item-icon">ƒ</span>
-							<span>Editar fórmula</span>
+							<span>{t('edit_formula')}</span>
 						</button>
 					)}
 
 					{col.type === 'lookup' && (
 						<button className="nb-menu-item" onClick={() => setEditingLookup(true)}>
 							<span className="nb-menu-item-icon">↗</span>
-							<span>Configurar lookup</span>
+							<span>{t('configure_lookup')}</span>
 						</button>
 					)}
 
 					{col.type === 'relation' && (
 						<button className="nb-menu-item" onClick={() => setEditingLookup(true)}>
 							<span className="nb-menu-item-icon">🔗</span>
-							<span>Configurar relação</span>
+							<span>{t('configure_relation')}</span>
 						</button>
 					)}
 
 					{col.type === 'number' && (
 						<button className="nb-menu-item" onClick={() => setEditingNumberFmt(true)}>
 							<span className="nb-menu-item-icon">#</span>
-							<span>Formatar número</span>
+							<span>{t('format_number')}</span>
 						</button>
 					)}
 
 					{col.type === 'image' && (
 						<button className="nb-menu-item" onClick={() => setEditingImageConfig(true)}>
 							<span className="nb-menu-item-icon">🖼</span>
-							<span>Configurar pasta de imagens</span>
+							<span>{t('configure_image_folder')}</span>
 						</button>
 					)}
 
 					<div className="nb-menu-separator" />
-					<div className="nb-menu-label">Tipo de campo</div>
+					<div className="nb-menu-label">{t('field_type_label')}</div>
 					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'url', 'email', 'phone', 'status', 'formula', 'relation', 'lookup', 'image'] as ColumnType[]).map(type => (
 						<button
 							key={type}
@@ -795,18 +796,18 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 							onClick={() => { void handleTypeChange(type) }}
 						>
 							<span className="nb-menu-item-icon">{TYPE_ICONS[type]}</span>
-							<span>{TYPE_LABELS[type]}</span>
+							<span>{TYPE_LABELS()[type]}</span>
 						</button>
 					))}
 
 					<div className="nb-menu-separator" />
 					<button className="nb-menu-item" onClick={() => { void handleHide() }}>
 						<span className="nb-menu-item-icon">👁</span>
-						<span>Ocultar campo</span>
+						<span>{t('hide_field')}</span>
 					</button>
 					<button className="nb-menu-item nb-menu-item--danger" onClick={() => { void handleDelete() }}>
 						<span className="nb-menu-item-icon">🗑</span>
-						<span>Excluir campo</span>
+						<span>{t('delete_field')}</span>
 					</button>
 				</div>
 			)}

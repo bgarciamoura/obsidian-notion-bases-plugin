@@ -9,6 +9,7 @@ import { DatabaseBoard } from './DatabaseBoard'
 import { DatabaseGallery } from './DatabaseGallery'
 import { DatabaseCalendar } from './DatabaseCalendar'
 import { DatabaseTimeline } from './DatabaseTimeline'
+import { t } from '../i18n'
 
 interface DatabaseRootProps {
 	dbFile: TFile | null
@@ -22,7 +23,7 @@ interface DatabaseRootProps {
 }
 
 const VIEW_ICONS: Record<string, string> = { table: '⊞', list: '≡', board: '▦', gallery: '⊟', calendar: '📅', timeline: '▬' }
-const VIEW_LABELS: Record<string, string> = { table: 'Tabela', list: 'Lista', board: 'Board', gallery: 'Galeria', calendar: 'Calendário', timeline: 'Timeline' }
+const VIEW_LABELS = () => ({ table: t('view_table'), list: t('view_list'), board: t('view_board'), gallery: t('view_gallery'), calendar: t('view_calendar'), timeline: t('view_timeline') })
 
 export function DatabaseRoot({
 	dbFile, manager,
@@ -190,7 +191,7 @@ export function DatabaseRoot({
 				...DEFAULT_VIEW,
 				id: crypto.randomUUID(),
 				type,
-				name: VIEW_LABELS[type] ?? type,
+				name: VIEW_LABELS()[type] ?? type,
 				filters: [], sorts: [], hiddenColumns: [], columnWidths: {},
 			}
 			const newViews = [...embedViews, newView]
@@ -250,17 +251,17 @@ export function DatabaseRoot({
 								/>
 							) : (
 								<span
-									onDoubleClick={e => { e.stopPropagation(); startRename(view.id, view.name ?? VIEW_LABELS[view.type] ?? view.type) }}
-									title="Duplo clique para renomear"
+									onDoubleClick={e => { e.stopPropagation(); startRename(view.id, view.name ?? VIEW_LABELS()[view.type] ?? view.type) }}
+									title={t('rename_view_hint')}
 								>
-									{view.name ?? VIEW_LABELS[view.type] ?? view.type}
+									{view.name ?? VIEW_LABELS()[view.type] ?? view.type}
 								</span>
 							)}
 							{embedViews.length > 1 && renamingViewId !== view.id && (
 								<span
 									className="nb-view-tab-remove"
 									onClick={(e) => { e.stopPropagation(); void removeEmbedView(view.id) }}
-									title="Remover view"
+									title={t('remove_view')}
 								>
 									×
 								</span>
@@ -268,16 +269,16 @@ export function DatabaseRoot({
 						</button>
 					))}
 					<div className="nb-view-tab-add" ref={embedAddMenuRef}>
-						<button className="nb-view-tab-add-btn" onClick={() => setEmbedAddMenuOpen(v => !v)} title="Adicionar view">
+						<button className="nb-view-tab-add-btn" onClick={() => setEmbedAddMenuOpen(v => !v)} title={t('add_view')}>
 							+
 						</button>
 						{embedAddMenuOpen && (
 							<div className="nb-view-add-menu nb-fields-dropdown">
-								<div className="nb-fields-dropdown-label">Adicionar view</div>
+								<div className="nb-fields-dropdown-label">{t('add_view')}</div>
 								{(['table', 'list', 'board', 'gallery', 'calendar', 'timeline'] as ViewConfig['type'][]).map(type => (
 									<button key={type} className="nb-menu-item" onClick={() => { void addEmbedView(type) }}>
 										<span className="nb-menu-item-icon">{VIEW_ICONS[type]}</span>
-										<span>{VIEW_LABELS[type]}</span>
+										<span>{VIEW_LABELS()[type]}</span>
 									</button>
 								))}
 							</div>
@@ -312,7 +313,7 @@ export function DatabaseRoot({
 			...DEFAULT_VIEW,
 			id: crypto.randomUUID(),
 			type,
-			name: VIEW_LABELS[type] ?? type,
+			name: VIEW_LABELS()[type] ?? type,
 			filters: [], sorts: [], hiddenColumns: [], columnWidths: {},
 		}
 		const newViews = needsMigration ? [migratedFirstView, newView] : [...config.views, newView]
@@ -373,17 +374,17 @@ export function DatabaseRoot({
 							/>
 						) : (
 							<span
-								onDoubleClick={e => { e.stopPropagation(); startRename(view.id, view.name ?? VIEW_LABELS[view.type] ?? view.type) }}
-								title="Duplo clique para renomear"
+								onDoubleClick={e => { e.stopPropagation(); startRename(view.id, view.name ?? VIEW_LABELS()[view.type] ?? view.type) }}
+								title={t('rename_view_hint')}
 							>
-								{view.name ?? VIEW_LABELS[view.type] ?? view.type}
+								{view.name ?? VIEW_LABELS()[view.type] ?? view.type}
 							</span>
 						)}
 						{config.views.length > 1 && renamingViewId !== view.id && (
 							<span
 								className="nb-view-tab-remove"
 								onClick={(e) => { e.stopPropagation(); void removeView(view.id) }}
-								title="Remover view"
+								title={t('remove_view')}
 							>
 								×
 							</span>
@@ -391,16 +392,16 @@ export function DatabaseRoot({
 					</button>
 				))}
 				<div className="nb-view-tab-add" ref={addMenuRef}>
-					<button className="nb-view-tab-add-btn" onClick={() => setAddMenuOpen(v => !v)} title="Adicionar view">
+					<button className="nb-view-tab-add-btn" onClick={() => setAddMenuOpen(v => !v)} title={t('add_view')}>
 						+
 					</button>
 					{addMenuOpen && (
 						<div className="nb-view-add-menu nb-fields-dropdown">
-							<div className="nb-fields-dropdown-label">Adicionar view</div>
+							<div className="nb-fields-dropdown-label">{t('add_view')}</div>
 							{(['table', 'list', 'board', 'gallery', 'calendar', 'timeline'] as ViewConfig['type'][]).map(type => (
 								<button key={type} className="nb-menu-item" onClick={() => { void addView(type) }}>
 									<span className="nb-menu-item-icon">{VIEW_ICONS[type]}</span>
-									<span>{VIEW_LABELS[type]}</span>
+									<span>{VIEW_LABELS()[type]}</span>
 								</button>
 							))}
 						</div>

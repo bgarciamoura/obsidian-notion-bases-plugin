@@ -13,6 +13,7 @@ import {
 	getColumnIconStatic, getDefaultOperator,
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
 } from './filter-utils'
+import { t } from '../i18n'
 
 interface DatabaseListProps {
 	dbFile: TFile | null
@@ -58,30 +59,30 @@ function ListSortPanel({ sorts, schema, onSortChange, onClose, anchorRect, panel
 	return createPortal(
 		<div ref={panelRef} className="nb-sort-panel" style={{ position: 'fixed', top: pos.y, left: pos.x }}>
 			<div className="nb-sort-panel-titlebar" onMouseDown={handleDragStart}>
-				<span className="nb-sort-panel-title">Ordenar por</span>
-				<button className="nb-sort-panel-close" onClick={onClose} title="Fechar">×</button>
+				<span className="nb-sort-panel-title">{t('sort_by')}</span>
+				<button className="nb-sort-panel-close" onClick={onClose} title={t('tooltip_close')}>×</button>
 			</div>
-			{sorts.length === 0 && <div className="nb-sort-panel-empty">Nenhuma ordenação ativa</div>}
+			{sorts.length === 0 && <div className="nb-sort-panel-empty">{t('no_active_sorts')}</div>}
 			{sorts.map((sort, idx) => {
 				const name = sort.columnId === '_title' ? 'Nome' : (schema.find(c => c.id === sort.columnId)?.name ?? sort.columnId)
 				return (
 					<div key={sort.columnId} className="nb-sort-row">
 						<div className="nb-sort-row-priority">
-							<button className="nb-sort-priority-btn" onClick={() => move(idx, -1)} disabled={idx === 0} title="Mover para cima">↑</button>
-							<button className="nb-sort-priority-btn" onClick={() => move(idx, 1)} disabled={idx === sorts.length - 1} title="Mover para baixo">↓</button>
+							<button className="nb-sort-priority-btn" onClick={() => move(idx, -1)} disabled={idx === 0} title={t('tooltip_move_up')}>↑</button>
+							<button className="nb-sort-priority-btn" onClick={() => move(idx, 1)} disabled={idx === sorts.length - 1} title={t('tooltip_move_down')}>↓</button>
 						</div>
 						<span className="nb-sort-row-name">{name}</span>
 						<button className="nb-sort-dir-btn" onClick={() => onSortChange(sorts.map(s => s.columnId === sort.columnId ? { ...s, direction: s.direction === 'asc' ? 'desc' : 'asc' } : s))}>
-							{sort.direction === 'asc' ? 'A → Z' : 'Z → A'}
+							{sort.direction === 'asc' ? t('sort_asc') : t('sort_desc')}
 						</button>
-						<button className="nb-sort-remove-btn" onClick={() => onSortChange(sorts.filter(s => s.columnId !== sort.columnId))} title="Remover">×</button>
+						<button className="nb-sort-remove-btn" onClick={() => onSortChange(sorts.filter(s => s.columnId !== sort.columnId))} title={t('tooltip_remove')}>×</button>
 					</div>
 				)
 			})}
 			{available.length > 0 && (
 				<div className="nb-sort-add-row">
 					<select className="nb-sort-add-select" value="" onChange={e => { if (e.target.value) { onSortChange([...sorts, { columnId: e.target.value, direction: 'asc' }]); e.target.value = '' } }}>
-						<option value="">+ Adicionar ordenação...</option>
+						<option value="">{t('add_sort')}</option>
 						{available.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 					</select>
 				</div>
@@ -108,7 +109,7 @@ function FilterPill({ filter, onUpdate, onRemove, onToggleConjunction, showConju
 					className={`nb-pill-conjunction${filter.conjunction === 'or' ? ' nb-pill-conjunction--or' : ''}`}
 					onClick={onToggleConjunction}
 				>
-					{filter.conjunction === 'or' ? 'OU' : 'E'}
+					{filter.conjunction === 'or' ? t('conjunction_or') : t('conjunction_and')}
 				</button>
 			)}
 			<span className="nb-filter-pill">
@@ -181,7 +182,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 			const pills = externalView.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: t('name_column'), columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
 					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
@@ -272,8 +273,8 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 
 	// ── Render ───────────────────────────────────────────────────────────────
 
-	if (!dbFile) return <div className="nb-empty-state"><p>Nenhum banco de dados aberto.</p></div>
-	if (loading) return <div className="nb-loading">Carregando...</div>
+	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
+	if (loading) return <div className="nb-loading">{t('loading')}</div>
 
 	return (
 		<div className="nb-container">
@@ -285,11 +286,11 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 						className={`nb-toolbar-btn ${fieldsMenuOpen ? 'nb-toolbar-btn--active' : ''}`}
 						onClick={() => setFieldsMenuOpen(v => !v)}
 					>
-						Campos
+						{t('fields')}
 					</button>
 					{fieldsMenuOpen && (
 						<div className="nb-fields-dropdown">
-							<div className="nb-fields-dropdown-label">Campos</div>
+							<div className="nb-fields-dropdown-label">{t('fields_label')}</div>
 							{config.schema.map(col => (
 								<label key={col.id} className="nb-field-row">
 									<input
@@ -308,7 +309,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 
 				{/* Row count */}
 				<span className="nb-row-count">
-					{displayRows.length} {displayRows.length === 1 ? 'item' : 'itens'}
+					{displayRows.length} {displayRows.length === 1 ? t('item_singular') : t('item_plural')}
 				</span>
 
 				{/* Filtros */}
@@ -316,7 +317,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 					<button
 						className={`nb-toolbar-btn nb-toolbar-btn--icon ${filterMenuOpen ? 'nb-toolbar-btn--active' : ''}`}
 						onClick={() => setFilterMenuOpen(v => !v)}
-						title="Filtros"
+						title={t('filters')}
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 							<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
@@ -325,9 +326,9 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 					</button>
 					{filterMenuOpen && (
 						<div className="nb-fields-dropdown nb-filter-menu-dropdown">
-							<div className="nb-fields-dropdown-label">Filtrar por</div>
+							<div className="nb-fields-dropdown-label">{t('filter_by')}</div>
 							<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
-								<span className="nb-menu-item-icon">📄</span><span>Nome</span>
+								<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
 							</button>
 							{config.schema.map(col => (
 								<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
@@ -348,7 +349,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 						setSortPanelOpen(v => !v)
 					}}
 				>
-					<span>Ordenar</span>
+					<span>{t('sort')}</span>
 					{activeView.sorts.length > 0 && <span className="nb-hidden-badge">{activeView.sorts.length}</span>}
 				</button>
 				{sortPanelOpen && sortAnchorRect && (
@@ -407,7 +408,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 					</div>
 				))}
 				<button className="nb-add-row nb-list-add-row" onClick={() => { void handleAddRow() }}>
-					+ Nova entrada
+					{t('add_entry')}
 				</button>
 			</div>
 		</div>

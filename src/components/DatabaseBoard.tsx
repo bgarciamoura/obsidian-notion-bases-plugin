@@ -12,6 +12,7 @@ import {
 	getColumnIconStatic, getDefaultOperator,
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
 } from './filter-utils'
+import { t } from '../i18n'
 
 interface DatabaseBoardProps {
 	dbFile: TFile | null
@@ -72,7 +73,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			const pills = externalView.activePills ?? []
 			if (pills.length > 0) {
 				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: 'Nome', columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
+					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: t('name_column'), columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
 					const col = cfg.schema.find(sc => sc.id === p.columnId)
 					if (!col) return []
 					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
@@ -160,7 +161,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			})),
 			{
 				value: '',
-				label: 'Sem valor',
+				label: t('no_value'),
 				color: undefined,
 				rows: sortedRows.filter(r => {
 					const v = r[groupByCol.id]
@@ -240,14 +241,14 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 
 	// ── Render ─────────────────────────────────────────────────────────────────
 
-	if (!dbFile) return <div className="nb-empty-state"><p>Nenhum banco de dados aberto.</p></div>
-	if (loading) return <div className="nb-loading">Carregando...</div>
+	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
+	if (loading) return <div className="nb-loading">{t('loading')}</div>
 
 	if (groupableColumns.length === 0) {
 		return (
 			<div className="nb-empty-state">
-				<p>O Board precisa de uma coluna do tipo <strong>Select</strong> ou <strong>Status</strong> para agrupar os cards.</p>
-				<p>Adicione uma coluna desse tipo na view de Tabela e volte aqui.</p>
+				<p>{t('board_no_select_col')}</p>
+				<p>{t('board_add_select_hint')}</p>
 			</div>
 		)
 	}
@@ -259,11 +260,11 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 				{/* Campos */}
 				<div className="nb-fields-menu-wrapper" ref={fieldsMenuRef}>
 					<button className={`nb-toolbar-btn${fieldsMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFieldsMenuOpen(v => !v)}>
-						Campos
+						{t('fields')}
 					</button>
 					{fieldsMenuOpen && (
 						<div className="nb-fields-dropdown">
-							<div className="nb-fields-dropdown-label">Campos no card</div>
+							<div className="nb-fields-dropdown-label">{t('fields_in_card')}</div>
 							{config.schema.filter(c => c.id !== groupByCol?.id && c.type !== 'title').map(col => (
 								<label key={col.id} className="nb-field-row">
 									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
@@ -278,11 +279,11 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 				{/* Agrupar por */}
 				<div className="nb-fields-menu-wrapper" ref={groupByMenuRef}>
 					<button className={`nb-toolbar-btn${groupByMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setGroupByMenuOpen(v => !v)}>
-						Agrupar por: <strong>{groupByCol?.name ?? '—'}</strong>
+						{t('group_by')}: <strong>{groupByCol?.name ?? '—'}</strong>
 					</button>
 					{groupByMenuOpen && (
 						<div className="nb-fields-dropdown">
-							<div className="nb-fields-dropdown-label">Agrupar por</div>
+							<div className="nb-fields-dropdown-label">{t('group_by_label')}</div>
 							{groupableColumns.map(col => (
 								<button
 									key={col.id}
@@ -300,21 +301,21 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 				{/* Ocultar vazias */}
 				<label className="nb-toolbar-btn nb-toolbar-toggle">
 					<input type="checkbox" checked={hideEmpty} onChange={e => setHideEmpty(e.target.checked)} />
-					Ocultar vazias
+					{t('hide_empty_cols')}
 				</label>
 
 				{/* Ocultar sem valor */}
 				<label className="nb-toolbar-btn nb-toolbar-toggle">
 					<input type="checkbox" checked={hideNoValue} onChange={e => setHideNoValue(e.target.checked)} />
-					Ocultar sem valor
+					{t('hide_no_value_cols')}
 				</label>
 
 				{/* Row count */}
-				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? 'item' : 'itens'}</span>
+				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? t('item_singular') : t('item_plural')}</span>
 
 				{/* Filtros */}
 				<div className="nb-fields-menu-wrapper" ref={filterMenuRef} style={{ marginLeft: 'auto' }}>
-					<button className={`nb-toolbar-btn nb-toolbar-btn--icon${filterMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFilterMenuOpen(v => !v)} title="Filtros">
+					<button className={`nb-toolbar-btn nb-toolbar-btn--icon${filterMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFilterMenuOpen(v => !v)} title={t('filters')}>
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 							<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
 						</svg>
@@ -322,9 +323,9 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 					</button>
 					{filterMenuOpen && (
 						<div className="nb-fields-dropdown nb-filter-menu-dropdown">
-							<div className="nb-fields-dropdown-label">Filtrar por</div>
-							<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
-								<span className="nb-menu-item-icon">📄</span><span>Nome</span>
+							<div className="nb-fields-dropdown-label">{t('filter_by')}</div>
+							<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), '📄', 'title')}>
+								<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
 							</button>
 							{config.schema.map(col => (
 								<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
@@ -344,7 +345,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 						<Fragment key={f.id}>
 							{idx > 0 && (
 								<button className={`nb-pill-conjunction${f.conjunction === 'or' ? ' nb-pill-conjunction--or' : ''}`} onClick={() => toggleConjunction(f.id)}>
-									{f.conjunction === 'or' ? 'OU' : 'E'}
+									{f.conjunction === 'or' ? t('conjunction_or') : t('conjunction_and')}
 								</button>
 							)}
 							<span className="nb-filter-pill">
@@ -413,7 +414,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 									e.dataTransfer.setData(DRAG_TYPE_COLUMN, '')
 								}}
 								onDragEnd={() => setColDragOver(null)}
-								title="Arraste para reordenar"
+								title={t('board_drag_reorder')}
 							>
 								<span className="nb-board-column-drag-handle">⠿</span>
 								{col.color ? (
@@ -462,7 +463,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 
 							{/* Add card */}
 							<button className="nb-board-add-card" onClick={() => { void addCardToColumn(col.value) }}>
-								+ Novo card
+								{t('add_card')}
 							</button>
 						</div>
 					)
