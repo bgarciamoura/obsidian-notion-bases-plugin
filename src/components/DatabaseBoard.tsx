@@ -45,6 +45,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	const groupByMenuRef = useRef<HTMLDivElement>(null)
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const filtersInitialized = useRef(false)
+	const loadVersion = useRef(0)
 
 	useEffect(() => { setActiveView(externalView) }, [externalView.id])
 
@@ -58,9 +59,9 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	const loadData = useCallback(async () => {
 		if (!dbFile) { setLoading(false); return }
 		setLoading(true)
+		const version = ++loadVersion.current
 		const cfg = manager.readConfig(dbFile)
-		const currentView = cfg.views.find(v => v.id === externalView.id) ?? externalView
-		const notes = manager.getNotesInDatabase(dbFile, currentView.includeSubfolders)
+		const notes = manager.getNotesInDatabase(dbFile, activeView.includeSubfolders)
 		if (cfg.schema.length === 0 && notes.length > 0) {
 			cfg.schema = manager.inferSchema(notes)
 			await manager.writeConfig(dbFile, cfg)
@@ -69,6 +70,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			evaluateFormulas(notes.map(f => manager.getNoteData(f, cfg.schema)), cfg.schema),
 			cfg.schema
 		)
+		if (loadVersion.current !== version) return
 		if (!filtersInitialized.current) {
 			filtersInitialized.current = true
 			const pills = externalView.activePills ?? []
@@ -82,7 +84,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 				setActiveFilters(restored as ActiveFilter[])
 			}
 		}
-		setConfig(cfg)
+		setConfig(prev => ({ schema: cfg.schema, views: prev.views }))
 		setRows(noteRows)
 		setLoading(false)
 	}, [dbFile, manager, activeView.includeSubfolders])

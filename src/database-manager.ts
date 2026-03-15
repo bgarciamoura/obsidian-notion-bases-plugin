@@ -1,4 +1,4 @@
-import { App, TFile, normalizePath } from 'obsidian'
+import { App, TFile, TFolder, normalizePath } from 'obsidian'
 import { t } from './i18n'
 import {
 	ColumnSchema,
@@ -57,14 +57,18 @@ export class DatabaseManager {
 		if (!folder) return []
 
 		if (includeSubfolders) {
-			const prefix = (!folder.path || folder.path === '/') ? '' : folder.path + '/'
-			return this.app.vault.getFiles()
-				.filter(f =>
-					f.extension === 'md' &&
-					f.path !== dbFile.path &&
-					(prefix === '' || f.path.startsWith(prefix))
-				)
-				.sort((a, b) => a.basename.localeCompare(b.basename))
+			const files: TFile[] = []
+			const collect = (f: TFolder) => {
+				for (const child of f.children) {
+					if (child instanceof TFile && child.extension === 'md' && child.path !== dbFile.path) {
+						files.push(child)
+					} else if (child instanceof TFolder) {
+						collect(child)
+					}
+				}
+			}
+			collect(folder)
+			return files.sort((a, b) => a.basename.localeCompare(b.basename))
 		}
 
 		return folder.children

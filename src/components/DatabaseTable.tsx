@@ -593,6 +593,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const [openOperatorPicker, setOpenOperatorPicker] = useState<string | null>(null)
 	const operatorPickerRefs = useRef<Record<string, HTMLDivElement | null>>({})
 	const filtersInitialized = useRef(false)
+	const loadVersion = useRef(0)
 	const [searchExpanded, setSearchExpanded] = useState(false)
 	const searchInputRef = useRef<HTMLInputElement>(null)
 	const searchInactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -640,11 +641,11 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	const loadData = useCallback(async () => {
 		if (!dbFile) { setLoading(false); return }
+		const version = ++loadVersion.current
 		setLoading(true)
 
 		const cfg = manager.readConfig(dbFile)
-		const currentView = (externalView ? localEmbedView : undefined) ?? cfg.views[0]
-		const notes = manager.getNotesInDatabase(dbFile, currentView?.includeSubfolders)
+		const notes = manager.getNotesInDatabase(dbFile, activeView.includeSubfolders)
 
 		// Inferir schema se vazio
 		if (cfg.schema.length === 0 && notes.length > 0) {
@@ -659,6 +660,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			),
 			cfg.schema
 		)
+
+		// Abort se uma versão mais recente já iniciou
+		if (loadVersion.current !== version) return
 
 		// Garantir que a linha recém-criada apareça no final
 		if (lastCreatedPath.current) {
@@ -704,7 +708,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		setRelationOptions(relOpts)
 
 		setPinnedColumnId((externalView ?? cfg.views[0])?.pinnedColumnId ?? null)
-		setConfig(cfg)
+		setConfig(prev => ({ schema: cfg.schema, views: prev.views }))
 		setRows(noteRows)
 		setLoading(false)
 	}, [dbFile, manager, app, activeView.includeSubfolders])
@@ -863,7 +867,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		// Coluna virtual _folder (antes do título, quando includeSubfolders está ativo)
 		if (activeView.includeSubfolders && !activeView.hiddenColumns.includes('_folder')) {
 			const dbFolder = dbFile?.parent?.path ?? ''
-			const dbFolderName = dbFile?.parent?.name ?? ''
+			const dbFolderName = dbFolder.split('/').pop() || dbFolder || ''
 			cols.push({
 				id: '_folder',
 				accessorFn: row => {
