@@ -32,5 +32,6 @@ export default tseslint.config(
 		"versions.json",
 		"main.js",
 		"*.cjs",
+		"obsidian-notion-bases-plugin",
 	]),
 );

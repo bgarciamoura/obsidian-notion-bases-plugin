@@ -85,7 +85,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 			cfg.schema = manager.inferSchema(notes)
 			await manager.writeConfig(dbFile, cfg)
 		}
-		const noteRows = await manager.resolveLookupsForRows(
+		const noteRows = manager.resolveLookupsForRows(
 			evaluateFormulas(notes.map(f => manager.getNoteData(f, cfg.schema)), cfg.schema),
 			cfg.schema
 		)

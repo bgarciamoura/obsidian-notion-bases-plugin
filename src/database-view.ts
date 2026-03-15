@@ -67,7 +67,7 @@ export class DatabaseView extends ItemView {
 		// Se onOpen renderizar, causa um render em branco antes do setState.
 	}
 
-	onClose(): void {
+	async onClose(): Promise<void> {
 		this.root?.unmount()
 		this.root = null
 	}

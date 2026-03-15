@@ -653,7 +653,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			await manager.writeConfig(dbFile, cfg)
 		}
 
-		const noteRows = await manager.resolveLookupsForRows(
+		const noteRows = manager.resolveLookupsForRows(
 			evaluateFormulas(
 				notes.map(f => manager.getNoteData(f, cfg.schema)),
 				cfg.schema
