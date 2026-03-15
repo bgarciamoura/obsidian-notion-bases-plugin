@@ -349,6 +349,15 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	// Plugin
 	plugin_display_name: 'Notion bases',
 	no_databases_found: 'Nenhum banco de dados encontrado. Use o comando "Criar novo banco de dados" para criar um.',
+
+	// Commands
+	cmd_open_database: 'Abrir banco de dados desta pasta',
+	cmd_create_database: 'Criar novo banco de dados na pasta atual',
+
+	// Picker / View
+	picker_placeholder: 'Selecionar banco de dados...',
+	picker_root: '/ (Raiz)',
+	view_fallback_name: 'Banco de dados',
 }
 
 export default ptBR

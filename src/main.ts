@@ -31,7 +31,7 @@ export default class NotionBasesPlugin extends Plugin {
 		// Comandos
 		this.addCommand({
 			id: 'open-database',
-			name: 'Abrir banco de dados desta pasta',
+			name: t('cmd_open_database'),
 			callback: async () => {
 				await this.openOrCreateDatabase()
 			},
@@ -39,7 +39,7 @@ export default class NotionBasesPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'create-database',
-			name: 'Criar novo banco de dados na pasta atual',
+			name: t('cmd_create_database'),
 			callback: async () => {
 				const activeFile = this.app.workspace.getActiveFile()
 				const folderPath = activeFile?.parent?.path ?? ''

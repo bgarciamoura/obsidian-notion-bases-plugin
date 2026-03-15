@@ -347,6 +347,15 @@ const en = {
 	// Plugin
 	plugin_display_name: 'Notion bases',
 	no_databases_found: 'No databases found. Use the "create new database" command to create one.',
+
+	// Commands
+	cmd_open_database: 'Open database for this folder',
+	cmd_create_database: 'Create new database in current folder',
+
+	// Picker / View
+	picker_placeholder: 'Select database...',
+	picker_root: '/ (Root)',
+	view_fallback_name: 'Database',
 } as const
 
 export default en

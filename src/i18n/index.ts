@@ -1,3 +1,4 @@
+import { getLanguage } from 'obsidian'
 import en from './locales/en'
 import ptBR from './locales/pt-BR'
 
@@ -11,7 +12,7 @@ const locales: Record<string, LocaleDict> = {
 }
 
 export function t(key: Keys): string {
-	const locale = (window as Window & { moment?: { locale: () => string } }).moment?.locale() ?? 'en'
+	const locale = getLanguage() ?? 'en'
 	const strings = locales[locale] ?? {}
 	return strings[key] ?? (en as LocaleDict)[key] ?? key
 }

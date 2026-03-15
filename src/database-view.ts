@@ -30,7 +30,7 @@ export class DatabaseView extends ItemView {
 	getDisplayText(): string {
 		if (this.dbFilePath) {
 			const file = this.app.vault.getFileByPath(this.dbFilePath)
-			return file?.parent?.name ?? 'Banco de Dados'
+			return file?.parent?.name ?? t('view_fallback_name')
 		}
 		return t('plugin_display_name')
 	}
