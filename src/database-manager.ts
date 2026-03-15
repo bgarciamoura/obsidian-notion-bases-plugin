@@ -132,7 +132,7 @@ export class DatabaseManager {
 		return this.app.vault.getMarkdownFiles().filter(f => this.isDatabaseFile(f))
 	}
 
-	async resolveLookupsForRows(rows: NoteRow[], schema: ColumnSchema[]): Promise<NoteRow[]> {
+	resolveLookupsForRows(rows: NoteRow[], schema: ColumnSchema[]): NoteRow[] {
 		const lookupCols = schema.filter(c =>
 			c.type === 'lookup' && c.refDatabasePath && c.refColumnId && c.refMatchColumnId
 		)

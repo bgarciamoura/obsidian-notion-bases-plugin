@@ -356,7 +356,7 @@ const en = {
 
 	// Picker / View
 	picker_placeholder: 'Select database...',
-	picker_root: '/ (Root)',
+	picker_root: '/ (root)',
 	view_fallback_name: 'Database',
 } as const
 
