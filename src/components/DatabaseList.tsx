@@ -167,7 +167,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 	const loadData = useCallback(async () => {
 		if (!dbFile) { setLoading(false); return }
 		setLoading(true)
-		const cfg = await manager.readConfig(dbFile)
+		const cfg = manager.readConfig(dbFile)
 		const notes = manager.getNotesInDatabase(dbFile)
 		if (cfg.schema.length === 0 && notes.length > 0) {
 			cfg.schema = manager.inferSchema(notes)

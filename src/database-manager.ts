@@ -129,7 +129,7 @@ export class DatabaseManager {
 			if (!refDataCache.has(path)) {
 				const refDbFile = this.app.vault.getFileByPath(path)
 				if (!refDbFile) { refDataCache.set(path, []); continue }
-				const refConfig = await this.readConfig(refDbFile)
+				const refConfig = this.readConfig(refDbFile)
 				const refNotes = this.getNotesInDatabase(refDbFile)
 				const refRows = refNotes.map(f => this.getNoteData(f, refConfig.schema))
 				refDataCache.set(path, refRows)

@@ -642,7 +642,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		if (!dbFile) { setLoading(false); return }
 		setLoading(true)
 
-		const cfg = await manager.readConfig(dbFile)
+		const cfg = manager.readConfig(dbFile)
 		const notes = manager.getNotesInDatabase(dbFile)
 
 		// Inferir schema se vazio
@@ -687,7 +687,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		for (const col of cfg.schema.filter(c => c.type === 'relation' && c.refDatabasePath && c.refColumnId)) {
 			const refDbFile = app.vault.getFileByPath(col.refDatabasePath!)
 			if (!refDbFile) continue
-			const refConfig = await manager.readConfig(refDbFile)
+			const refConfig = manager.readConfig(refDbFile)
 			const refNotes = manager.getNotesInDatabase(refDbFile)
 			const values = new Set<string>()
 			for (const note of refNotes) {

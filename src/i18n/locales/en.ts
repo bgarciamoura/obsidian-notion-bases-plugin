@@ -110,7 +110,7 @@ const en = {
 
 	// Formula panel
 	formula_panel_title: 'Formula',
-	formula_placeholder: 'e.g. if(status = "done", 1, 0)',
+	formula_placeholder: 'Example: if(status = "done", 1, 0)',
 	formula_valid: 'Valid syntax',
 	formula_available_cols: 'Available columns:',
 	formula_ref_toggle: 'Function reference',
@@ -346,7 +346,7 @@ const en = {
 
 	// Plugin
 	plugin_display_name: 'Notion bases',
-	no_databases_found: 'No databases found. Use the "Create new database" command to create one.',
+	no_databases_found: 'No databases found. Use the "create new database" command to create one.',
 } as const
 
 export default en
