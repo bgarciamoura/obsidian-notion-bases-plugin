@@ -1,50 +1,84 @@
 
-# Obsidian Notion Bases — Database views for Obsidian
+# Notion Bases — The database plugin Obsidian is missing
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/bgarciamoura/obsidian-notion-bases-plugin)
 ![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=7c3aed&label=downloads&query=%24%5B%22obsidian-notion-bases%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json)
 ![Minimum Obsidian version](https://img.shields.io/badge/obsidian-%3E%3D1.4.0-7c3aed)
 ![License](https://img.shields.io/github/license/bgarciamoura/obsidian-notion-bases-plugin)
 
-**Turn any folder in your vault into a powerful database — right inside Obsidian.**
+**6 views. 15 column types. Formulas, relations and lookups. Zero code required.**
 
-Obsidian Notion Bases brings the database experience from Notion directly into your vault. Every note in a folder becomes a row. Every frontmatter field becomes a column. Six different views. No external tools, no syncing, no lock-in — your data lives in plain Markdown files, forever yours.
+Turn any folder into a full-featured database with Table, Board, Gallery, List, Calendar, and Timeline views — all powered by plain Markdown and frontmatter. Your data stays yours.
 
 ![Hero — Table view overview](docs/images/hero.png)
 
 ---
 
+## Why Notion Bases instead of the core Bases plugin?
+
+Obsidian's built-in Bases plugin is a great start, but if you need more than a basic table, you'll quickly hit its limits. Here's what Notion Bases gives you **today** that the core plugin doesn't:
+
+| Feature | Notion Bases | Core Bases |
+|---------|:---:|:---:|
+| Table view | Yes | Yes |
+| Board / Kanban view | Yes | No |
+| Gallery view | Yes | No |
+| List view | Yes | Yes |
+| Calendar view | Yes | No |
+| Timeline / Gantt view | Yes | No |
+| Column types | **15** | 7 |
+| Formula columns | Yes | No |
+| Relation columns | Yes | No |
+| Lookup columns | Yes | No |
+| Image columns (rendered) | Yes | Text only |
+| Aggregation row (sum, avg, min, max) | Yes | No |
+| Number formatting (prefix, suffix, decimals, thousands) | Yes | No |
+| Column pinning | Yes | No |
+| Column reordering (drag) | Yes | No |
+| Column resizing (drag) | Yes | No |
+| Row height options | Yes | No |
+| Text wrap toggle | Yes | No |
+| CSV import / export | Yes | No |
+| Bulk actions (delete, duplicate, move) | Yes | No |
+| Embed database in any note | Yes | Yes |
+| Multiple views per database | Yes | Yes |
+| AND/OR filter logic | Yes | Yes |
+
+**In short:** if you ever wished Obsidian had Notion-level databases without leaving your vault, this is it.
+
+---
+
 ## Views
 
-### 📊 Table
-The core view. A fully interactive spreadsheet with inline editing, resizable/reorderable/pinnable columns, aggregation footer, row height options, text wrap, and bulk row actions.
+### Table
+A fully interactive spreadsheet: inline editing, resizable/reorderable/pinnable columns, aggregation footer, row height options, text wrap, multi-column sort, and bulk row actions.
 
 ![Table view](docs/images/view-table.png)
 
-### 📋 List
-A minimal, single-line list of rows — title plus property chips. Great for quick overviews and task-like databases.
-
-![List view](docs/images/view-list.png)
-
-### 🗂 Board (Kanban)
-Drag cards between columns grouped by any `select` or `status` field. Configurable card properties, hide empty columns, add cards directly to a specific column.
+### Board (Kanban)
+Drag cards between columns grouped by any `select` or `status` field. Add cards directly to a column. Hide empty or no-value columns. Configure which properties appear on each card.
 
 ![Board view](docs/images/view-board.png)
 
 ![Board drag](docs/images/feature-board-drag.gif)
 
-### 🖼 Gallery
-A responsive image/card grid. Choose a cover field (text or image), configure card size (small / medium / large), and display any properties below the title.
+### Gallery
+A responsive card grid. Pick a cover field (text or image), choose card size (small / medium / large), and display any properties below the title.
 
 ![Gallery view](docs/images/view-gallery.png)
 
-### 📅 Calendar
-Monthly calendar. Position notes by any `date` field. Click a day to create a note with the date pre-filled. Drag cards to reschedule them. Notes without a date appear in a collapsible "No date" section.
+### List
+A minimal, single-line view — title plus property chips. Great for quick overviews and task-oriented databases.
+
+![List view](docs/images/view-list.png)
+
+### Calendar
+Monthly calendar. Position notes by any `date` field. Click a day to create a note with the date pre-filled. Notes without a date appear in a collapsible section.
 
 ![Calendar view](docs/images/view-calendar.png)
 
-### ⏱ Timeline (Gantt)
-Horizontal bar chart with three zoom levels (days / weeks / months). Drag the left or right edge of a bar to resize the start or end date. Group rows by any `select` / `status` field. Scroll-to-today on load.
+### Timeline (Gantt)
+Horizontal bar chart with three zoom levels (days / weeks / months). Drag bar edges to resize start or end dates. Group rows by any field.
 
 ![Timeline view](docs/images/view-timeline.png)
 
@@ -52,24 +86,22 @@ Horizontal bar chart with three zoom levels (days / weeks / months). Drag the le
 
 ---
 
-## Features at a glance
+## Powerful features, zero learning curve
 
-- **Multiple views per database** — each with independent filters, sorts and field visibility, saved to the database config
 - **15 column types** — Title, Text, Number, Select, Multi-select, Checkbox, Date, URL, Email, Phone, Status, Formula, Relation, Lookup, Image
-- **Filters with AND/OR logic** — type-aware operators; toggle AND/OR between any two filter pills
-- **Multi-column sorting** — draggable sort panel with priority ordering
-- **Aggregation row** — Sum, Average, Min, Max, Count, Count Filled; updates live as you filter
-- **Number formatting** — Excel-style: prefix, suffix, decimal places, thousands separator
-- **Column resizing, reordering and pinning**
-- **Row height** — Compact / Medium / Tall
-- **Text wrap** — toggle per view
-- **Bulk row actions** — select multiple rows to delete or duplicate
-- **CSV export / import**
-- **Formula columns** — compute values with a built-in expression engine
-- **Relation & Lookup columns** — link rows across databases and pull values from related notes
-- **Tab drag-to-reorder** — drag view tabs to change their order
-- **Smart schema inference** — infers column types from existing frontmatter automatically
-- **Database embed** — embed any database inside a regular note with a simple code block
+- **Formula engine** — Compute values with built-in functions: `IF`, `SUM`, `AVG`, `CONCAT`, `LEFT`, `ROUND`, and [many more](docs/formulas.md)
+- **Relations & Lookups** — Link rows across databases and pull values from related notes, just like Notion
+- **Filters with AND/OR** — Type-aware operators with toggleable conjunction between filter pills
+- **Multi-column sort** — Draggable sort panel with priority ordering
+- **Aggregation row** — Sum, Average, Min, Max, Count — updates live as you filter
+- **Number formatting** — Excel-style: prefix (`$`, `R$`), suffix (`%`, `kg`), decimal places, thousands separator
+- **Column pinning, resizing & reordering** — Drag to resize, drag to reorder, pin columns to the left
+- **CSV import / export** — Bring data in or take it out
+- **Bulk actions** — Select multiple rows to delete, duplicate or move
+- **Smart schema inference** — Infers column types from existing frontmatter automatically
+- **Database embed** — Embed any database inside a regular note with a simple code block
+- **Multiple views per database** — Each view has its own filters, sorts, and field visibility
+- **100% Markdown** — Every row is a `.md` file, every column is a frontmatter field. No lock-in, ever.
 
 ![Inline editing](docs/images/feature-inline-edit.gif)
 
@@ -105,30 +137,27 @@ Horizontal bar chart with three zoom levels (days / weeks / months). Drag the le
 
 **Community plugins (recommended)**
 
-1. Open **Settings → Community plugins** and disable Safe mode if prompted
-2. Click **Browse**, search for **Obsidian Notion Bases** and install
+1. Open **Settings > Community plugins** and disable Safe mode if prompted
+2. Click **Browse**, search for **Notion Bases** and install
 3. Enable the plugin
 
 **Manual installation**
 
 1. Download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/bgarciamoura/obsidian-notion-bases-plugin/releases/latest)
-2. Copy the three files to `<your-vault>/.obsidian/plugins/obsidian-notion-bases/`
-3. Reload Obsidian and enable the plugin in **Settings → Community plugins**
+2. Copy the three files to `<your-vault>/.obsidian/plugins/notion-bases/`
+3. Reload Obsidian and enable the plugin in **Settings > Community plugins**
 
 ### Create your first database
 
-1. Open a folder in your vault
-2. Open the command palette (`Ctrl/Cmd + P`) and run **"Create new database in current folder"**
-3. A `_database.md` file is created — this marks the folder as a database
-4. Click the table icon in the ribbon (or run **"Open database for this folder"**) to open it
+1. Open the command palette (`Ctrl/Cmd + P`) and run **"Create new database"**
+2. Pick a folder — a `_database.md` file is created to mark it as a database
+3. Click the table icon in the ribbon (or run **"Open database"**) to open it
 
 ### Add views
 
-Click **+** in the view tab bar to add a new view. Each view has its own filters, sorts and field visibility. Drag tabs to reorder them. Click **×** on a tab to remove it.
+Click **+** in the view tab bar to add a new view. Each view has its own filters, sorts and field visibility. Drag tabs to reorder. Click **x** on a tab to remove.
 
 ### Embed in a note
-
-Embed any database inside a regular note using a code block:
 
 ````markdown
 ```nb-database
@@ -136,7 +165,7 @@ path: Projects
 ```
 ````
 
-To pin a fixed view type with no tabs:
+Pin a fixed view type (no tabs):
 
 ````markdown
 ```nb-database
@@ -158,7 +187,7 @@ Everything lives in your vault as plain Markdown — nothing proprietary, nothin
 | Rows | `.md` files in the database folder |
 | Column values | Frontmatter fields in each note |
 | Schema & view config | Frontmatter of `_database.md` |
-| Embed view configs | Frontmatter of the hosting note, under `notion-bases-embeds` |
+| Embed view configs | Frontmatter of the hosting note |
 
 Open any file in any text editor and your data is right there.
 
@@ -173,11 +202,9 @@ Open any file in any text editor and your data is right there.
 
 ## Support the project
 
-If Obsidian Notion Bases saves you time or makes your vault more powerful, consider supporting its development!
+If Notion Bases makes your vault more powerful, consider buying me a coffee!
 
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Donate-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/bgarciamoura)
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/bgarciamoura)
-[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-Sponsor-EA4AAA?logo=github-sponsors&logoColor=white)](https://github.com/sponsors/bgarciamoura)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/bgarciamoura)
 
 ---
 

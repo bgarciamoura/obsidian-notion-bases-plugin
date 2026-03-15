@@ -7,9 +7,5 @@
 	"author": "bgarciamoura",
 	"authorUrl": "https://github.com/bgarciamoura",
 	"isDesktopOnly": false,
-	"fundingUrl": {
-		"Ko-fi": "https://ko-fi.com/bgarciamoura",
-		"Buy Me a Coffee": "https://buymeacoffee.com/bgarciamoura",
-		"GitHub Sponsors": "https://github.com/sponsors/bgarciamoura"
-	}
+	"fundingUrl": "https://buymeacoffee.com/bgarciamoura"
 }
