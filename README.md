@@ -31,6 +31,8 @@ Drag cards between columns grouped by any `select` or `status` field. Configurab
 
 ![Board view](docs/images/view-board.png)
 
+![Board drag](docs/images/feature-board-drag.gif)
+
 ### 🖼 Gallery
 A responsive image/card grid. Choose a cover field (text or image), configure card size (small / medium / large), and display any properties below the title.
 
@@ -45,6 +47,8 @@ Monthly calendar. Position notes by any `date` field. Click a day to create a no
 Horizontal bar chart with three zoom levels (days / weeks / months). Drag the left or right edge of a bar to resize the start or end date. Group rows by any `select` / `status` field. Scroll-to-today on load.
 
 ![Timeline view](docs/images/view-timeline.png)
+
+![Timeline resize](docs/images/feature-timeline-resize.gif)
 
 ---
 
@@ -68,6 +72,8 @@ Horizontal bar chart with three zoom levels (days / weeks / months). Drag the le
 - **Database embed** — embed any database inside a regular note with a simple code block
 
 ![Inline editing](docs/images/feature-inline-edit.gif)
+
+![Filters](docs/images/feature-filter.gif)
 
 ---
 
