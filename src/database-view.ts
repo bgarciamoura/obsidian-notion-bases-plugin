@@ -67,7 +67,6 @@ export class DatabaseView extends ItemView {
 		// Se onOpen renderizar, causa um render em branco antes do setState.
 	}
 
-	// eslint-disable-next-line @typescript-eslint/require-await -- async required by ItemView base class signature
 	async onClose(): Promise<void> {
 		this.root?.unmount()
 		this.root = null
