@@ -168,7 +168,8 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 		if (!dbFile) { setLoading(false); return }
 		setLoading(true)
 		const cfg = manager.readConfig(dbFile)
-		const notes = manager.getNotesInDatabase(dbFile, activeView.includeSubfolders)
+		const currentView = cfg.views.find(v => v.id === externalView.id) ?? externalView
+		const notes = manager.getNotesInDatabase(dbFile, currentView.includeSubfolders)
 		if (cfg.schema.length === 0 && notes.length > 0) {
 			cfg.schema = manager.inferSchema(notes)
 			await manager.writeConfig(dbFile, cfg)

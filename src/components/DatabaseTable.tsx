@@ -643,7 +643,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		setLoading(true)
 
 		const cfg = manager.readConfig(dbFile)
-		const notes = manager.getNotesInDatabase(dbFile, activeView.includeSubfolders)
+		const currentView = (externalView ? localEmbedView : undefined) ?? cfg.views[0]
+		const notes = manager.getNotesInDatabase(dbFile, currentView?.includeSubfolders)
 
 		// Inferir schema se vazio
 		if (cfg.schema.length === 0 && notes.length > 0) {
@@ -859,7 +860,30 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			),
 		})
 
-		// Coluna título (sempre segunda)
+		// Coluna virtual _folder (antes do título, quando includeSubfolders está ativo)
+		if (activeView.includeSubfolders && !activeView.hiddenColumns.includes('_folder')) {
+			const dbFolder = dbFile?.parent?.path ?? ''
+			const dbFolderName = dbFile?.parent?.name ?? ''
+			cols.push({
+				id: '_folder',
+				accessorFn: row => {
+					const fileFolder = row._file.parent?.path ?? ''
+					return fileFolder.length > dbFolder.length ? fileFolder.slice(dbFolder.length + 1) : dbFolderName
+				},
+				size: activeView.columnWidths['_folder'] ?? 150,
+				enableColumnFilter: true,
+				enableSorting: true,
+				sortingFn: 'text',
+				header: () => (
+					<div className="nb-header-title">
+						<span>{t('folder_column')}</span>
+					</div>
+				),
+				cell: info => <span className="nb-folder-path nb-folder-path--cell">{info.getValue<string>()}/</span>,
+			})
+		}
+
+		// Coluna título
 		cols.push({
 			id: '_title',
 			accessorFn: row => row._title,
@@ -904,28 +928,6 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				)
 			},
 		})
-
-		// Coluna virtual _folder (só quando includeSubfolders está ativo)
-		if (activeView.includeSubfolders && !activeView.hiddenColumns.includes('_folder')) {
-			const dbFolder = dbFile?.parent?.path ?? ''
-			cols.push({
-				id: '_folder',
-				accessorFn: row => {
-					const fileFolder = row._file.parent?.path ?? ''
-					return fileFolder.length > dbFolder.length ? fileFolder.slice(dbFolder.length + 1) : ''
-				},
-				size: activeView.columnWidths['_folder'] ?? 150,
-				enableColumnFilter: true,
-				enableSorting: true,
-				sortingFn: 'text',
-				header: () => (
-					<div className="nb-header-title">
-						<span>{t('folder_column')}</span>
-					</div>
-				),
-				cell: info => <span className="nb-folder-path">{info.getValue<string>()}</span>,
-			})
-		}
 
 		// Colunas do schema
 		const visibleSchema = orderedSchema.filter(col =>
