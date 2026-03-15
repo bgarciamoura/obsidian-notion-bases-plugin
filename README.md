@@ -16,7 +16,7 @@ Turn any folder into a full-featured database with Table, Board, Gallery, List, 
 
 ## Why Notion Bases instead of the core Bases plugin?
 
-Obsidian's built-in Bases plugin is a great start, but if you need more than a basic table, you'll quickly hit its limits. Here's what Notion Bases gives you **today** that the core plugin doesn't:
+Obsidian's built-in Bases plugin is great for tables and has its own powerful expression-based formula system. Notion Bases focuses on a different set of trade-offs — more views, more column types, and a spreadsheet-style formula syntax. Here's how they compare:
 
 | Feature | Notion Bases | Core Bases |
 |---------|:---:|:---:|
@@ -27,7 +27,7 @@ Obsidian's built-in Bases plugin is a great start, but if you need more than a b
 | Calendar view | Yes | No |
 | Timeline / Gantt view | Yes | No |
 | Column types | **15** | 7 |
-| Formula columns | Yes | No |
+| Formulas | Spreadsheet-style (IF, SUM, AVG, CONCAT) | Expression-based (JS-like dot notation) |
 | Relation columns | Yes | No |
 | Lookup columns | Yes | No |
 | Image columns (rendered) | Yes | Text only |
