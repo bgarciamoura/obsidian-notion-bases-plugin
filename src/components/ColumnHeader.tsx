@@ -197,7 +197,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		if (!lookupDbPath) { setRefDbSchema([]); return }
 		const refDbFile = app.vault.getFileByPath(lookupDbPath)
 		if (!refDbFile) { setRefDbSchema([]); return }
-		void manager.readConfig(refDbFile).then(cfg => setRefDbSchema(cfg.schema))
+		setRefDbSchema(manager.readConfig(refDbFile).schema)
 	}, [lookupDbPath, app, manager])
 
 	// Sync lookup state with col when not editing

@@ -64,33 +64,32 @@ export function DatabaseRoot({
 
 	useEffect(() => {
 		if (!dbFile || isForcedEmbed) return
-		void manager.readConfig(dbFile).then(cfg => {
-			setConfig(cfg)
-			if (isDirectMode) {
-				setActiveViewId(prev => (prev && cfg.views.some(v => v.id === prev)) ? prev : (cfg.views[0]?.id ?? ''))
-			} else if (isFreeEmbed && !embedInitialized) {
-				// First render: copy database views into embed with new IDs
-				const initialViews: ViewConfig[] = cfg.views.map(v => ({
-					...v,
-					id: crypto.randomUUID(),
-				}))
-				const initialState: EmbedState = {
-					activeViewId: initialViews[0]?.id ?? '',
-					views: initialViews,
-				}
-				setEmbedViews(initialViews)
-				setEmbedActiveId(initialViews[0]?.id ?? '')
-				setEmbedInitialized(true)
-				void onEmbedStateChange(initialState)
+		const cfg = manager.readConfig(dbFile)
+		setConfig(cfg)
+		if (isDirectMode) {
+			setActiveViewId(prev => (prev && cfg.views.some((v: ViewConfig) => v.id === prev)) ? prev : (cfg.views[0]?.id ?? ''))
+		} else if (isFreeEmbed && !embedInitialized) {
+			// First render: copy database views into embed with new IDs
+			const initialViews: ViewConfig[] = cfg.views.map((v: ViewConfig) => ({
+				...v,
+				id: crypto.randomUUID(),
+			}))
+			const initialState: EmbedState = {
+				activeViewId: initialViews[0]?.id ?? '',
+				views: initialViews,
 			}
-		})
+			setEmbedViews(initialViews)
+			setEmbedActiveId(initialViews[0]?.id ?? '')
+			setEmbedInitialized(true)
+			void onEmbedStateChange(initialState)
+		}
 	}, [dbFile, manager, isForcedEmbed])
 
 	// Sync direct mode tabs when database file changes
 	useEffect(() => {
 		if (!dbFile || !isDirectMode) return
 		const onChange = (file: TFile) => {
-			if (file === dbFile) void manager.readConfig(dbFile).then(setConfig)
+			if (file === dbFile) setConfig(manager.readConfig(dbFile))
 		}
 		app.metadataCache.on('changed', onChange)
 		return () => app.metadataCache.off('changed', onChange)
