@@ -1,11 +1,11 @@
 {
-	"id": "obsidian-notion-bases",
+	"id": "notion-bases",
 	"name": "Notion Bases",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"minAppVersion": "1.4.0",
-	"description": "Banco de dados para o seu vault — tabela, kanban, galeria e mais.",
+	"description": "Turn any folder into a database — table, kanban board, gallery, calendar, timeline and list views powered by frontmatter.",
 	"author": "bgarciamoura",
-	"authorUrl": "https://github.com/bgarciamoura/obsidian-notion-bases-plugin",
+	"authorUrl": "https://github.com/bgarciamoura",
 	"isDesktopOnly": false,
 	"fundingUrl": {
 		"Ko-fi": "https://ko-fi.com/bgarciamoura",
