@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { TFile } from 'obsidian'
-import { ColumnSchema, NoteRow, NumberFormat, SelectOption } from '../../types'
+import { ColumnSchema, NumberFormat, SelectOption } from '../../types'
 import { useApp } from '../../context'
 import { t } from '../../i18n'
 

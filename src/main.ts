@@ -1,4 +1,5 @@
-import { Notice, Plugin, TFile, WorkspaceLeaf } from 'obsidian'
+import { MarkdownView, Notice, Plugin, TFile, WorkspaceLeaf } from 'obsidian'
+import { t } from './i18n'
 import { DATABASE_VIEW_TYPE, DatabaseView } from './database-view'
 import { DatabaseManager } from './database-manager'
 import { DEFAULT_SETTINGS, NotionBasesSettings, NotionBasesSettingTab } from './settings'
@@ -62,8 +63,7 @@ export default class NotionBasesPlugin extends Plugin {
 				if (!leaf || this._redirecting) return
 				if (leaf.view.getViewType() !== 'markdown') return
 
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-				const file = (leaf.view as any).file as TFile | undefined
+				const file = (leaf.view as MarkdownView).file ?? undefined
 				if (!file || !this.manager.isDatabaseFile(file)) return
 
 				const existingLeaf = this.findDatabaseLeaf(file.path)
@@ -116,8 +116,7 @@ export default class NotionBasesPlugin extends Plugin {
 			.sort((a, b) => (a.parent?.path ?? '').localeCompare(b.parent?.path ?? ''))
 
 		if (databases.length === 0) {
-			// eslint-disable-next-line obsidianmd/ui/sentence-case
-			new Notice('Nenhum banco de dados encontrado. Use o comando "Criar novo banco de dados" para criar um.')
+			new Notice(t('no_databases_found'))
 			return
 		}
 

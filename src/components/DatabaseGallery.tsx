@@ -85,7 +85,7 @@ function GallerySortPanel({ sorts, schema, onSortChange, onClose, anchorRect, pa
 			{available.length > 0 && (
 				<div className="nb-sort-add-row">
 					<select className="nb-sort-add-select" value="" onChange={e => { if (e.target.value) { onSortChange([...sorts, { columnId: e.target.value, direction: 'asc' }]); e.target.value = '' } }}>
-						<option value="">{t('add_sort')}</option>
+						<option value="">{'+ ' + t('add_sort') + '...'}</option>
 						{available.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 					</select>
 				</div>
@@ -336,7 +336,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 
 				{/* Row count */}
 				<span className="nb-row-count">
-					{displayRows.length} {displayRows.length === 1 ? t('item_singular') : t('item_plural')}
+					{displayRows.length} {displayRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}
 				</span>
 
 				{/* Filtros */}
@@ -469,7 +469,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 
 				{/* Add card */}
 				<div className="nb-gallery-card nb-gallery-card--add" onClick={() => { void handleAddRow() }}>
-					<div className="nb-gallery-add-inner">{t('add_entry')}</div>
+					<div className="nb-gallery-add-inner">{'+ ' + t('add_entry')}</div>
 				</div>
 			</div>
 		</div>

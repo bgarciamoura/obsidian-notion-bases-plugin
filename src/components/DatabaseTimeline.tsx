@@ -472,7 +472,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 					))}
 				</div>
 
-				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? t('item_singular') : t('item_plural')}</span>
+				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}</span>
 
 				{/* Filtros */}
 				<div className="nb-fields-menu-wrapper" ref={filterMenuRef} style={{ marginLeft: 'auto' }}>

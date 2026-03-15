@@ -6,7 +6,6 @@ import {
 	flexRender,
 	ColumnDef,
 	SortingState,
-	SortingFn,
 	SortingFnOption,
 	RowSelectionState,
 } from '@tanstack/react-table'
@@ -346,7 +345,7 @@ function SortPanel({ sorts, schema, onSortChange, onClose, anchorRect, panelRef 
 						value=""
 						onChange={e => { add(e.target.value); e.target.value = '' }}
 					>
-						<option value="">{t('add_sort')}</option>
+						<option value="">{'+ ' + t('add_sort') + '...'}</option>
 						{availableColumns.map(c => (
 							<option key={c.id} value={c.id}>{c.name}</option>
 						))}
@@ -759,7 +758,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	// ── Validar e trocar tipo de coluna ─────────────────────────────────────
 
-	const handleChangeColumnType = useCallback(async (colId: string, newType: ColumnType): Promise<boolean> => {
+	const handleChangeColumnType = useCallback((colId: string, newType: ColumnType): boolean => {
 		const col = config.schema.find(c => c.id === colId)
 		if (!col) return true
 		const error = validateTypeChange(rows, colId, col.type, newType)
@@ -1265,7 +1264,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		if (type === 'none') return ''
 		const vals = filteredRows.map(r => columnId === '_title' ? r._title : r[columnId])
 		const total = filteredRows.length
-		if (type === 'count') return `${total} ${total === 1 ? t('row_singular') : t('row_plural')}`
+		if (type === 'count') return `${total} ${total === 1 ? t('row_singular').toLowerCase() : t('row_plural').toLowerCase()}`
 		const nonEmpty = vals.filter(v => v !== null && v !== undefined && String(v as string | number | boolean).trim() !== '')
 		if (type === 'count_values') return `${nonEmpty.length} preenchido${nonEmpty.length !== 1 ? 's' : ''}`
 		const nums = nonEmpty.map(v => parseFloat(String(v as string | number | boolean))).filter(n => !isNaN(n))
@@ -1567,7 +1566,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				</div>
 
 <span className="nb-row-count">
-					{tableRows.length} {tableRows.length === 1 ? t('item_singular') : t('item_plural')}
+					{tableRows.length} {tableRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}
 				</span>
 
 				{/* Botão Filtros */}
@@ -1737,8 +1736,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		{/* Tabela */}
 			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema, relationOptions, updateSchema }}>
 			<div className={`nb-table-wrapper${activeView.wrapText ? ' nb-table--wrap' : ''}`}
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-				style={{ '--nb-row-height': activeView.rowHeight === 'compact' ? '28px' : activeView.rowHeight === 'tall' ? '64px' : '36px' } as any}>
+				style={{ '--nb-row-height': activeView.rowHeight === 'compact' ? '28px' : activeView.rowHeight === 'tall' ? '64px' : '36px' } as React.CSSProperties}>
 				<table ref={tableRef} className="nb-table">
 					<thead className="nb-thead">
 						{table.getHeaderGroups().map(group => {
@@ -1884,7 +1882,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						<tr>
 							<td colSpan={columns.length + 1} className="nb-add-row-td">
 								<button className="nb-add-row-btn" onClick={() => { void handleAddRow() }}>
-									{t('add_row')}
+									{'+ ' + t('add_row')}
 								</button>
 							</td>
 						</tr>
@@ -1941,8 +1939,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 					const filtered = table.getFilteredRowModel().rows.length
 					const isFiltered = filtered !== total
 					return isFiltered
-						? <span className="nb-row-count">{filtered} de {total} {total !== 1 ? t('record_plural') : t('record_singular')}</span>
-						: <span className="nb-row-count">{total} {total !== 1 ? t('record_plural') : t('record_singular')}</span>
+						? <span className="nb-row-count">{filtered} de {total} {total !== 1 ? t('record_plural').toLowerCase() : t('record_singular').toLowerCase()}</span>
+						: <span className="nb-row-count">{total} {total !== 1 ? t('record_plural').toLowerCase() : t('record_singular').toLowerCase()}</span>
 				})()}
 			</div>
 

@@ -56,7 +56,7 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 
 	// Filter/Sort
 	add_filter_advanced: 'Adicionar filtro avançado',
-	add_sort: '+ Adicionar ordenação...',
+	add_sort: 'Adicionar ordenação',
 	no_active_sorts: 'Nenhuma ordenação ativa',
 	name_column: 'Nome',
 
@@ -76,11 +76,11 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	import_csv: 'Importar CSV',
 
 	// Sort directions
-	sort_asc: 'A → Z',
-	sort_desc: 'Z → A',
-	sort_asc_title: 'Ordenar Z→A',
+	sort_asc: 'Ascendente',
+	sort_desc: 'Descendente',
+	sort_asc_title: 'Ordenar descendente',
 	sort_desc_title: 'Remover ordenação',
-	sort_none_title: 'Ordenar A→Z',
+	sort_none_title: 'Ordenar ascendente',
 
 	// Column header menu
 	rename_column: 'Renomear',
@@ -112,7 +112,7 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 
 	// Formula panel
 	formula_panel_title: 'Fórmula',
-	formula_placeholder: 'Ex: IF(status = "feito", 1, 0)',
+	formula_placeholder: 'ex: if(status = "feito", 1, 0)',
 	formula_valid: 'Sintaxe válida',
 	formula_available_cols: 'Colunas disponíveis:',
 	formula_ref_toggle: 'Referência de funções',
@@ -146,11 +146,11 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	lookup_col_to_display: '2. Coluna a exibir',
 	lookup_origin_col: '2. Campo de origem dos valores',
 	lookup_select_col: 'Selecionar coluna...',
-	lookup_file_name: '📄 Nome do arquivo',
+	lookup_file_name: 'Nome do arquivo',
 	lookup_join_col: '3. Coluna de junção (nesta tabela)',
-	lookup_join_col_title: '📄 Nome do arquivo (junção por título)',
+	lookup_join_col_title: 'Nome do arquivo (junção por título)',
 	lookup_select_join_col: 'Selecionar coluna...',
-	lookup_hint: 'O valor desta coluna deve ser igual ao nome do arquivo da nota na tabela referenciada (ex: "A" para encontrar "A.md")',
+	lookup_hint: 'O valor desta coluna deve ser igual ao nome do arquivo da nota na tabela referenciada',
 
 	// Image config panel
 	image_panel_title: 'Imagem',
@@ -175,28 +175,28 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 
 	// Empty states / loading
 	no_database_open: 'Nenhum banco de dados aberto.',
-	no_database_hint: 'Use o botão na ribbon ou o comando Criar novo banco de dados.',
+	no_database_hint: 'Use o botão na ribbon ou o comando "criar novo banco de dados".',
 	loading: 'Carregando...',
 	no_results: 'Nenhum item encontrado',
 
 	// Row/item counts
-	item_singular: 'item',
-	item_plural: 'itens',
-	row_singular: 'linha',
-	row_plural: 'linhas',
-	record_singular: 'registro',
-	record_plural: 'registros',
+	item_singular: 'Item',
+	item_plural: 'Itens',
+	row_singular: 'Linha',
+	row_plural: 'Linhas',
+	record_singular: 'Registro',
+	record_plural: 'Registros',
 
 	// Add row/entry
-	add_row: '+ Nova linha',
-	add_entry: '+ Nova entrada',
-	add_card: '+ Novo card',
+	add_row: 'Nova linha',
+	add_entry: 'Nova entrada',
+	add_card: 'Novo card',
 	new_field: 'Novo campo',
 	add_field: 'Adicionar campo',
 
 	// Board
-	board_no_select_col: 'O Board precisa de uma coluna do tipo Select ou Status para agrupar os cards.',
-	board_add_select_hint: 'Adicione uma coluna desse tipo na view de Tabela e volte aqui.',
+	board_no_select_col: 'O board precisa de uma coluna do tipo select ou status para agrupar os cards.',
+	board_add_select_hint: 'Adicione uma coluna desse tipo na view de tabela e volte aqui.',
 	board_drag_reorder: 'Arraste para reordenar',
 	hide_empty_cols: 'Ocultar vazias',
 	hide_no_value_cols: 'Ocultar sem valor',
@@ -288,13 +288,13 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	status_new_placeholder: 'Novo status...',
 
 	// Type change validation errors
-	validate_non_numeric: 'célula(s) contêm valores não numéricos (ex: "',
-	validate_invalid_dates: 'célula(s) contêm valores que não são datas válidas (ex: "',
-	validate_invalid_checkbox: 'célula(s) contêm valores incompatíveis com checkbox (ex: "',
-	validate_multiselect_to_select: 'linha(s) têm múltiplos valores selecionados. Remova os extras antes de mudar para seleção única.',
-	validate_invalid_email: 'célula(s) contêm valores que não são e-mails válidos (ex: "',
-	validate_invalid_url: 'célula(s) contêm valores que não são URLs válidas (ex: "',
-	validate_invalid_phone: 'célula(s) contêm valores que não são telefones válidos (ex: "',
+	validate_non_numeric: 'Célula(s) contêm valores não numéricos (ex: "',
+	validate_invalid_dates: 'Célula(s) contêm valores que não são datas válidas (ex: "',
+	validate_invalid_checkbox: 'Célula(s) contêm valores incompatíveis com checkbox (ex: "',
+	validate_multiselect_to_select: 'Linha(s) têm múltiplos valores selecionados. Remova os extras antes de mudar para seleção única.',
+	validate_invalid_email: 'Célula(s) contêm valores que não são e-mails válidos (ex: "',
+	validate_invalid_url: 'Célula(s) contêm valores que não são URLs válidas (ex: "',
+	validate_invalid_phone: 'Célula(s) contêm valores que não são telefones válidos (ex: "',
 	validate_type_change_prefix: 'Não é possível mudar o tipo: ',
 
 	// Cell validation
@@ -327,7 +327,7 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	db_copy_suffix: '(cópia)',
 	db_copy_suffix_n: '(cópia $n)',
 	db_already_exists: 'Já existe um banco de dados em "$folder"',
-	db_tip_body: '> Este arquivo é um banco de dados. Abra-o para ver a visualização de tabela.',
+	db_tip_body: 'Este arquivo é um banco de dados. Abra-o para ver a visualização de tabela.',
 
 	// Formula errors
 	formula_err_unclosed_string: 'String não fechada na posição $pos',
@@ -338,13 +338,17 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	formula_err_unexpected_token: "Token inesperado '$token' na posição $pos",
 	formula_err_circular_ref: 'Referência circular: "$name" é uma coluna fórmula',
 	formula_err_unknown_fn: 'Função desconhecida: $fn()',
-	formula_err_if_args: 'IF(condição, se_verdadeiro, [se_falso])',
-	formula_err_avg_args: 'AVG(coluna) — requer referência de coluna como argumento',
-	formula_err_count_args: 'COUNT(coluna) — requer referência de coluna como argumento',
-	formula_err_mid_args: 'MID(texto, início, comprimento)',
-	formula_err_mod_args: 'MOD(número, divisor)',
-	formula_err_sqrt_args: 'SQRT(número)',
+	formula_err_if_args: 'Esperado if(condição, se_verdadeiro, [se_falso])',
+	formula_err_avg_args: 'Esperado avg(coluna) — requer referência de coluna como argumento',
+	formula_err_count_args: 'Esperado count(coluna) — requer referência de coluna como argumento',
+	formula_err_mid_args: 'Esperado mid(texto, início, comprimento)',
+	formula_err_mod_args: 'Esperado mod(número, divisor)',
+	formula_err_sqrt_args: 'Esperado sqrt(número)',
 	formula_err_not_implemented: 'Função não implementada: $fn()',
+
+	// Plugin
+	plugin_display_name: 'Notion bases',
+	no_databases_found: 'Nenhum banco de dados encontrado. Use o comando "Criar novo banco de dados" para criar um.',
 }
 
 export default ptBR

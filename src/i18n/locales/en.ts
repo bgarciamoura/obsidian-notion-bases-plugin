@@ -54,7 +54,7 @@ const en = {
 
 	// Filter/Sort
 	add_filter_advanced: 'Add advanced filter',
-	add_sort: '+ Add sort...',
+	add_sort: 'Add sort',
 	no_active_sorts: 'No active sorts',
 	name_column: 'Name',
 
@@ -74,11 +74,11 @@ const en = {
 	import_csv: 'Import CSV',
 
 	// Sort directions
-	sort_asc: 'A → Z',
-	sort_desc: 'Z → A',
-	sort_asc_title: 'Sort Z→A',
+	sort_asc: 'Ascending',
+	sort_desc: 'Descending',
+	sort_asc_title: 'Sort descending',
 	sort_desc_title: 'Remove sort',
-	sort_none_title: 'Sort A→Z',
+	sort_none_title: 'Sort ascending',
 
 	// Column header menu
 	rename_column: 'Rename',
@@ -110,7 +110,7 @@ const en = {
 
 	// Formula panel
 	formula_panel_title: 'Formula',
-	formula_placeholder: 'Ex: IF(status = "done", 1, 0)',
+	formula_placeholder: 'e.g. if(status = "done", 1, 0)',
 	formula_valid: 'Valid syntax',
 	formula_available_cols: 'Available columns:',
 	formula_ref_toggle: 'Function reference',
@@ -144,11 +144,11 @@ const en = {
 	lookup_col_to_display: '2. Column to display',
 	lookup_origin_col: '2. Source field for values',
 	lookup_select_col: 'Select column...',
-	lookup_file_name: '📄 File name',
+	lookup_file_name: 'File name',
 	lookup_join_col: '3. Join column (this table)',
-	lookup_join_col_title: '📄 File name (join by title)',
+	lookup_join_col_title: 'File name (join by title)',
 	lookup_select_join_col: 'Select column...',
-	lookup_hint: 'The value of this column must match the file name in the referenced table (e.g., "A" to find "A.md")',
+	lookup_hint: 'The value of this column must match the file name in the referenced table',
 
 	// Image config panel
 	image_panel_title: 'Image',
@@ -173,28 +173,28 @@ const en = {
 
 	// Empty states / loading
 	no_database_open: 'No database open.',
-	no_database_hint: 'Use the ribbon button or the command Create new database.',
+	no_database_hint: 'Use the ribbon button or the "create new database" command.',
 	loading: 'Loading...',
 	no_results: 'No items found',
 
 	// Row/item counts
-	item_singular: 'item',
-	item_plural: 'items',
-	row_singular: 'row',
-	row_plural: 'rows',
-	record_singular: 'record',
-	record_plural: 'records',
+	item_singular: 'Item',
+	item_plural: 'Items',
+	row_singular: 'Row',
+	row_plural: 'Rows',
+	record_singular: 'Record',
+	record_plural: 'Records',
 
 	// Add row/entry
-	add_row: '+ New row',
-	add_entry: '+ New entry',
-	add_card: '+ New card',
+	add_row: 'New row',
+	add_entry: 'New entry',
+	add_card: 'New card',
 	new_field: 'New field',
 	add_field: 'Add field',
 
 	// Board
-	board_no_select_col: 'The Board requires a Select or Status column to group cards.',
-	board_add_select_hint: 'Add a column of that type in the Table view and come back here.',
+	board_no_select_col: 'The board requires a select or status column to group cards.',
+	board_add_select_hint: 'Add a column of that type in the table view and come back here.',
 	board_drag_reorder: 'Drag to reorder',
 	hide_empty_cols: 'Hide empty',
 	hide_no_value_cols: 'Hide no-value',
@@ -286,13 +286,13 @@ const en = {
 	status_new_placeholder: 'New status...',
 
 	// Type change validation errors
-	validate_non_numeric: 'cell(s) contain non-numeric values (e.g.: "',
-	validate_invalid_dates: 'cell(s) contain values that are not valid dates (e.g.: "',
-	validate_invalid_checkbox: 'cell(s) contain values incompatible with checkbox (e.g.: "',
-	validate_multiselect_to_select: 'row(s) have multiple values selected. Remove extras before changing to single select.',
-	validate_invalid_email: 'cell(s) contain values that are not valid emails (e.g.: "',
-	validate_invalid_url: 'cell(s) contain values that are not valid URLs (e.g.: "',
-	validate_invalid_phone: 'cell(s) contain values that are not valid phone numbers (e.g.: "',
+	validate_non_numeric: 'Cell(s) contain non-numeric values (e.g.: "',
+	validate_invalid_dates: 'Cell(s) contain values that are not valid dates (e.g.: "',
+	validate_invalid_checkbox: 'Cell(s) contain values incompatible with checkbox (e.g.: "',
+	validate_multiselect_to_select: 'Row(s) have multiple values selected. Remove extras before changing to single select.',
+	validate_invalid_email: 'Cell(s) contain values that are not valid emails (e.g.: "',
+	validate_invalid_url: 'Cell(s) contain values that are not valid URLs (e.g.: "',
+	validate_invalid_phone: 'Cell(s) contain values that are not valid phone numbers (e.g.: "',
 	validate_type_change_prefix: 'Cannot change type: ',
 
 	// Cell validation
@@ -325,7 +325,7 @@ const en = {
 	db_copy_suffix: '(copy)',
 	db_copy_suffix_n: '(copy $n)',
 	db_already_exists: 'A database already exists in "$folder"',
-	db_tip_body: '> This file is a database. Open it to see the table view.',
+	db_tip_body: 'This file is a database. Open it to see the table view.',
 
 	// Formula errors
 	formula_err_unclosed_string: 'Unclosed string at position $pos',
@@ -336,13 +336,17 @@ const en = {
 	formula_err_unexpected_token: "Unexpected token '$token' at position $pos",
 	formula_err_circular_ref: 'Circular reference: "$name" is a formula column',
 	formula_err_unknown_fn: 'Unknown function: $fn()',
-	formula_err_if_args: 'IF(condition, if_true, [if_false])',
-	formula_err_avg_args: 'AVG(column) — requires a column reference as argument',
-	formula_err_count_args: 'COUNT(column) — requires a column reference as argument',
-	formula_err_mid_args: 'MID(text, start, length)',
-	formula_err_mod_args: 'MOD(number, divisor)',
-	formula_err_sqrt_args: 'SQRT(number)',
+	formula_err_if_args: 'Expected if(condition, if_true, [if_false])',
+	formula_err_avg_args: 'Expected avg(column) — requires a column reference as argument',
+	formula_err_count_args: 'Expected count(column) — requires a column reference as argument',
+	formula_err_mid_args: 'Expected mid(text, start, length)',
+	formula_err_mod_args: 'Expected mod(number, divisor)',
+	formula_err_sqrt_args: 'Expected sqrt(number)',
 	formula_err_not_implemented: 'Function not implemented: $fn()',
+
+	// Plugin
+	plugin_display_name: 'Notion bases',
+	no_databases_found: 'No databases found. Use the "Create new database" command to create one.',
 } as const
 
 export default en

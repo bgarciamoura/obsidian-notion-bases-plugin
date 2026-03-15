@@ -144,7 +144,7 @@ export interface NoteRow {
 // ── TanStack Table meta augmentation ────────────────────────────────────────
 
 declare module '@tanstack/react-table' {
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars -- TData generic is required by TanStack Table module augmentation signature
 	interface TableMeta<TData extends RowData> {
 		updateCell: (rowIndex: number, columnId: string, value: unknown) => Promise<void>
 		editingCell: { rowIndex: number; columnId: string } | null

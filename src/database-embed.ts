@@ -104,7 +104,7 @@ class DatabaseEmbedChild extends MarkdownRenderChild {
 }
 
 export function registerDatabaseEmbed(plugin: NotionBasesPlugin): void {
-	plugin.registerMarkdownCodeBlockProcessor('nb-database', async (source, el, ctx) => {
+	plugin.registerMarkdownCodeBlockProcessor('nb-database', (source, el, ctx) => {
 		const lines = source.trim().split('\n')
 		let folderPath = ''
 		let embedId = ''

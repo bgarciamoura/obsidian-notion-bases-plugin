@@ -296,12 +296,12 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 			if (!KNOWN_FNS.has(fn)) throw new FormulaError(i18n('formula_err_unknown_fn').replace('$fn', fn))
 
 			// ── Lógicas ──
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_IF: if (fn === 'IF') {
 				if (args.length < 2 || args.length > 3) throw new FormulaError(i18n('formula_err_if_args'))
 				return truthy(evalNode(args[0], ctx)) ? evalNode(args[1], ctx) : (args[2] ? evalNode(args[2], ctx) : null)
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_IFS: if (fn === 'IFS') {
 				if (args.length < 2 || args.length % 2 !== 0) throw new FormulaError('IFS(cond1, val1, cond2, val2, ...)')
 				for (let i = 0; i < args.length; i += 2) {
@@ -309,24 +309,24 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 				}
 				return null
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_AND: if (fn === 'AND') {
 				if (args.length === 0) throw new FormulaError('AND requer ao menos 1 argumento')
 				return args.every(a => truthy(evalNode(a, ctx)))
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_OR: if (fn === 'OR') {
 				if (args.length === 0) throw new FormulaError('OR requer ao menos 1 argumento')
 				return args.some(a => truthy(evalNode(a, ctx)))
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_NOT: if (fn === 'NOT') {
 				if (args.length !== 1) throw new FormulaError('NOT(valor)')
 				return !truthy(evalNode(args[0], ctx))
 			}
 
 			// ── Agregadores ──
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_SUM: if (fn === 'SUM') {
 				if (args.length === 0) throw new FormulaError('SUM requer ao menos 1 argumento')
 				if (args.length === 1 && args[0].k === 'col') {
@@ -335,7 +335,7 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 				}
 				return args.reduce((s, a) => s + toNum(evalNode(a, ctx)), 0)
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_AVG: if (fn === 'AVG' || fn === 'AVERAGE') {
 				if (args.length !== 1 || args[0].k !== 'col') throw new FormulaError(i18n('formula_err_avg_args'))
 				const id = resolveColId(args[0].name, ctx)
@@ -343,14 +343,14 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 				const vals = ctx.allRows.map(r => toNum(getColVal(id, r)))
 				return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_COUNT: if (fn === 'COUNT' || fn === 'COUNTA') {
 				if (args.length !== 1 || args[0].k !== 'col') throw new FormulaError(i18n('formula_err_count_args'))
 				const id = resolveColId(args[0].name, ctx)
 				if (!id) throw new FormulaError(`Coluna desconhecida em COUNT`)
 				return ctx.allRows.filter(r => { const v = getColVal(id, r); return v !== null && v !== undefined && v !== '' }).length
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_MIN: if (fn === 'MIN') {
 				if (args.length === 1 && args[0].k === 'col') {
 					const id = resolveColId(args[0].name, ctx)
@@ -358,7 +358,7 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 				}
 				return Math.min(...args.map(a => toNum(evalNode(a, ctx))))
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_MAX: if (fn === 'MAX') {
 				if (args.length === 1 && args[0].k === 'col') {
 					const id = resolveColId(args[0].name, ctx)
@@ -368,97 +368,97 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 			}
 
 			// ── Texto ──
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_CONCAT: if (fn === 'CONCAT') return args.map(a => toStr(evalNode(a, ctx))).join('')
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_LEN: if (fn === 'LEN') {
 				if (args.length !== 1) throw new FormulaError('LEN(texto)')
 				return toStr(evalNode(args[0], ctx)).length
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_UPPER: if (fn === 'UPPER') {
 				if (args.length !== 1) throw new FormulaError('UPPER(texto)')
 				return toStr(evalNode(args[0], ctx)).toUpperCase()
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_LOWER: if (fn === 'LOWER') {
 				if (args.length !== 1) throw new FormulaError('LOWER(texto)')
 				return toStr(evalNode(args[0], ctx)).toLowerCase()
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_TRIM: if (fn === 'TRIM') {
 				if (args.length !== 1) throw new FormulaError('TRIM(texto)')
 				return toStr(evalNode(args[0], ctx)).trim()
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_LEFT: if (fn === 'LEFT') {
 				if (args.length !== 2) throw new FormulaError('LEFT(texto, n)')
 				return toStr(evalNode(args[0], ctx)).slice(0, toNum(evalNode(args[1], ctx)))
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_RIGHT: if (fn === 'RIGHT') {
 				if (args.length !== 2) throw new FormulaError('RIGHT(texto, n)')
 				const s = toStr(evalNode(args[0], ctx)), n = toNum(evalNode(args[1], ctx))
 				return s.slice(Math.max(0, s.length - n))
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_MID: if (fn === 'MID') {
 				if (args.length !== 3) throw new FormulaError(i18n('formula_err_mid_args'))
 				const s = toStr(evalNode(args[0], ctx))
 				const start = toNum(evalNode(args[1], ctx)) - 1
 				return s.slice(start, start + toNum(evalNode(args[2], ctx)))
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_SUBSTITUTE: if (fn === 'SUBSTITUTE') {
 				if (args.length < 3) throw new FormulaError('SUBSTITUTE(texto, de, para)')
 				return toStr(evalNode(args[0], ctx)).split(toStr(evalNode(args[1], ctx))).join(toStr(evalNode(args[2], ctx)))
 			}
 
 			// ── Matemática ──
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_ROUND: if (fn === 'ROUND') {
 				const n = toNum(evalNode(args[0], ctx)), d = args[1] ? toNum(evalNode(args[1], ctx)) : 0
 				return Math.round(n * 10 ** d) / 10 ** d
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_FLOOR: if (fn === 'FLOOR') { return Math.floor(toNum(evalNode(args[0], ctx))) }
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_CEIL: if (fn === 'CEIL') { return Math.ceil(toNum(evalNode(args[0], ctx))) }
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_ABS: if (fn === 'ABS') { return Math.abs(toNum(evalNode(args[0], ctx))) }
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_MOD: if (fn === 'MOD') {
 				if (args.length !== 2) throw new FormulaError(i18n('formula_err_mod_args'))
 				return toNum(evalNode(args[0], ctx)) % toNum(evalNode(args[1], ctx))
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_POWER: if (fn === 'POWER') {
 				if (args.length !== 2) throw new FormulaError('POWER(base, expoente)')
 				return Math.pow(toNum(evalNode(args[0], ctx)), toNum(evalNode(args[1], ctx)))
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_SQRT: if (fn === 'SQRT') {
 				if (args.length !== 1) throw new FormulaError(i18n('formula_err_sqrt_args'))
 				return Math.sqrt(toNum(evalNode(args[0], ctx)))
 			}
 
 			// ── Nulos ──
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_ISNULL: if (fn === 'ISNULL' || fn === 'ISEMPTY') {
 				if (args.length !== 1) throw new FormulaError(`${fn}(valor)`)
 				const v = evalNode(args[0], ctx)
 				return v === null || v === undefined || v === ''
 			}
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_COALESCE: if (fn === 'COALESCE') {
 				for (const a of args) { const v = evalNode(a, ctx); if (v !== null && v !== undefined && v !== '') return v }
 				return null
 			}
 
 			// ── Conversão ──
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_TEXT: if (fn === 'TEXT') { return args.length === 1 ? toStr(evalNode(args[0], ctx)) : null }
-			// eslint-disable-next-line no-unused-labels
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_VALUE: if (fn === 'VALUE') { return args.length === 1 ? toNum(evalNode(args[0], ctx)) : null }
 
 			throw new FormulaError(i18n('formula_err_not_implemented').replace('$fn', fn))

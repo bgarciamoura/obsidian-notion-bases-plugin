@@ -311,7 +311,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 				</label>
 
 				{/* Row count */}
-				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? t('item_singular') : t('item_plural')}</span>
+				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}</span>
 
 				{/* Filtros */}
 				<div className="nb-fields-menu-wrapper" ref={filterMenuRef} style={{ marginLeft: 'auto' }}>
@@ -387,7 +387,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 									setColDragOver(null)
 								}
 							}}
-							// eslint-disable-next-line @typescript-eslint/no-misused-promises
+							// eslint-disable-next-line @typescript-eslint/no-misused-promises -- async handler required for drag-and-drop file operations
 							onDrop={async e => {
 								e.preventDefault()
 								setCardDragOver(null)
@@ -463,7 +463,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 
 							{/* Add card */}
 							<button className="nb-board-add-card" onClick={() => { void addCardToColumn(col.value) }}>
-								{t('add_card')}
+								{'+ ' + t('add_card')}
 							</button>
 						</div>
 					)

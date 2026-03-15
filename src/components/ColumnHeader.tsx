@@ -48,7 +48,7 @@ interface ColumnHeaderProps {
 	schema: ColumnSchema[]
 	onUpdateSchema: (schema: ColumnSchema[]) => Promise<void>
 	onRenameColumn: (oldId: string, newName: string) => Promise<void>
-	onChangeType: (newType: ColumnType) => Promise<boolean>
+	onChangeType: (newType: ColumnType) => boolean | Promise<boolean>
 	manager: DatabaseManager
 	dbFile: TFile | null
 }
@@ -666,7 +666,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 					<label className="nb-lookup-label">{col.type === 'relation' ? t('lookup_origin_col') : t('lookup_col_to_display')}</label>
 					<select className="nb-lookup-select" value={lookupRefColId} onChange={e => setLookupRefColId(e.target.value)} disabled={!lookupDbPath}>
 						<option value="">{t('lookup_select_col')}</option>
-						<option value="_title">{t('lookup_file_name')}</option>
+						<option value="_title">{'📄 ' + t('lookup_file_name')}</option>
 						{refDbSchema.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 					</select>
 				</div>
@@ -675,7 +675,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						<label className="nb-lookup-label">{t('lookup_join_col')}</label>
 						<select className="nb-lookup-select" value={lookupMatchColId} onChange={e => setLookupMatchColId(e.target.value)}>
 							<option value="">{t('lookup_select_col')}</option>
-							<option value="_title">{t('lookup_join_col_title')}</option>
+							<option value="_title">{'📄 ' + t('lookup_join_col_title')}</option>
 							{schema.filter(c => c.id !== col.id && c.type !== 'formula' && c.type !== 'lookup').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 						</select>
 						<p className="nb-lookup-hint">{t('lookup_hint')}</p>

@@ -82,7 +82,7 @@ function ListSortPanel({ sorts, schema, onSortChange, onClose, anchorRect, panel
 			{available.length > 0 && (
 				<div className="nb-sort-add-row">
 					<select className="nb-sort-add-select" value="" onChange={e => { if (e.target.value) { onSortChange([...sorts, { columnId: e.target.value, direction: 'asc' }]); e.target.value = '' } }}>
-						<option value="">{t('add_sort')}</option>
+						<option value="">{'+ ' + t('add_sort') + '...'}</option>
 						{available.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 					</select>
 				</div>
@@ -309,7 +309,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 
 				{/* Row count */}
 				<span className="nb-row-count">
-					{displayRows.length} {displayRows.length === 1 ? t('item_singular') : t('item_plural')}
+					{displayRows.length} {displayRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}
 				</span>
 
 				{/* Filtros */}
@@ -408,7 +408,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 					</div>
 				))}
 				<button className="nb-add-row nb-list-add-row" onClick={() => { void handleAddRow() }}>
-					{t('add_entry')}
+					{'+ ' + t('add_entry')}
 				</button>
 			</div>
 		</div>

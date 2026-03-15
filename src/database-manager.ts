@@ -31,7 +31,7 @@ export class DatabaseManager {
 
 	// ── Config (schema + views) ────────────────────────────────────────────
 
-	async readConfig(file: TFile): Promise<DatabaseConfig> {
+	readConfig(file: TFile): DatabaseConfig {
 		const cache = this.app.metadataCache.getFileCache(file)
 		const fm = cache?.frontmatter as Record<string, unknown> | undefined
 		if (!fm || !fm[DATABASE_MARKER]) return structuredClone(DEFAULT_DATABASE_CONFIG)
@@ -154,7 +154,7 @@ export class DatabaseManager {
 
 	async deleteNotes(files: TFile[]): Promise<void> {
 		for (const file of files) {
-			await this.app.vault.delete(file)
+			await this.app.fileManager.trashFile(file)
 		}
 	}
 
@@ -205,7 +205,7 @@ export class DatabaseManager {
 			'---',
 			'',
 			'> [!tip] Notion Bases',
-			t('db_tip_body'),
+			'> ' + t('db_tip_body'),
 			'',
 		].join('\n')
 

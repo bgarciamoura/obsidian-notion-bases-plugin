@@ -1,4 +1,5 @@
 import { ItemView, TFile, WorkspaceLeaf } from 'obsidian'
+import { t } from './i18n'
 import { createElement } from 'react'
 import { createRoot, Root } from 'react-dom/client'
 import { AppContext } from './context'
@@ -31,8 +32,7 @@ export class DatabaseView extends ItemView {
 			const file = this.app.vault.getFileByPath(this.dbFilePath)
 			return file?.parent?.name ?? 'Banco de Dados'
 		}
-		// eslint-disable-next-line obsidianmd/ui/sentence-case
-		return 'Notion Bases'
+		return t('plugin_display_name')
 	}
 
 	getIcon(): string {
@@ -67,7 +67,7 @@ export class DatabaseView extends ItemView {
 		// Se onOpen renderizar, causa um render em branco antes do setState.
 	}
 
-	async onClose(): Promise<void> {
+	onClose(): void {
 		this.root?.unmount()
 		this.root = null
 	}
