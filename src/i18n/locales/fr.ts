@@ -1,0 +1,363 @@
+import en from './en'
+
+const fr: Partial<Record<keyof typeof en, string>> = {
+	// View types
+	view_table: 'Tableau',
+	view_list: 'Liste',
+	view_board: 'Tableau Kanban',
+	view_gallery: 'Galerie',
+	view_calendar: 'Calendrier',
+	view_timeline: 'Chronologie',
+
+	// View tabs
+	add_view: 'Ajouter une vue',
+	remove_view: 'Supprimer la vue',
+	rename_view_hint: 'Double-cliquez pour renommer',
+
+	// Toolbar buttons
+	fields: 'Champs',
+	filter: 'Filtre',
+	filters: 'Filtres',
+	sort: 'Trier',
+	actions: 'Actions',
+	group_by: 'Grouper par',
+	cover: 'Couverture',
+	date_field: 'Date',
+	start_field: 'Début',
+	end_field: 'Fin',
+	group_field: 'Groupe',
+
+	// Dropdown labels
+	fields_in_card: 'Champs dans la carte',
+	fields_label: 'Champs',
+	fields_on_bars: 'Champs sur les barres',
+	filter_by: 'Filtrer par',
+	sort_by: 'Trier par',
+	group_by_label: 'Grouper par',
+	date_field_label: 'Champ de date',
+	cover_field_label: 'Champ de couverture',
+	card_size_label: 'Taille de carte',
+	row_height_label: 'Hauteur de ligne',
+
+	// Common values
+	none_value: 'Aucun',
+	no_value: 'Sans valeur',
+	no_cover: 'Aucune',
+
+	// Card sizes
+	size_small: 'Petit',
+	size_medium: 'Moyen',
+	size_large: 'Grand',
+
+	// Row heights
+	height_compact: 'Compact',
+	height_medium: 'Moyen',
+	height_tall: 'Grand',
+
+	// Filter/Sort
+	add_filter_advanced: 'Ajouter un filtre avancé',
+	add_sort: 'Ajouter un tri',
+	no_active_sorts: 'Aucun tri actif',
+	name_column: 'Nom',
+
+	// Conjunction pills
+	conjunction_and: 'ET',
+	conjunction_or: 'OU',
+
+	// Filter value placeholders
+	filter_number_placeholder: 'Nombre...',
+	filter_value_placeholder: 'Valeur...',
+
+	// Actions menu
+	delete_selected: 'Supprimer tous les sélectionnés',
+	move_selected: 'Déplacer tous les sélectionnés',
+	duplicate_selected: 'Dupliquer tous les sélectionnés',
+	export_csv: 'Exporter CSV',
+	import_csv: 'Importer CSV',
+
+	// Sort directions
+	sort_asc: 'Croissant',
+	sort_desc: 'Décroissant',
+	sort_asc_title: 'Trier décroissant',
+	sort_desc_title: 'Supprimer le tri',
+	sort_none_title: 'Trier croissant',
+
+	// Column header menu
+	rename_column: 'Renommer',
+	edit_formula: 'Modifier la formule',
+	configure_lookup: 'Configurer le lookup',
+	configure_relation: 'Configurer la relation',
+	format_number: 'Formater le nombre',
+	configure_image_folder: 'Configurer le dossier d\'images',
+	field_type_label: 'Type de champ',
+	hide_field: 'Masquer le champ',
+	delete_field: 'Supprimer le champ',
+
+	// Column types
+	type_title: 'Titre',
+	type_text: 'Texte',
+	type_number: 'Nombre',
+	type_select: 'Sélection',
+	type_multiselect: 'Multi-sélection',
+	type_date: 'Date',
+	type_checkbox: 'Checkbox',
+	type_url: 'URL',
+	type_email: 'Email',
+	type_phone: 'Téléphone',
+	type_status: 'Statut',
+	type_formula: 'Formule',
+	type_relation: 'Relation',
+	type_lookup: 'Lookup',
+	type_image: 'Image',
+
+	// Formula panel
+	formula_panel_title: 'Formule',
+	formula_placeholder: 'Exemple : if(status = "done", 1, 0)',
+	formula_valid: 'Syntaxe valide',
+	formula_available_cols: 'Colonnes disponibles :',
+	formula_ref_toggle: 'Référence des fonctions',
+	formula_save: 'Enregistrer',
+	formula_cancel: 'Annuler',
+	formula_save_hint: 'Enregistrer (Ctrl+Entrée)',
+
+	// Formula reference groups
+	formula_group_logic: 'Logique',
+	formula_group_comparators: 'Comparateurs',
+	formula_group_aggregators: 'Agrégateurs',
+	formula_group_text: 'Texte',
+	formula_group_math: 'Mathématiques',
+	formula_group_utils: 'Utilitaires',
+
+	// Number format panel
+	number_format_title: 'Format',
+	number_decimals_label: 'Décimales',
+	number_thousands_label: 'Séparateur de milliers',
+	number_prefix_label: 'Préfixe',
+	number_suffix_label: 'Suffixe',
+	number_prefix_placeholder: 'Ex : $, €',
+	number_suffix_placeholder: 'Ex : %, kg, km',
+	number_remove_format: 'Supprimer le format',
+
+	// Lookup/Relation panel
+	relation_panel_title: 'Relation',
+	lookup_panel_title: 'Lookup',
+	lookup_ref_table: '1. Table de référence',
+	lookup_select_table: 'Sélectionner une table...',
+	lookup_col_to_display: '2. Colonne à afficher',
+	lookup_origin_col: '2. Champ source des valeurs',
+	lookup_select_col: 'Sélectionner une colonne...',
+	lookup_file_name: 'Nom du fichier',
+	lookup_join_col: '3. Colonne de jointure (cette table)',
+	lookup_join_col_title: 'Nom du fichier (jointure par titre)',
+	lookup_select_join_col: 'Sélectionner une colonne...',
+	lookup_hint: 'La valeur de cette colonne doit correspondre au nom du fichier dans la table référencée',
+
+	// Image config panel
+	image_panel_title: 'Image',
+	image_folder_label: 'Dossier source (optionnel)',
+	image_folder_placeholder: 'Ex : images/covers',
+
+	// Image picker
+	image_picker_title: 'Sélectionner une image',
+	image_picker_clear: 'Effacer',
+	image_picker_empty_vault: 'Aucune image trouvée dans le vault',
+	image_picker_empty_folder: 'Aucune image trouvée dans',
+	image_select_placeholder: 'Sélectionner une image…',
+
+	// Aggregations
+	agg_none: 'Aucun',
+	agg_count: 'Compter',
+	agg_count_values: 'Compter les valeurs',
+	agg_sum: 'Somme',
+	agg_avg: 'Moyenne',
+	agg_min: 'Min',
+	agg_max: 'Max',
+
+	// Empty states / loading
+	no_database_open: 'Aucune base de données ouverte.',
+	no_database_hint: 'Utilisez le bouton du ruban ou la commande "créer une nouvelle base de données".',
+	loading: 'Chargement...',
+	no_results: 'Aucun élément trouvé',
+
+	// Row/item counts
+	item_singular: 'Élément',
+	item_plural: 'Éléments',
+	row_singular: 'Ligne',
+	row_plural: 'Lignes',
+	record_singular: 'Enregistrement',
+	record_plural: 'Enregistrements',
+
+	// Add row/entry
+	add_row: 'Nouvelle ligne',
+	add_entry: 'Nouvelle entrée',
+	add_card: 'Nouvelle carte',
+	new_field: 'Nouveau champ',
+	add_field: 'Ajouter un champ',
+
+	// Board
+	board_no_select_col: 'Le tableau nécessite une colonne de sélection ou de statut pour grouper les cartes.',
+	board_add_select_hint: 'Ajoutez une colonne de ce type dans la vue tableau et revenez ici.',
+	board_drag_reorder: 'Glisser pour réorganiser',
+	hide_empty_cols: 'Masquer vides',
+	hide_no_value_cols: 'Masquer sans valeur',
+
+	// Calendar
+	calendar_no_date_field: 'Sélectionnez un champ de date dans la barre d\'outils pour afficher le calendrier.',
+	calendar_no_date_section: 'Sans date',
+	calendar_click_to_create: 'Cliquez pour créer une note',
+	calendar_today: 'Aujourd\'hui',
+	calendar_prev_month: 'Mois précédent',
+	calendar_next_month: 'Mois suivant',
+
+	// Calendar days (short)
+	day_sun: 'Dim',
+	day_mon: 'Lun',
+	day_tue: 'Mar',
+	day_wed: 'Mer',
+	day_thu: 'Jeu',
+	day_fri: 'Ven',
+	day_sat: 'Sam',
+
+	// Calendar months (long)
+	month_january: 'Janvier',
+	month_february: 'Février',
+	month_march: 'Mars',
+	month_april: 'Avril',
+	month_may: 'Mai',
+	month_june: 'Juin',
+	month_july: 'Juillet',
+	month_august: 'Août',
+	month_september: 'Septembre',
+	month_october: 'Octobre',
+	month_november: 'Novembre',
+	month_december: 'Décembre',
+
+	// Timeline
+	timeline_no_start_field: 'Sélectionnez un champ de début dans la barre d\'outils pour afficher la chronologie.',
+	timeline_no_interval: 'Sans intervalle',
+	timeline_scroll_prev: 'Défiler en arrière',
+	timeline_scroll_next: 'Défiler en avant',
+	zoom_days: 'Jours',
+	zoom_weeks: 'Semaines',
+	zoom_months: 'Mois',
+
+	// Timeline months (short)
+	month_short_jan: 'Jan',
+	month_short_feb: 'Fév',
+	month_short_mar: 'Mar',
+	month_short_apr: 'Avr',
+	month_short_may: 'Mai',
+	month_short_jun: 'Jun',
+	month_short_jul: 'Jul',
+	month_short_aug: 'Aoû',
+	month_short_sep: 'Sep',
+	month_short_oct: 'Oct',
+	month_short_nov: 'Nov',
+	month_short_dec: 'Déc',
+
+	// Misc tooltips
+	tooltip_pin_column: 'Fixer les colonnes jusqu\'ici',
+	tooltip_unpin_column: 'Détacher les colonnes',
+	tooltip_resize_column: 'Glisser pour redimensionner ; double-clic pour ajuster au contenu',
+	tooltip_wrap_text: 'Retour à la ligne',
+	tooltip_manage_fields: 'Gérer les champs',
+	tooltip_batch_actions: 'Actions groupées',
+	tooltip_remove_filter: 'Supprimer le filtre',
+	tooltip_close: 'Fermer',
+	tooltip_remove: 'Supprimer',
+	tooltip_move_up: 'Monter',
+	tooltip_move_down: 'Descendre',
+	tooltip_change_color: 'Changer la couleur',
+	tooltip_delete_status: 'Supprimer le statut',
+
+	// Status defaults
+	status_not_started: 'Non commencé',
+	status_in_progress: 'En cours',
+	status_done: 'Terminé',
+	status_cancelled: 'Annulé',
+
+	// Relation cell
+	relation_search_placeholder: 'Rechercher...',
+	relation_clear: 'Effacer',
+	relation_no_results: 'Aucun résultat',
+
+	// Select cell
+	select_clear: 'Effacer',
+
+	// Status cell
+	status_new_placeholder: 'Nouveau statut...',
+
+	// Type change validation errors
+	validate_non_numeric: 'Cellule(s) contiennent des valeurs non numériques (ex : "',
+	validate_invalid_dates: 'Cellule(s) contiennent des valeurs qui ne sont pas des dates valides (ex : "',
+	validate_invalid_checkbox: 'Cellule(s) contiennent des valeurs incompatibles avec checkbox (ex : "',
+	validate_multiselect_to_select: 'Ligne(s) ont plusieurs valeurs sélectionnées. Supprimez les extras avant de passer en sélection unique.',
+	validate_invalid_email: 'Cellule(s) contiennent des valeurs qui ne sont pas des emails valides (ex : "',
+	validate_invalid_url: 'Cellule(s) contiennent des valeurs qui ne sont pas des URLs valides (ex : "',
+	validate_invalid_phone: 'Cellule(s) contiennent des valeurs qui ne sont pas des numéros de téléphone valides (ex : "',
+	validate_type_change_prefix: 'Impossible de changer le type : ',
+
+	// Cell validation
+	email_invalid: 'Email invalide',
+
+	// Filter operators
+	op_is: 'Est',
+	op_is_not: 'N\'est pas',
+	op_contains: 'Contient',
+	op_not_contains: 'Ne contient pas',
+	op_starts_with: 'Commence par',
+	op_ends_with: 'Finit par',
+	op_is_empty: 'Est vide',
+	op_is_not_empty: 'N\'est pas vide',
+	op_gt: '>',
+	op_gte: '>=',
+	op_lt: '<',
+	op_lte: '<=',
+	op_is_checked: 'Est coché',
+	op_is_unchecked: 'N\'est pas coché',
+
+	// Settings tab
+	settings_db_filename_name: 'Nom du fichier de base de données',
+	settings_db_filename_desc: 'Nom du fichier spécial qui identifie une base de données dans un dossier.',
+	settings_row_height_name: 'Hauteur de ligne par défaut',
+	settings_row_height_desc: 'Hauteur en pixels de chaque ligne du tableau.',
+
+	// Database manager
+	db_untitled_note: 'Sans titre',
+	db_copy_suffix: '(copie)',
+	db_copy_suffix_n: '(copie $n)',
+	db_already_exists: 'Une base de données existe déjà dans "$folder"',
+	db_tip_body: 'Ce fichier est une base de données. Ouvrez-le pour voir la vue tableau.',
+
+	// Formula errors
+	formula_err_unclosed_string: 'Chaîne non fermée à la position $pos',
+	formula_err_unclosed_bracket: 'Crochet non fermé à la position $pos',
+	formula_err_unexpected_bang: "Caractère inattendu '!' à la position $pos",
+	formula_err_unexpected_char: "Caractère inattendu '$char' à la position $pos",
+	formula_err_expected_token: "Attendu $expected, trouvé '$found' à la position $pos",
+	formula_err_unexpected_token: "Token inattendu '$token' à la position $pos",
+	formula_err_circular_ref: 'Référence circulaire : "$name" est une colonne formule',
+	formula_err_unknown_fn: 'Fonction inconnue : $fn()',
+	formula_err_if_args: 'Attendu if(condition, si_vrai, [si_faux])',
+	formula_err_avg_args: 'Attendu avg(colonne) — nécessite une référence de colonne',
+	formula_err_count_args: 'Attendu count(colonne) — nécessite une référence de colonne',
+	formula_err_mid_args: 'Attendu mid(texte, début, longueur)',
+	formula_err_mod_args: 'Attendu mod(nombre, diviseur)',
+	formula_err_sqrt_args: 'Attendu sqrt(nombre)',
+	formula_err_not_implemented: 'Fonction non implémentée : $fn()',
+
+	// Plugin
+	plugin_display_name: 'Notion bases',
+	no_databases_found: 'Aucune base de données trouvée. Utilisez la commande "créer une nouvelle base de données" pour en créer une.',
+
+	// Commands
+	cmd_open_database: 'Ouvrir la base de données de ce dossier',
+	cmd_create_database: 'Créer une nouvelle base de données dans le dossier actuel',
+
+	// Picker / View
+	picker_placeholder: 'Sélectionner une base de données...',
+	picker_root: '/ (Racine)',
+	view_fallback_name: 'Base de données',
+}
+
+export default fr
