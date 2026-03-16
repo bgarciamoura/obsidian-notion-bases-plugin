@@ -202,9 +202,10 @@ Open any file in any text editor and your data is right there.
 
 ## Support the project
 
-If Notion Bases makes your vault more powerful, consider buying me a coffee!
+If Notion Bases makes your vault more powerful, consider supporting the project!
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/bgarciamoura)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/bgarciamoura)
 
 ---
 
