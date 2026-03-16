@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ideas & Discussion
+    url: https://github.com/bgarciamoura/obsidian-notion-bases-plugin/discussions
+    about: Have a vague idea or want to discuss before opening a feature request? Start a Discussion.

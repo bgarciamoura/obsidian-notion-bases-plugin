@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest a new feature or improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What would you like to see?
+      description: Describe the feature or improvement you'd like.
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: How would you use this feature? What problem does it solve?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Table view
+        - Board / Kanban view
+        - Gallery view
+        - List view
+        - Calendar view
+        - Timeline view
+        - Column types
+        - Formulas
+        - Relations / Lookups
+        - Filters / Sorts
+        - Mobile / Responsiveness
+        - Performance
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you found a workaround or considered an alternative approach?
