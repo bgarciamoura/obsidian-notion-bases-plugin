@@ -14,6 +14,9 @@ import {
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
 } from './filter-utils'
 import { t } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
+import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
+import { BottomSheet } from './BottomSheet'
 
 interface DatabaseListProps {
 	dbFile: TFile | null
@@ -153,6 +156,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const sortPanelRef = useRef<HTMLDivElement>(null)
 	const sortButtonRef = useRef<HTMLButtonElement>(null)
+	const mobileActionBarRef = useRef<HTMLDivElement>(null)
 	const filtersInitialized = useRef(false)
 	const loadVersion = useRef(0)
 
@@ -218,19 +222,26 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 
 	useEffect(() => {
 		if (!filterMenuOpen) return
-		const h = (e: MouseEvent) => { if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false) }
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false)
+		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [filterMenuOpen])
 
 	useEffect(() => {
 		if (!fieldsMenuOpen) return
-		const h = (e: MouseEvent) => { if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) setFieldsMenuOpen(false) }
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) setFieldsMenuOpen(false)
+		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [fieldsMenuOpen])
 
 	useEffect(() => {
 		if (!sortPanelOpen) return
 		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (sortButtonRef.current?.contains(e.target as Node)) return
 			if (sortPanelRef.current && !sortPanelRef.current.contains(e.target as Node)) setSortPanelOpen(false)
 		}
@@ -276,19 +287,70 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 
 	// ── Render ───────────────────────────────────────────────────────────────
 
+	const isMobile = useIsMobile()
+
 	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
 	if (loading) return <div className="nb-loading">{t('loading')}</div>
 
-	return (
-		<div className="nb-container">
-			{/* Toolbar */}
+	const closeMobileMenus = (except?: string) => {
+		if (except !== 'fields') setFieldsMenuOpen(false)
+		if (except !== 'filter') setFilterMenuOpen(false)
+		if (except !== 'sort') setSortPanelOpen(false)
+	}
+
+	const toolbarContent = isMobile ? (
+		<MobileToolbar
+			actionBarRef={mobileActionBarRef}
+			actions={[
+				{ id: 'fields', label: t('fields'), icon: <IconFields />, active: fieldsMenuOpen, onClick: () => { closeMobileMenus('fields'); setFieldsMenuOpen(v => !v) } },
+				{ id: 'subfolders', label: t('tooltip_include_subfolders'), icon: <IconSubfolders />, active: !!activeView.includeSubfolders, onClick: () => { closeMobileMenus(); void saveView({ ...activeView, includeSubfolders: !activeView.includeSubfolders }) } },
+				{ id: 'sort', label: t('sort'), icon: <IconSort />, active: activeView.sorts.length > 0, badge: activeView.sorts.length || undefined, onClick: () => { closeMobileMenus('sort'); if (!sortPanelOpen && sortButtonRef.current) setSortAnchorRect(sortButtonRef.current.getBoundingClientRect()); setSortPanelOpen(v => !v) } },
+				{ id: 'filter', label: t('filter'), icon: <IconFilter />, active: filterMenuOpen, badge: activeFilters.length || undefined, onClick: () => { closeMobileMenus('filter'); setFilterMenuOpen(v => !v) } },
+			]}
+			rowCount={displayRows.length}
+			rowCountLabel={displayRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}
+			filters={activeFilters}
+			onFilterUpdate={updateFilter}
+			onFilterRemove={removeFilter}
+			onConjunctionToggle={toggleConjunction}
+		>
+			<BottomSheet open={fieldsMenuOpen} onClose={() => setFieldsMenuOpen(false)} title={t('fields')}>
+				{config.schema.map(col => (
+					<label key={col.id} className="nb-field-row">
+						<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
+						<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
+						<span className="nb-field-name">{col.name}</span>
+					</label>
+				))}
+			</BottomSheet>
+			<BottomSheet open={filterMenuOpen} onClose={() => setFilterMenuOpen(false)} title={t('filter')}>
+				<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), '📄', 'title')}>
+					<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
+				</button>
+				{config.schema.map(col => (
+					<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
+						<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
+						<span>{col.name}</span>
+					</button>
+				))}
+			</BottomSheet>
+			<BottomSheet open={sortPanelOpen} onClose={() => setSortPanelOpen(false)} title={t('sort')}>
+				<ListSortPanel
+					sorts={activeView.sorts}
+					schema={config.schema}
+					onSortChange={s => { void handleSortChange(s) }}
+					onClose={() => setSortPanelOpen(false)}
+					anchorRect={new DOMRect()}
+					panelRef={sortPanelRef}
+				/>
+			</BottomSheet>
+		</MobileToolbar>
+	) : (
+		<>
+			{/* Desktop Toolbar */}
 			<div className="nb-toolbar">
-				{/* Campos */}
 				<div className="nb-fields-menu-wrapper" ref={fieldsMenuRef}>
-					<button
-						className={`nb-toolbar-btn ${fieldsMenuOpen ? 'nb-toolbar-btn--active' : ''}`}
-						onClick={() => setFieldsMenuOpen(v => !v)}
-					>
+					<button className={`nb-toolbar-btn ${fieldsMenuOpen ? 'nb-toolbar-btn--active' : ''}`} onClick={() => setFieldsMenuOpen(v => !v)}>
 						{t('fields')}
 					</button>
 					{fieldsMenuOpen && (
@@ -296,12 +358,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 							<div className="nb-fields-dropdown-label">{t('fields_label')}</div>
 							{config.schema.map(col => (
 								<label key={col.id} className="nb-field-row">
-									<input
-										type="checkbox"
-										className="nb-field-checkbox"
-										checked={col.visible && !activeView.hiddenColumns.includes(col.id)}
-										onChange={() => { void toggleFieldVisibility(col.id) }}
-									/>
+									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
 									<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
 									<span className="nb-field-name">{col.name}</span>
 								</label>
@@ -309,8 +366,6 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 						</div>
 					)}
 				</div>
-
-				{/* Include subfolders toggle */}
 				<button
 					className={`nb-toolbar-btn nb-toolbar-btn--icon nb-subfolder-toggle ${activeView.includeSubfolders ? 'nb-toolbar-btn--active' : ''}`}
 					onClick={() => { void saveView({ ...activeView, includeSubfolders: !activeView.includeSubfolders }) }}
@@ -321,19 +376,9 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 						<line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
 					</svg>
 				</button>
-
-				{/* Row count */}
-				<span className="nb-row-count">
-					{displayRows.length} {displayRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}
-				</span>
-
-				{/* Filtros */}
+				<span className="nb-row-count">{displayRows.length} {displayRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}</span>
 				<div className="nb-fields-menu-wrapper" ref={filterMenuRef} style={{ marginLeft: 'auto' }}>
-					<button
-						className={`nb-toolbar-btn nb-toolbar-btn--icon ${filterMenuOpen ? 'nb-toolbar-btn--active' : ''}`}
-						onClick={() => setFilterMenuOpen(v => !v)}
-						title={t('filters')}
-					>
+					<button className={`nb-toolbar-btn nb-toolbar-btn--icon ${filterMenuOpen ? 'nb-toolbar-btn--active' : ''}`} onClick={() => setFilterMenuOpen(v => !v)} title={t('filters')}>
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 							<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
 						</svg>
@@ -342,7 +387,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 					{filterMenuOpen && (
 						<div className="nb-fields-dropdown nb-filter-menu-dropdown">
 							<div className="nb-fields-dropdown-label">{t('filter_by')}</div>
-							<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
+							<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), '📄', 'title')}>
 								<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
 							</button>
 							{config.schema.map(col => (
@@ -354,46 +399,28 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 						</div>
 					)}
 				</div>
-
-				{/* Ordenar */}
-				<button
-					ref={sortButtonRef}
-					className={`nb-toolbar-btn${activeView.sorts.length > 0 ? ' nb-toolbar-btn--active' : ''}`}
-					onClick={() => {
-						if (!sortPanelOpen && sortButtonRef.current) setSortAnchorRect(sortButtonRef.current.getBoundingClientRect())
-						setSortPanelOpen(v => !v)
-					}}
-				>
+				<button ref={sortButtonRef} className={`nb-toolbar-btn${activeView.sorts.length > 0 ? ' nb-toolbar-btn--active' : ''}`}
+					onClick={() => { if (!sortPanelOpen && sortButtonRef.current) setSortAnchorRect(sortButtonRef.current.getBoundingClientRect()); setSortPanelOpen(v => !v) }}>
 					<span>{t('sort')}</span>
 					{activeView.sorts.length > 0 && <span className="nb-hidden-badge">{activeView.sorts.length}</span>}
 				</button>
 				{sortPanelOpen && sortAnchorRect && (
-					<ListSortPanel
-						sorts={activeView.sorts}
-						schema={config.schema}
-						onSortChange={s => { void handleSortChange(s) }}
-						onClose={() => setSortPanelOpen(false)}
-						anchorRect={sortAnchorRect}
-						panelRef={sortPanelRef}
-					/>
+					<ListSortPanel sorts={activeView.sorts} schema={config.schema} onSortChange={s => { void handleSortChange(s) }} onClose={() => setSortPanelOpen(false)} anchorRect={sortAnchorRect} panelRef={sortPanelRef} />
 				)}
 			</div>
-
-			{/* Filter pills */}
 			{activeFilters.length > 0 && (
 				<div className="nb-filter-pills-row">
 					{activeFilters.map((f, idx) => (
-						<FilterPill
-							key={f.id}
-							filter={f}
-							showConjunction={idx > 0}
-							onUpdate={(op, val) => updateFilter(f.id, op, val)}
-							onRemove={() => removeFilter(f.id)}
-							onToggleConjunction={() => toggleConjunction(f.id)}
-						/>
+						<FilterPill key={f.id} filter={f} showConjunction={idx > 0} onUpdate={(op, val) => updateFilter(f.id, op, val)} onRemove={() => removeFilter(f.id)} onToggleConjunction={() => toggleConjunction(f.id)} />
 					))}
 				</div>
 			)}
+		</>
+	)
+
+	return (
+		<div className="nb-container">
+			{toolbarContent}
 
 			{/* List */}
 			<div className="nb-list">

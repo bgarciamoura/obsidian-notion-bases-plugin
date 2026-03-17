@@ -13,6 +13,9 @@ import {
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
 } from './filter-utils'
 import { t } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
+import { MobileToolbar, IconFields, IconFilter, IconSubfolders } from './MobileToolbar'
+import { BottomSheet } from './BottomSheet'
 
 interface DatabaseCalendarProps {
 	dbFile: TFile | null
@@ -63,6 +66,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const dateFieldMenuRef = useRef<HTMLDivElement>(null)
+	const mobileActionBarRef = useRef<HTMLDivElement>(null)
 	const filtersInitialized = useRef(false)
 	const loadVersion = useRef(0)
 
@@ -128,19 +132,28 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 
 	useEffect(() => {
 		if (!filterMenuOpen) return
-		const h = (e: MouseEvent) => { if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false) }
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false)
+		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [filterMenuOpen])
 
 	useEffect(() => {
 		if (!fieldsMenuOpen) return
-		const h = (e: MouseEvent) => { if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) setFieldsMenuOpen(false) }
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) setFieldsMenuOpen(false)
+		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [fieldsMenuOpen])
 
 	useEffect(() => {
 		if (!dateFieldMenuOpen) return
-		const h = (e: MouseEvent) => { if (dateFieldMenuRef.current && !dateFieldMenuRef.current.contains(e.target as Node)) setDateFieldMenuOpen(false) }
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (dateFieldMenuRef.current && !dateFieldMenuRef.current.contains(e.target as Node)) setDateFieldMenuOpen(false)
+		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [dateFieldMenuOpen])
 
@@ -256,14 +269,85 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 
 	// ── Render ────────────────────────────────────────────────────────────────
 
+	const isMobile = useIsMobile()
+
 	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
 	if (loading) return <div className="nb-loading">{t('loading')}</div>
 
 	const todayDay = today.getFullYear() === currentYear && today.getMonth() === currentMonth ? today.getDate() : null
 
-	return (
-		<div className="nb-container">
-			{/* Toolbar */}
+	const closeMobileMenus = (except?: string) => {
+		if (except !== 'datefield') setDateFieldMenuOpen(false)
+		if (except !== 'fields') setFieldsMenuOpen(false)
+		if (except !== 'filter') setFilterMenuOpen(false)
+	}
+
+	const toolbarContent = isMobile ? (
+		<MobileToolbar
+			actionBarRef={mobileActionBarRef}
+			actions={[
+				{ id: 'datefield', label: t('date_field'), icon: <IconFields />, active: dateFieldMenuOpen, onClick: () => { closeMobileMenus('datefield'); setDateFieldMenuOpen(v => !v) } },
+				{ id: 'fields', label: t('fields'), icon: <IconFields />, active: fieldsMenuOpen, onClick: () => { closeMobileMenus('fields'); setFieldsMenuOpen(v => !v) } },
+				{ id: 'subfolders', label: t('tooltip_include_subfolders'), icon: <IconSubfolders />, active: !!activeView.includeSubfolders, onClick: () => { closeMobileMenus(); void saveView({ ...activeView, includeSubfolders: !activeView.includeSubfolders }) } },
+				{ id: 'filter', label: t('filter'), icon: <IconFilter />, active: filterMenuOpen, badge: activeFilters.length || undefined, onClick: () => { closeMobileMenus('filter'); setFilterMenuOpen(v => !v) } },
+			]}
+			rowCount={filteredRows.length}
+			rowCountLabel={filteredRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}
+			filters={activeFilters}
+			onFilterUpdate={updateFilter}
+			onFilterRemove={removeFilter}
+			onConjunctionToggle={toggleConjunction}
+		>
+			<BottomSheet open={dateFieldMenuOpen} onClose={() => setDateFieldMenuOpen(false)} title={t('date_field')}>
+				<button
+					className={`nb-menu-item${!activeView.calendarDateField ? ' nb-menu-item--active' : ''}`}
+					onClick={() => { void saveView({ ...activeView, calendarDateField: undefined }); setDateFieldMenuOpen(false) }}
+				>
+					<span className="nb-menu-item-icon">—</span>
+					<span>{t('none_value')}</span>
+				</button>
+				{config.schema.filter(c => c.type === 'date').map(col => (
+					<button
+						key={col.id}
+						className={`nb-menu-item${activeView.calendarDateField === col.id ? ' nb-menu-item--active' : ''}`}
+						onClick={() => { void saveView({ ...activeView, calendarDateField: col.id }); setDateFieldMenuOpen(false) }}
+					>
+						<span className="nb-menu-item-icon">📅</span>
+						<span>{col.name}</span>
+					</button>
+				))}
+			</BottomSheet>
+			<BottomSheet open={fieldsMenuOpen} onClose={() => setFieldsMenuOpen(false)} title={t('fields')}>
+				{config.schema.map(col => (
+					<label key={col.id} className="nb-field-row">
+						<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
+						<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
+						<span className="nb-field-name">{col.name}</span>
+					</label>
+				))}
+			</BottomSheet>
+			<BottomSheet open={filterMenuOpen} onClose={() => setFilterMenuOpen(false)} title={t('filter')}>
+				<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
+					<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
+				</button>
+				{config.schema.map(col => (
+					<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
+						<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
+						<span>{col.name}</span>
+					</button>
+				))}
+			</BottomSheet>
+			{/* Calendar navigation */}
+			<div className="nb-cal-nav" style={{ padding: '4px 12px' }}>
+				<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToPrevMonth} title={t('calendar_prev_month')}>‹</button>
+				<button className="nb-toolbar-btn nb-cal-today-btn" onClick={goToToday}>{t('calendar_today')}</button>
+				<span className="nb-cal-month-label">{MONTHS_LONG()[currentMonth]} {currentYear}</span>
+				<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToNextMonth} title={t('calendar_next_month')}>›</button>
+			</div>
+		</MobileToolbar>
+	) : (
+		<>
+			{/* Desktop Toolbar */}
 			<div className="nb-toolbar">
 				{/* Campo de data */}
 				<div className="nb-fields-menu-wrapper" ref={dateFieldMenuRef}>
@@ -384,6 +468,12 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 					))}
 				</div>
 			)}
+		</>
+	)
+
+	return (
+		<div className="nb-container">
+			{toolbarContent}
 
 			{/* Calendar body */}
 			{!dateField ? (

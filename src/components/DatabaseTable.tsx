@@ -35,6 +35,9 @@ import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
 import { t } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
+import { MobileToolbar, IconFields, IconSort, IconFilter, IconActions, IconSubfolders } from './MobileToolbar'
+import { BottomSheet } from './BottomSheet'
 
 // ── Validação de compatibilidade de tipos ────────────────────────────────────
 
@@ -580,6 +583,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const actionsMenuRef = useRef<HTMLDivElement>(null)
 	const rowHeightMenuRef = useRef<HTMLDivElement>(null)
 	const csvInputRef = useRef<HTMLInputElement>(null)
+	const mobileActionBarRef = useRef<HTMLDivElement>(null)
 	const tableRef = useRef<HTMLTableElement>(null)
 	const lastCreatedPath = useRef<string | null>(null)
 	const [pinnedColumnId, setPinnedColumnId] = useState<string | null>(null)
@@ -1020,6 +1024,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	useEffect(() => {
 		if (!fieldsMenuOpen) return
 		const handler = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) {
 				setFieldsMenuOpen(false)
 			}
@@ -1033,6 +1038,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	useEffect(() => {
 		if (!actionsMenuOpen) return
 		const handler = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
 				setActionsMenuOpen(false)
 			}
@@ -1046,6 +1052,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	useEffect(() => {
 		if (!rowHeightMenuOpen) return
 		const handler = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (rowHeightMenuRef.current && !rowHeightMenuRef.current.contains(e.target as Node)) {
 				setRowHeightMenuOpen(false)
 			}
@@ -1203,6 +1210,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	useEffect(() => {
 		if (!filterMenuOpen) return
 		const handler = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) {
 				setFilterMenuOpen(false)
 			}
@@ -1427,6 +1435,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	// ── Render ───────────────────────────────────────────────────────────────
 
+	const isMobile = useIsMobile()
+
 	if (!dbFile) {
 		return (
 			<div className="nb-empty-state">
@@ -1442,8 +1452,79 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	const tableRows = table.getRowModel().rows
 
+	const closeMobileMenus = (except?: string) => {
+		if (except !== 'fields') setFieldsMenuOpen(false)
+		if (except !== 'actions') setActionsMenuOpen(false)
+		if (except !== 'filter') setFilterMenuOpen(false)
+		if (except !== 'sort') setSortPanelOpen(false)
+	}
+
+	const mobileToolbarEl = isMobile ? (
+		<MobileToolbar
+			actionBarRef={mobileActionBarRef}
+			search={{ value: globalFilter, onChange: setGlobalFilter }}
+			actions={[
+				{ id: 'fields', label: t('fields'), icon: <IconFields />, active: fieldsMenuOpen, badge: config.schema.filter(c => !c.visible).length || undefined, onClick: () => { closeMobileMenus('fields'); setFieldsMenuOpen(v => !v) } },
+				{ id: 'actions', label: t('actions'), icon: <IconActions />, active: actionsMenuOpen, badge: table.getSelectedRowModel().rows.length || undefined, onClick: () => { closeMobileMenus('actions'); setActionsMenuOpen(v => !v) } },
+				{ id: 'subfolders', label: t('tooltip_include_subfolders'), icon: <IconSubfolders />, active: !!activeView.includeSubfolders, onClick: () => { closeMobileMenus(); void toggleIncludeSubfolders() } },
+				{ id: 'sort', label: t('sort'), icon: <IconSort />, active: activeView.sorts.length > 0, badge: activeView.sorts.length || undefined, onClick: () => { closeMobileMenus('sort'); if (!sortPanelOpen && sortButtonRef.current) setSortAnchorRect(sortButtonRef.current.getBoundingClientRect()); setSortPanelOpen(v => !v) } },
+				{ id: 'filter', label: t('filter'), icon: <IconFilter />, active: filterMenuOpen, badge: activeFilters.length || undefined, onClick: () => { closeMobileMenus('filter'); setFilterMenuOpen(v => !v) } },
+			]}
+			rowCount={tableRows.length}
+			rowCountLabel={tableRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}
+			filters={activeFilters}
+			onFilterUpdate={updateFilter}
+			onFilterRemove={removeFilter}
+			onConjunctionToggle={toggleConjunction}
+		>
+			<BottomSheet open={fieldsMenuOpen} onClose={() => setFieldsMenuOpen(false)} title={t('fields')}>
+				{config.schema.map(col => (
+					<label key={col.id} className="nb-field-row">
+						<input type="checkbox" className="nb-field-checkbox" checked={externalView ? col.visible && !activeView.hiddenColumns.includes(col.id) : col.visible} onChange={() => { void toggleFieldVisibility(col.id) }} />
+						<span className="nb-field-icon">{getColumnIcon(col.type)}</span>
+						<span className="nb-field-name">{col.name}</span>
+					</label>
+				))}
+			</BottomSheet>
+			<BottomSheet open={actionsMenuOpen} onClose={() => setActionsMenuOpen(false)} title={t('actions')}>
+				<button className="nb-menu-item" onClick={() => { void handleDeleteSelected() }} disabled={table.getSelectedRowModel().rows.length === 0}>
+					<span className="nb-menu-item-icon">🗑</span><span>{t('delete_selected')}</span>
+				</button>
+				<button className="nb-menu-item" onClick={handleMoveSelected} disabled={table.getSelectedRowModel().rows.length === 0}>
+					<span className="nb-menu-item-icon">📁</span><span>{t('move_selected')}</span>
+				</button>
+				<button className="nb-menu-item" onClick={() => { void handleDuplicateSelected() }} disabled={table.getSelectedRowModel().rows.length === 0}>
+					<span className="nb-menu-item-icon">📋</span><span>{t('duplicate_selected')}</span>
+				</button>
+				<div className="nb-menu-separator" />
+				<button className="nb-menu-item" onClick={handleExportCsv}>
+					<span className="nb-menu-item-icon">⬇</span><span>{t('export_csv')}</span>
+				</button>
+				<button className="nb-menu-item" onClick={() => csvInputRef.current?.click()}>
+					<span className="nb-menu-item-icon">⬆</span><span>{t('import_csv')}</span>
+				</button>
+				<input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={e => { void handleImportCsv(e) }} />
+			</BottomSheet>
+			<BottomSheet open={filterMenuOpen} onClose={() => setFilterMenuOpen(false)} title={t('filter')}>
+				<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
+					<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
+				</button>
+				{config.schema.map(col => (
+					<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIcon(col.type), col.type)}>
+						<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span><span>{col.name}</span>
+					</button>
+				))}
+			</BottomSheet>
+			<BottomSheet open={sortPanelOpen} onClose={() => setSortPanelOpen(false)} title={t('sort')}>
+				<SortPanel sorts={activeView.sorts} schema={config.schema} onSortChange={s => { void handleSortChange(s) }} onClose={() => setSortPanelOpen(false)} anchorRect={sortAnchorRect ?? new DOMRect()} panelRef={sortPanelRef} />
+			</BottomSheet>
+		</MobileToolbar>
+	) : null
+
 	return (
 		<div className="nb-container">
+			{mobileToolbarEl || (
+			<>
 			{/* Toolbar */}
 			<div className="nb-toolbar">
 				<div className={`nb-search-container${shouldCollapse ? (searchExpanded ? ' nb-search-container--expanded' : ' nb-search-container--collapsed') : ''}`}>
@@ -1778,7 +1859,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 							type={filter.columnType === 'number' ? 'number' : filter.columnType === 'date' ? 'date' : 'text'}
 							placeholder={filter.columnType === 'number' ? t('filter_number_placeholder') : filter.columnType === 'date' ? '' : t('filter_value_placeholder')}
 							value={filter.value}
-							autoFocus
+							autoFocus={!isMobile}
 							onChange={e => updateFilter(filter.id, filter.operator, e.target.value)}
 						/>
 					)}
@@ -1786,6 +1867,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				document.body
 			)
 		})()}
+		</>)}
 
 		{/* Tabela */}
 			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema, relationOptions, updateSchema }}>

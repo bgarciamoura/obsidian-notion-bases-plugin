@@ -13,6 +13,9 @@ import {
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
 } from './filter-utils'
 import { t } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
+import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
+import { BottomSheet } from './BottomSheet'
 
 interface DatabaseBoardProps {
 	dbFile: TFile | null
@@ -44,6 +47,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const groupByMenuRef = useRef<HTMLDivElement>(null)
 	const filterMenuRef = useRef<HTMLDivElement>(null)
+	const mobileActionBarRef = useRef<HTMLDivElement>(null)
 	const filtersInitialized = useRef(false)
 	const loadVersion = useRef(0)
 
@@ -109,19 +113,28 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 
 	useEffect(() => {
 		if (!fieldsMenuOpen) return
-		const h = (e: MouseEvent) => { if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) setFieldsMenuOpen(false) }
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) setFieldsMenuOpen(false)
+		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [fieldsMenuOpen])
 
 	useEffect(() => {
 		if (!groupByMenuOpen) return
-		const h = (e: MouseEvent) => { if (groupByMenuRef.current && !groupByMenuRef.current.contains(e.target as Node)) setGroupByMenuOpen(false) }
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (groupByMenuRef.current && !groupByMenuRef.current.contains(e.target as Node)) setGroupByMenuOpen(false)
+		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [groupByMenuOpen])
 
 	useEffect(() => {
 		if (!filterMenuOpen) return
-		const h = (e: MouseEvent) => { if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false) }
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false)
+		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [filterMenuOpen])
 
@@ -244,6 +257,8 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 
 	// ── Render ─────────────────────────────────────────────────────────────────
 
+	const isMobile = useIsMobile()
+
 	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
 	if (loading) return <div className="nb-loading">{t('loading')}</div>
 
@@ -256,9 +271,72 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		)
 	}
 
-	return (
-		<div className="nb-container">
-			{/* Toolbar */}
+	const closeMobileMenus = (except?: string) => {
+		if (except !== 'fields') setFieldsMenuOpen(false)
+		if (except !== 'groupby') setGroupByMenuOpen(false)
+		if (except !== 'filter') setFilterMenuOpen(false)
+	}
+
+	const toolbarContent = isMobile ? (
+		<MobileToolbar
+			actionBarRef={mobileActionBarRef}
+			actions={[
+				{ id: 'fields', label: t('fields'), icon: <IconFields />, active: fieldsMenuOpen, onClick: () => { closeMobileMenus('fields'); setFieldsMenuOpen(v => !v) } },
+				{ id: 'groupby', label: t('group_by'), icon: <IconSort />, active: groupByMenuOpen, onClick: () => { closeMobileMenus('groupby'); setGroupByMenuOpen(v => !v) } },
+				{ id: 'subfolders', label: t('tooltip_include_subfolders'), icon: <IconSubfolders />, active: !!activeView.includeSubfolders, onClick: () => { closeMobileMenus(); void saveView({ ...activeView, includeSubfolders: !activeView.includeSubfolders }) } },
+				{ id: 'filter', label: t('filter'), icon: <IconFilter />, active: filterMenuOpen, badge: activeFilters.length || undefined, onClick: () => { closeMobileMenus('filter'); setFilterMenuOpen(v => !v) } },
+			]}
+			rowCount={filteredRows.length}
+			rowCountLabel={filteredRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}
+			filters={activeFilters}
+			onFilterUpdate={updateFilter}
+			onFilterRemove={removeFilter}
+			onConjunctionToggle={toggleConjunction}
+		>
+			<BottomSheet open={fieldsMenuOpen} onClose={() => setFieldsMenuOpen(false)} title={t('fields_in_card')}>
+				{config.schema.filter(c => c.id !== groupByCol?.id && c.type !== 'title').map(col => (
+					<label key={col.id} className="nb-field-row">
+						<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
+						<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
+						<span className="nb-field-name">{col.name}</span>
+					</label>
+				))}
+			</BottomSheet>
+			<BottomSheet open={groupByMenuOpen} onClose={() => setGroupByMenuOpen(false)} title={t('group_by')}>
+				{groupableColumns.map(col => (
+					<button
+						key={col.id}
+						className={`nb-menu-item${activeView.groupByColumnId === col.id ? ' nb-menu-item--active' : ''}`}
+						onClick={() => { void saveView({ ...activeView, groupByColumnId: col.id }); setGroupByMenuOpen(false) }}
+					>
+						<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
+						<span>{col.name}</span>
+					</button>
+				))}
+			</BottomSheet>
+			<BottomSheet open={filterMenuOpen} onClose={() => setFilterMenuOpen(false)} title={t('filter')}>
+				<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), '📄', 'title')}>
+					<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
+				</button>
+				{config.schema.map(col => (
+					<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
+						<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
+						<span>{col.name}</span>
+					</button>
+				))}
+			</BottomSheet>
+			<label className="nb-toolbar-btn nb-toolbar-toggle">
+				<input type="checkbox" checked={hideEmpty} onChange={e => setHideEmpty(e.target.checked)} />
+				{t('hide_empty_cols')}
+			</label>
+			<label className="nb-toolbar-btn nb-toolbar-toggle">
+				<input type="checkbox" checked={hideNoValue} onChange={e => setHideNoValue(e.target.checked)} />
+				{t('hide_no_value_cols')}
+			</label>
+		</MobileToolbar>
+	) : (
+		<>
+			{/* Desktop Toolbar */}
 			<div className="nb-toolbar">
 				{/* Campos */}
 				<div className="nb-fields-menu-wrapper" ref={fieldsMenuRef}>
@@ -378,6 +456,12 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 					))}
 				</div>
 			)}
+		</>
+	)
+
+	return (
+		<div className="nb-container">
+			{toolbarContent}
 
 			{/* Board */}
 			<div className="nb-board">

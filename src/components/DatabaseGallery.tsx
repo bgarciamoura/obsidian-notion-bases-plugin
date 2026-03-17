@@ -14,6 +14,9 @@ import {
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
 } from './filter-utils'
 import { t } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
+import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
+import { BottomSheet } from './BottomSheet'
 
 interface DatabaseGalleryProps {
 	dbFile: TFile | null
@@ -117,6 +120,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 	const sizeMenuRef = useRef<HTMLDivElement>(null)
 	const sortPanelRef = useRef<HTMLDivElement>(null)
 	const sortButtonRef = useRef<HTMLButtonElement>(null)
+	const mobileActionBarRef = useRef<HTMLDivElement>(null)
 	const filtersInitialized = useRef(false)
 	const loadVersion = useRef(0)
 
@@ -182,31 +186,44 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 
 	useEffect(() => {
 		if (!filterMenuOpen) return
-		const h = (e: MouseEvent) => { if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false) }
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false)
+		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [filterMenuOpen])
 
 	useEffect(() => {
 		if (!fieldsMenuOpen) return
-		const h = (e: MouseEvent) => { if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) setFieldsMenuOpen(false) }
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) setFieldsMenuOpen(false)
+		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [fieldsMenuOpen])
 
 	useEffect(() => {
 		if (!coverMenuOpen) return
-		const h = (e: MouseEvent) => { if (coverMenuRef.current && !coverMenuRef.current.contains(e.target as Node)) setCoverMenuOpen(false) }
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (coverMenuRef.current && !coverMenuRef.current.contains(e.target as Node)) setCoverMenuOpen(false)
+		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [coverMenuOpen])
 
 	useEffect(() => {
 		if (!sizeMenuOpen) return
-		const h = (e: MouseEvent) => { if (sizeMenuRef.current && !sizeMenuRef.current.contains(e.target as Node)) setSizeMenuOpen(false) }
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (sizeMenuRef.current && !sizeMenuRef.current.contains(e.target as Node)) setSizeMenuOpen(false)
+		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [sizeMenuOpen])
 
 	useEffect(() => {
 		if (!sortPanelOpen) return
 		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (sortButtonRef.current?.contains(e.target as Node)) return
 			if (sortPanelRef.current && !sortPanelRef.current.contains(e.target as Node)) setSortPanelOpen(false)
 		}
@@ -261,12 +278,88 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 
 	// ── Render ───────────────────────────────────────────────────────────────
 
+	const isMobile = useIsMobile()
+
 	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
 	if (loading) return <div className="nb-loading">{t('loading')}</div>
 
-	return (
-		<div className="nb-container">
-			{/* Toolbar */}
+	const closeMobileMenus = (except?: string) => {
+		if (except !== 'fields') setFieldsMenuOpen(false)
+		if (except !== 'cover') setCoverMenuOpen(false)
+		if (except !== 'filter') setFilterMenuOpen(false)
+		if (except !== 'sort') setSortPanelOpen(false)
+	}
+
+	const toolbarContent = isMobile ? (
+		<MobileToolbar
+			actionBarRef={mobileActionBarRef}
+			actions={[
+				{ id: 'fields', label: t('fields'), icon: <IconFields />, active: fieldsMenuOpen, onClick: () => { closeMobileMenus('fields'); setFieldsMenuOpen(v => !v) } },
+				{ id: 'cover', label: t('cover'), icon: <IconFields />, active: coverMenuOpen, onClick: () => { closeMobileMenus('cover'); setCoverMenuOpen(v => !v) } },
+				{ id: 'subfolders', label: t('tooltip_include_subfolders'), icon: <IconSubfolders />, active: !!activeView.includeSubfolders, onClick: () => { closeMobileMenus(); void saveView({ ...activeView, includeSubfolders: !activeView.includeSubfolders }) } },
+				{ id: 'sort', label: t('sort'), icon: <IconSort />, active: activeView.sorts.length > 0, badge: activeView.sorts.length || undefined, onClick: () => { closeMobileMenus('sort'); if (!sortPanelOpen && sortButtonRef.current) setSortAnchorRect(sortButtonRef.current.getBoundingClientRect()); setSortPanelOpen(v => !v) } },
+				{ id: 'filter', label: t('filter'), icon: <IconFilter />, active: filterMenuOpen, badge: activeFilters.length || undefined, onClick: () => { closeMobileMenus('filter'); setFilterMenuOpen(v => !v) } },
+			]}
+			rowCount={displayRows.length}
+			rowCountLabel={displayRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}
+			filters={activeFilters}
+			onFilterUpdate={updateFilter}
+			onFilterRemove={removeFilter}
+			onConjunctionToggle={toggleConjunction}
+		>
+			<BottomSheet open={fieldsMenuOpen} onClose={() => setFieldsMenuOpen(false)} title={t('fields')}>
+				{config.schema.map(col => (
+					<label key={col.id} className="nb-field-row">
+						<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
+						<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
+						<span className="nb-field-name">{col.name}</span>
+					</label>
+				))}
+			</BottomSheet>
+			<BottomSheet open={coverMenuOpen} onClose={() => setCoverMenuOpen(false)} title={t('cover')}>
+				<button
+					className={`nb-menu-item${!activeView.galleryCoverField ? ' nb-menu-item--active' : ''}`}
+					onClick={() => { void saveView({ ...activeView, galleryCoverField: undefined }); setCoverMenuOpen(false) }}
+				>
+					<span className="nb-menu-item-icon">—</span>
+					<span>{t('no_cover')}</span>
+				</button>
+				{config.schema.filter(c => c.type === 'text' || c.type === 'title' || c.type === 'image').map(col => (
+					<button
+						key={col.id}
+						className={`nb-menu-item${activeView.galleryCoverField === col.id ? ' nb-menu-item--active' : ''}`}
+						onClick={() => { void saveView({ ...activeView, galleryCoverField: col.id }); setCoverMenuOpen(false) }}
+					>
+						<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
+						<span>{col.name}</span>
+					</button>
+				))}
+			</BottomSheet>
+			<BottomSheet open={filterMenuOpen} onClose={() => setFilterMenuOpen(false)} title={t('filter')}>
+				<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
+					<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
+				</button>
+				{config.schema.map(col => (
+					<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
+						<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
+						<span>{col.name}</span>
+					</button>
+				))}
+			</BottomSheet>
+			<BottomSheet open={sortPanelOpen} onClose={() => setSortPanelOpen(false)} title={t('sort')}>
+				<GallerySortPanel
+					sorts={activeView.sorts}
+					schema={config.schema}
+					onSortChange={s => { void handleSortChange(s) }}
+					onClose={() => setSortPanelOpen(false)}
+					anchorRect={new DOMRect()}
+					panelRef={sortPanelRef}
+				/>
+			</BottomSheet>
+		</MobileToolbar>
+	) : (
+		<>
+			{/* Desktop Toolbar */}
 			<div className="nb-toolbar">
 				{/* Campos */}
 				<div className="nb-fields-menu-wrapper" ref={fieldsMenuRef}>
@@ -427,6 +520,12 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 					))}
 				</div>
 			)}
+		</>
+	)
+
+	return (
+		<div className="nb-container">
+			{toolbarContent}
 
 			{/* Gallery grid */}
 			<div className="nb-gallery" style={{ gridTemplateColumns: gridTemplate }}>

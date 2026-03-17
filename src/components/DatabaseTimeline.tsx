@@ -13,6 +13,9 @@ import {
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
 } from './filter-utils'
 import { t } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
+import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
+import { BottomSheet } from './BottomSheet'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -163,6 +166,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 	const endMenuRef    = useRef<HTMLDivElement>(null)
 	const groupMenuRef  = useRef<HTMLDivElement>(null)
 	const scrollRef     = useRef<HTMLDivElement>(null)
+	const mobileActionBarRef = useRef<HTMLDivElement>(null)
 	const filtersInit   = useRef(false)
 	const loadVersion = useRef(0)
 	const justResized   = useRef(false)
@@ -223,7 +227,10 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 	const mkCloseEffect = (open: boolean, ref: React.RefObject<HTMLDivElement>, setter: (v: boolean) => void) =>
 		useEffect(() => {
 			if (!open) return
-			const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setter(false) }
+			const h = (e: MouseEvent) => {
+				if (mobileActionBarRef.current?.contains(e.target as Node)) return
+				if (ref.current && !ref.current.contains(e.target as Node)) setter(false)
+			}
 			document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 		}, [open])
 
@@ -377,6 +384,8 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 
 	// ── Render ────────────────────────────────────────────────────────────────
 
+	const isMobile = useIsMobile()
+
 	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
 	if (loading)  return <div className="nb-loading">{t('loading')}</div>
 
@@ -412,9 +421,107 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 		)
 	}
 
-	return (
-		<div className="nb-container">
-			{/* Toolbar */}
+	const closeMobileMenus = (except?: string) => {
+		if (except !== 'start') setStartMenuOpen(false)
+		if (except !== 'end') setEndMenuOpen(false)
+		if (except !== 'group') setGroupMenuOpen(false)
+		if (except !== 'fields') setFieldsMenuOpen(false)
+		if (except !== 'filter') setFilterMenuOpen(false)
+	}
+
+	const toolbarContent = isMobile ? (
+		<MobileToolbar
+			actionBarRef={mobileActionBarRef}
+			actions={[
+				{ id: 'start', label: t('start_field'), icon: <IconFields />, active: startMenuOpen, onClick: () => { closeMobileMenus('start'); setStartMenuOpen(v => !v) } },
+				{ id: 'end', label: t('end_field'), icon: <IconFields />, active: endMenuOpen, onClick: () => { closeMobileMenus('end'); setEndMenuOpen(v => !v) } },
+				{ id: 'group', label: t('group_field'), icon: <IconSort />, active: groupMenuOpen, onClick: () => { closeMobileMenus('group'); setGroupMenuOpen(v => !v) } },
+				{ id: 'fields', label: t('fields'), icon: <IconFields />, active: fieldsMenuOpen, onClick: () => { closeMobileMenus('fields'); setFieldsMenuOpen(v => !v) } },
+				{ id: 'subfolders', label: t('tooltip_include_subfolders'), icon: <IconSubfolders />, active: !!activeView.includeSubfolders, onClick: () => { closeMobileMenus(); void saveView({ ...activeView, includeSubfolders: !activeView.includeSubfolders }) } },
+				{ id: 'filter', label: t('filter'), icon: <IconFilter />, active: filterMenuOpen, badge: activeFilters.length || undefined, onClick: () => { closeMobileMenus('filter'); setFilterMenuOpen(v => !v) } },
+			]}
+			rowCount={filteredRows.length}
+			rowCountLabel={filteredRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}
+			filters={activeFilters}
+			onFilterUpdate={updateFilter}
+			onFilterRemove={removeFilter}
+			onConjunctionToggle={toggleConj}
+		>
+			<BottomSheet open={startMenuOpen} onClose={() => setStartMenuOpen(false)} title={t('start_field')}>
+				<button className={`nb-menu-item${!activeView.timelineStartField ? ' nb-menu-item--active' : ''}`}
+					onClick={() => { void saveView({ ...activeView, timelineStartField: undefined }); setStartMenuOpen(false) }}>
+					<span className="nb-menu-item-icon">—</span><span>{t('none_value')}</span>
+				</button>
+				{config.schema.filter(c => c.type === 'date').map(col => (
+					<button key={col.id} className={`nb-menu-item${activeView.timelineStartField === col.id ? ' nb-menu-item--active' : ''}`}
+						onClick={() => { void saveView({ ...activeView, timelineStartField: col.id }); setStartMenuOpen(false) }}>
+						<span className="nb-menu-item-icon">📅</span><span>{col.name}</span>
+					</button>
+				))}
+			</BottomSheet>
+			<BottomSheet open={endMenuOpen} onClose={() => setEndMenuOpen(false)} title={t('end_field')}>
+				<button className={`nb-menu-item${!activeView.timelineEndField ? ' nb-menu-item--active' : ''}`}
+					onClick={() => { void saveView({ ...activeView, timelineEndField: undefined }); setEndMenuOpen(false) }}>
+					<span className="nb-menu-item-icon">—</span><span>{t('none_value')}</span>
+				</button>
+				{config.schema.filter(c => c.type === 'date').map(col => (
+					<button key={col.id} className={`nb-menu-item${activeView.timelineEndField === col.id ? ' nb-menu-item--active' : ''}`}
+						onClick={() => { void saveView({ ...activeView, timelineEndField: col.id }); setEndMenuOpen(false) }}>
+						<span className="nb-menu-item-icon">📅</span><span>{col.name}</span>
+					</button>
+				))}
+			</BottomSheet>
+			<BottomSheet open={groupMenuOpen} onClose={() => setGroupMenuOpen(false)} title={t('group_field')}>
+				<button className={`nb-menu-item${!activeView.timelineGroupByField ? ' nb-menu-item--active' : ''}`}
+					onClick={() => { void saveView({ ...activeView, timelineGroupByField: undefined }); setGroupMenuOpen(false) }}>
+					<span className="nb-menu-item-icon">—</span><span>{t('none_value')}</span>
+				</button>
+				{config.schema.filter(c => c.type === 'select' || c.type === 'status').map(col => (
+					<button key={col.id} className={`nb-menu-item${activeView.timelineGroupByField === col.id ? ' nb-menu-item--active' : ''}`}
+						onClick={() => { void saveView({ ...activeView, timelineGroupByField: col.id }); setGroupMenuOpen(false) }}>
+						<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span><span>{col.name}</span>
+					</button>
+				))}
+			</BottomSheet>
+			<BottomSheet open={fieldsMenuOpen} onClose={() => setFieldsMenuOpen(false)} title={t('fields')}>
+				{config.schema.map(col => (
+					<label key={col.id} className="nb-field-row">
+						<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
+						<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
+						<span className="nb-field-name">{col.name}</span>
+					</label>
+				))}
+			</BottomSheet>
+			<BottomSheet open={filterMenuOpen} onClose={() => setFilterMenuOpen(false)} title={t('filter')}>
+				<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
+					<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
+				</button>
+				{config.schema.map(col => (
+					<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
+						<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span><span>{col.name}</span>
+					</button>
+				))}
+			</BottomSheet>
+			{/* Navigation + Zoom */}
+			<div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 12px' }}>
+				<div className="nb-cal-nav">
+					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={handlePrev} title={t('timeline_scroll_prev')}>‹</button>
+					<button className="nb-toolbar-btn nb-cal-today-btn" onClick={handleToday}>{t('calendar_today')}</button>
+					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={handleNext} title={t('timeline_scroll_next')}>›</button>
+				</div>
+				<div className="nb-tl-zoom-group">
+					{(['days', 'weeks', 'months'] as const).map(z => (
+						<button key={z} className={`nb-tl-zoom-btn${zoom === z ? ' nb-tl-zoom-btn--active' : ''}`}
+							onClick={() => { void saveView({ ...activeView, timelineZoom: z }) }}>
+							{ZOOM_LBL()[z]}
+						</button>
+					))}
+				</div>
+			</div>
+		</MobileToolbar>
+	) : (
+		<>
+			{/* Desktop Toolbar */}
 			<div className="nb-toolbar">
 				<DateFieldDropdown label={t('start_field')} valueKey="timelineStartField" open={startMenuOpen} setOpen={setStartMenuOpen} menuRef={startMenuRef} />
 				<DateFieldDropdown label={t('end_field')}    valueKey="timelineEndField"   open={endMenuOpen}   setOpen={setEndMenuOpen}   menuRef={endMenuRef} />
@@ -537,6 +644,12 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 					))}
 				</div>
 			)}
+		</>
+	)
+
+	return (
+		<div className="nb-container">
+			{toolbarContent}
 
 			{/* Timeline body */}
 			{!startField ? (
