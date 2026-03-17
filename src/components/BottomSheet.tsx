@@ -28,7 +28,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
 		return () => clearTimeout(timer)
 	}, [open])
 
-	// Close on Escape
+	// Close on Escape key
 	useEffect(() => {
 		if (!open) return
 		const handler = (e: KeyboardEvent) => {
@@ -38,7 +38,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
 		return () => document.removeEventListener('keydown', handler)
 	}, [open, onClose])
 
-	// Adapt to keyboard via visualViewport
+	// Adapt to keyboard via visualViewport (works on some platforms)
 	useEffect(() => {
 		if (!open || !window.visualViewport) return
 		const onResize = () => {

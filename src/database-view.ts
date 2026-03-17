@@ -17,7 +17,6 @@ export class DatabaseView extends ItemView {
 	private root: Root | null = null
 	private dbFilePath = ''
 	private plugin: NotionBasesPlugin
-
 	constructor(leaf: WorkspaceLeaf, plugin: NotionBasesPlugin) {
 		super(leaf)
 		this.plugin = plugin
@@ -85,6 +84,10 @@ export class DatabaseView extends ItemView {
 
 		container.empty()
 		container.addClass('notion-bases-view-container')
+
+		// No keyboard detection needed — search input is now inside a BottomSheet
+		// (rendered via portal to document.body), which avoids Obsidian's behavior
+		// of hiding view content when an input inside view-content gains focus.
 
 		const dbFile = this.dbFilePath
 			? this.app.vault.getFileByPath(this.dbFilePath) ?? null

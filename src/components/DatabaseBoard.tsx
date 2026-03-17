@@ -325,14 +325,16 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 					</button>
 				))}
 			</BottomSheet>
-			<label className="nb-toolbar-btn nb-toolbar-toggle">
-				<input type="checkbox" checked={hideEmpty} onChange={e => setHideEmpty(e.target.checked)} />
-				{t('hide_empty_cols')}
-			</label>
-			<label className="nb-toolbar-btn nb-toolbar-toggle">
-				<input type="checkbox" checked={hideNoValue} onChange={e => setHideNoValue(e.target.checked)} />
-				{t('hide_no_value_cols')}
-			</label>
+			<div className="nb-mobile-toggles-row">
+				<label className="nb-mobile-toggle">
+					<input type="checkbox" checked={hideEmpty} onChange={e => setHideEmpty(e.target.checked)} />
+					<span>{t('hide_empty_cols')}</span>
+				</label>
+				<label className="nb-mobile-toggle">
+					<input type="checkbox" checked={hideNoValue} onChange={e => setHideNoValue(e.target.checked)} />
+					<span>{t('hide_no_value_cols')}</span>
+				</label>
+			</div>
 		</MobileToolbar>
 	) : (
 		<>

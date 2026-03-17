@@ -335,14 +335,49 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 				))}
 			</BottomSheet>
 			<BottomSheet open={sortPanelOpen} onClose={() => setSortPanelOpen(false)} title={t('sort')}>
-				<ListSortPanel
-					sorts={activeView.sorts}
-					schema={config.schema}
-					onSortChange={s => { void handleSortChange(s) }}
-					onClose={() => setSortPanelOpen(false)}
-					anchorRect={new DOMRect()}
-					panelRef={sortPanelRef}
-				/>
+				{activeView.sorts.length === 0 && (
+					<div className="nb-sort-panel-empty" style={{ padding: '8px 0' }}>{t('no_active_sorts')}</div>
+				)}
+				{activeView.sorts.map((sort, idx) => {
+					const name = sort.columnId === '_title'
+						? 'Nome'
+						: (config.schema.find(c => c.id === sort.columnId)?.name ?? sort.columnId)
+					return (
+						<div key={sort.columnId} className="nb-sort-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', minHeight: '44px' }}>
+							<div className="nb-sort-row-priority" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+								<button className="nb-sort-priority-btn" onClick={() => { const next = [...activeView.sorts]; if (idx > 0) { [next[idx], next[idx-1]] = [next[idx-1], next[idx]]; void handleSortChange(next) } }} disabled={idx === 0}>↑</button>
+								<button className="nb-sort-priority-btn" onClick={() => { const next = [...activeView.sorts]; if (idx < next.length - 1) { [next[idx], next[idx+1]] = [next[idx+1], next[idx]]; void handleSortChange(next) } }} disabled={idx === activeView.sorts.length - 1}>↓</button>
+							</div>
+							<span style={{ flex: 1 }}>{name}</span>
+							<button className="nb-sort-dir-btn" onClick={() => { void handleSortChange(activeView.sorts.map(s => s.columnId === sort.columnId ? { ...s, direction: s.direction === 'asc' ? 'desc' : 'asc' } : s)) }}>
+								{sort.direction === 'asc' ? t('sort_asc') : t('sort_desc')}
+							</button>
+							<button className="nb-sort-remove-btn" onClick={() => { void handleSortChange(activeView.sorts.filter(s => s.columnId !== sort.columnId)) }}>×</button>
+						</div>
+					)
+				})}
+				{(() => {
+					const sortableSchema = config.schema.filter(c => c.type !== 'formula' && c.type !== 'lookup' && c.type !== 'relation' && c.type !== 'multiselect')
+					const usedIds = new Set(activeView.sorts.map(s => s.columnId))
+					const available = [
+						...(!usedIds.has('_title') ? [{ id: '_title', name: 'Nome' }] : []),
+						...sortableSchema.filter(c => !usedIds.has(c.id)).map(c => ({ id: c.id, name: c.name })),
+					]
+					if (available.length === 0) return null
+					return (
+						<select
+							className="nb-mobile-filter-overlay-select"
+							style={{ width: '100%', marginTop: '8px', padding: '10px' }}
+							value=""
+							onChange={e => { if (e.target.value) { void handleSortChange([...activeView.sorts, { columnId: e.target.value, direction: 'asc' }]); e.target.value = '' } }}
+						>
+							<option value="">{'+ ' + t('add_sort') + '...'}</option>
+							{available.map(c => (
+								<option key={c.id} value={c.id}>{c.name}</option>
+							))}
+						</select>
+					)
+				})()}
 			</BottomSheet>
 		</MobileToolbar>
 	) : (

@@ -857,13 +857,17 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			enableColumnFilter: false,
 			header: () => null,
 			cell: ({ row }) => (
-				<div className="nb-cell-checkbox-wrapper">
-					<input
-						type="checkbox"
-						className="nb-cell-checkbox"
-						checked={row.getIsSelected()}
-						onChange={row.getToggleSelectedHandler()}
-					/>
+				<div
+					className="nb-cell-checkbox-wrapper"
+					onClick={row.getToggleSelectedHandler()}
+				>
+					<div className={`nb-cell-checkbox-custom${row.getIsSelected() ? ' nb-cell-checkbox-custom--checked' : ''}`}>
+						{row.getIsSelected() && (
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="nb-cell-check-icon">
+								<polyline points="20 6 9 17 4 12"/>
+							</svg>
+						)}
+					</div>
 				</div>
 			),
 		})
@@ -1516,7 +1520,49 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				))}
 			</BottomSheet>
 			<BottomSheet open={sortPanelOpen} onClose={() => setSortPanelOpen(false)} title={t('sort')}>
-				<SortPanel sorts={activeView.sorts} schema={config.schema} onSortChange={s => { void handleSortChange(s) }} onClose={() => setSortPanelOpen(false)} anchorRect={sortAnchorRect ?? new DOMRect()} panelRef={sortPanelRef} />
+				{activeView.sorts.length === 0 && (
+					<div className="nb-sort-panel-empty" style={{ padding: '8px 0' }}>{t('no_active_sorts')}</div>
+				)}
+				{activeView.sorts.map((sort, idx) => {
+					const name = sort.columnId === '_title'
+						? 'Nome'
+						: (config.schema.find(c => c.id === sort.columnId)?.name ?? sort.columnId)
+					return (
+						<div key={sort.columnId} className="nb-sort-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', minHeight: '44px' }}>
+							<div className="nb-sort-row-priority" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+								<button className="nb-sort-priority-btn" onClick={() => { const next = [...activeView.sorts]; if (idx > 0) { [next[idx], next[idx-1]] = [next[idx-1], next[idx]]; void handleSortChange(next) } }} disabled={idx === 0}>↑</button>
+								<button className="nb-sort-priority-btn" onClick={() => { const next = [...activeView.sorts]; if (idx < next.length - 1) { [next[idx], next[idx+1]] = [next[idx+1], next[idx]]; void handleSortChange(next) } }} disabled={idx === activeView.sorts.length - 1}>↓</button>
+							</div>
+							<span style={{ flex: 1 }}>{name}</span>
+							<button className="nb-sort-dir-btn" onClick={() => { void handleSortChange(activeView.sorts.map(s => s.columnId === sort.columnId ? { ...s, direction: s.direction === 'asc' ? 'desc' : 'asc' } : s)) }}>
+								{sort.direction === 'asc' ? t('sort_asc') : t('sort_desc')}
+							</button>
+							<button className="nb-sort-remove-btn" onClick={() => { void handleSortChange(activeView.sorts.filter(s => s.columnId !== sort.columnId)) }}>×</button>
+						</div>
+					)
+				})}
+				{(() => {
+					const sortableSchema = config.schema.filter(c => c.type !== 'formula' && c.type !== 'lookup' && c.type !== 'relation' && c.type !== 'multiselect')
+					const usedIds = new Set(activeView.sorts.map(s => s.columnId))
+					const available = [
+						...(!usedIds.has('_title') ? [{ id: '_title', name: 'Nome' }] : []),
+						...sortableSchema.filter(c => !usedIds.has(c.id)).map(c => ({ id: c.id, name: c.name })),
+					]
+					if (available.length === 0) return null
+					return (
+						<select
+							className="nb-mobile-filter-overlay-select"
+							style={{ width: '100%', marginTop: '8px', padding: '10px' }}
+							value=""
+							onChange={e => { if (e.target.value) { void handleSortChange([...activeView.sorts, { columnId: e.target.value, direction: 'asc' }]); e.target.value = '' } }}
+						>
+							<option value="">{'+ ' + t('add_sort') + '...'}</option>
+							{available.map(c => (
+								<option key={c.id} value={c.id}>{c.name}</option>
+							))}
+						</select>
+					)
+				})()}
 			</BottomSheet>
 		</MobileToolbar>
 	) : null
@@ -1900,14 +1946,20 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 															className="nb-th nb-th-select nb-th--sticky"
 															style={{ width: header.getSize(), left: 0, zIndex: 3 }}
 														>
-															<div className="nb-cell-checkbox-wrapper">
-																<input
-																	type="checkbox"
-																	className="nb-cell-checkbox"
-																	checked={table.getIsAllRowsSelected()}
-																	ref={el => { if (el) el.indeterminate = table.getIsSomeRowsSelected() }}
-																	onChange={table.getToggleAllRowsSelectedHandler()}
-																/>
+															<div
+																className="nb-cell-checkbox-wrapper"
+																onClick={table.getToggleAllRowsSelectedHandler()}
+															>
+																<div className={`nb-cell-checkbox-custom${table.getIsAllRowsSelected() ? ' nb-cell-checkbox-custom--checked' : ''}${table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() ? ' nb-cell-checkbox-custom--indeterminate' : ''}`}>
+																	{(table.getIsAllRowsSelected() || table.getIsSomeRowsSelected()) && (
+																		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="nb-cell-check-icon">
+																			{table.getIsAllRowsSelected()
+																				? <polyline points="20 6 9 17 4 12"/>
+																				: <line x1="6" y1="12" x2="18" y2="12"/>
+																			}
+																		</svg>
+																	)}
+																</div>
 															</div>
 														</th>
 													)

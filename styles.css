@@ -39,7 +39,8 @@
 .nb-container {
 	display: flex;
 	flex-direction: column;
-	height: 100%;
+	flex: 1;
+	min-height: 0;
 	overflow: hidden;
 }
 
@@ -1459,8 +1460,8 @@
 	align-items: center;
 	justify-content: center;
 	width: 100%;
-	height: 100%;
-	padding: 0 10px;
+	min-height: var(--nb-row-height, 36px);
+	padding: 0;
 	box-sizing: border-box;
 }
 
@@ -1469,6 +1470,35 @@
 	height: 16px;
 	cursor: pointer;
 	accent-color: var(--interactive-accent);
+}
+
+.nb-cell-checkbox-custom {
+	width: 16px;
+	height: 16px;
+	border: 2px solid var(--text-faint);
+	border-radius: 3px;
+	background: transparent;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	transition: background 0.15s, border-color 0.15s;
+}
+
+.nb-cell-checkbox-custom--checked {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+}
+
+.nb-cell-checkbox-custom--indeterminate {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+}
+
+.nb-cell-check-icon {
+	width: 12px;
+	height: 12px;
 }
 
 /* ── Select / Multiselect ────────────────────────────────────────────────── */
@@ -3337,9 +3367,16 @@ body.nb-tl-resizing * {
 	padding: 6px 8px;
 }
 
-.is-mobile .nb-cell-checkbox {
+.is-mobile .nb-cell-checkbox-custom {
 	width: 20px;
 	height: 20px;
+	border: 2px solid var(--text-muted);
+	border-radius: 4px;
+}
+
+.is-mobile .nb-cell-check-icon {
+	width: 16px;
+	height: 16px;
 }
 
 .is-mobile .nb-field-checkbox {
@@ -3553,6 +3590,128 @@ body.nb-tl-resizing * {
 	border-color: var(--background-modifier-border) !important;
 }
 
+/* ── Mobile toggles row (board hide empty / hide no-value) ───────────────── */
+
+.nb-mobile-toggles-row {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 6px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.nb-mobile-toggle {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.nb-mobile-toggle input[type="checkbox"] {
+	margin: 0;
+	width: 16px;
+	height: 16px;
+}
+
+.nb-mobile-search-fake {
+	cursor: text;
+	color: var(--text-faint);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	line-height: normal;
+	display: flex;
+	align-items: center;
+}
+
+.nb-mobile-search-fake--has-value {
+	color: var(--text-normal);
+}
+
+/* ── Mobile search overlay (portal to body, fixed at top) ────────────────── */
+
+.nb-mobile-search-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 300;
+	background: rgba(0, 0, 0, 0.4);
+}
+
+.nb-mobile-search-overlay-bar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 301;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	padding-top: calc(env(safe-area-inset-top, 0px) + var(--header-height, 48px));
+	background: var(--background-primary);
+	border-bottom: 1px solid var(--background-modifier-border);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.nb-mobile-search-overlay-icon {
+	flex-shrink: 0;
+	color: var(--text-faint);
+}
+
+.nb-mobile-search-overlay-input {
+	flex: 1;
+	background: transparent !important;
+	border: none !important;
+	outline: none !important;
+	color: var(--text-normal) !important;
+	font-size: 16px !important;
+	padding: 8px 4px !important;
+	height: auto !important;
+	box-shadow: none !important;
+}
+
+/* ── Filter overlay bar variant ───────────────────────────────────────────── */
+
+.nb-mobile-filter-overlay-bar {
+	flex-wrap: wrap;
+}
+
+.nb-mobile-filter-overlay-title {
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--text-normal);
+	margin-right: auto;
+}
+
+.nb-mobile-filter-overlay-select {
+	flex: 0 0 auto;
+	padding: 6px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	outline: none;
+}
+
+.nb-mobile-search-overlay-close {
+	flex-shrink: 0;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	background: var(--background-secondary);
+	border-radius: 50%;
+	color: var(--text-muted);
+	font-size: 18px;
+	cursor: pointer;
+}
+
 .nb-mobile-action-bar {
 	display: flex;
 	align-items: center;
@@ -3736,18 +3895,41 @@ body.nb-tl-resizing * {
 }
 
 .nb-bottomsheet-content {
-	padding: 8px 12px 16px;
+	padding: 8px 16px 16px;
+	display: flex;
+	flex-direction: column;
 }
 
 .nb-bottomsheet-content .nb-menu-item {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
 	min-height: 44px;
-	padding: 8px 12px;
+	padding: 10px 16px;
+	border: none;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: transparent;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	gap: 10px;
+	cursor: pointer;
+	text-align: left;
+	width: 100%;
+}
+
+.nb-bottomsheet-content .nb-menu-item:last-child {
+	border-bottom: none;
+}
+
+.nb-bottomsheet-content .nb-menu-item:active {
+	background: var(--background-modifier-hover);
 }
 
 .nb-bottomsheet-content .nb-field-row {
 	min-height: 44px;
 	padding: 6px 8px;
 }
+
 
 /* ── Mobile pill dropdown ────────────────────────────────────────────────── */
 

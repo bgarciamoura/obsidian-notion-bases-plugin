@@ -1,5 +1,5 @@
 import { Fragment, ReactNode, RefObject, useRef, useState } from 'react'
-import { BottomSheet } from './BottomSheet'
+import { createPortal } from 'react-dom'
 import { FilterOperator } from '../types'
 import {
 	ActiveFilter, OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
@@ -79,24 +79,52 @@ export function MobileToolbar({
 }: MobileToolbarProps) {
 	const internalRef = useRef<HTMLDivElement>(null)
 	const actionBarRef = externalRef ?? internalRef
+	const [searchOpen, setSearchOpen] = useState(false)
+	const searchInputRef = useRef<HTMLInputElement>(null)
+
 	return (
 		<div className="nb-mobile-toolbar">
-			{/* Search strip */}
+			{/* Search strip — tapping opens a BottomSheet so the keyboard does not hide the view content */}
 			{search && (
 				<div className="nb-mobile-search-strip">
-					<div className="nb-mobile-search-wrapper">
+					<div className="nb-mobile-search-wrapper" onClick={() => setSearchOpen(true)}>
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nb-mobile-search-icon">
 							<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
 						</svg>
+						<div className={`nb-mobile-search-input nb-mobile-search-fake${search.value ? " nb-mobile-search-fake--has-value" : ""}`}
+							role="button"
+							tabIndex={-1}
+						>
+							{search.value || t('filter_value_placeholder').replace('...', '') + '...'}
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Search overlay — rendered via portal to document.body, positioned at top */
+			/* so the keyboard (at bottom) does not cover the input */}
+			{search && searchOpen && createPortal(
+				<div className="nb-mobile-search-overlay" onMouseDown={() => setSearchOpen(false)}>
+					<div className="nb-mobile-search-overlay-bar" onMouseDown={e => e.stopPropagation()}>
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nb-mobile-search-overlay-icon">
+							<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+						</svg>
 						<input
-							className="nb-mobile-search-input"
+							ref={searchInputRef}
+							className="nb-mobile-search-overlay-input"
 							type="text"
 							placeholder={t('filter_value_placeholder').replace('...', '') + '...'}
 							value={search.value}
 							onChange={e => search.onChange(e.target.value)}
+							onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); setSearchOpen(false) } }}
+							autoFocus
 						/>
+						<button className="nb-mobile-search-overlay-close" onClick={() => setSearchOpen(false)}>
+							×
+						</button>
 					</div>
-				</div>
+				</div>,
+				document.body
 			)}
 
 			{/* Action bar */}
@@ -175,34 +203,39 @@ function MobilePillsStrip({ filters, rowCount, rowCountLabel, onFilterUpdate, on
 				<span className="nb-mobile-row-count">{rowCount} {rowCountLabel}</span>
 			</div>
 
-			{/* Expanded pill bottom sheet */}
+			{/* Expanded pill — top overlay (portal to body) so keyboard does not cover it */}
 			{(() => {
 				const f = expandedPill ? filters.find(fi => fi.id === expandedPill) : null
-				return (
-					<BottomSheet open={!!f} onClose={() => setExpandedPill(null)} title={f?.columnName}>
-						{f && (
-							<div className="nb-mobile-pill-dropdown-body">
-								<select
-									className="nb-mobile-pill-dropdown-select"
-									value={f.operator}
-									onChange={e => onFilterUpdate(f.id, e.target.value as FilterOperator, f.value)}
-								>
-									{getOperatorsForType(f.columnType).map(op => (
-										<option key={op} value={op}>{OPERATOR_LABELS[op]}</option>
-									))}
-								</select>
-								{!NO_VALUE_OPERATORS.has(f.operator) && (
-									<input
-										className="nb-mobile-pill-dropdown-input"
-										type="text"
-										value={f.value}
-										placeholder={t('filter_value_placeholder')}
-										onChange={e => onFilterUpdate(f.id, f.operator, e.target.value)}
-									/>
-								)}
-							</div>
-						)}
-					</BottomSheet>
+				if (!f) return null
+				return createPortal(
+					<div className="nb-mobile-search-overlay" onMouseDown={() => setExpandedPill(null)}>
+						<div className="nb-mobile-search-overlay-bar nb-mobile-filter-overlay-bar" onMouseDown={e => e.stopPropagation()}>
+							<span className="nb-mobile-filter-overlay-title">{f.columnName}</span>
+							<select
+								className="nb-mobile-filter-overlay-select"
+								value={f.operator}
+								onChange={e => onFilterUpdate(f.id, e.target.value as FilterOperator, f.value)}
+							>
+								{getOperatorsForType(f.columnType).map(op => (
+									<option key={op} value={op}>{OPERATOR_LABELS[op]}</option>
+								))}
+							</select>
+							{!NO_VALUE_OPERATORS.has(f.operator) && (
+								<input
+									className="nb-mobile-search-overlay-input"
+									type="text"
+									value={f.value}
+									placeholder={t('filter_value_placeholder')}
+									onChange={e => onFilterUpdate(f.id, f.operator, e.target.value)}
+									autoFocus
+								/>
+							)}
+							<button className="nb-mobile-search-overlay-close" onClick={() => setExpandedPill(null)}>
+								×
+							</button>
+						</div>
+					</div>,
+					document.body
 				)
 			})()}
 		</>
