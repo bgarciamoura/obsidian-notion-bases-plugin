@@ -4,7 +4,7 @@ import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import {
 	DatabaseConfig, DEFAULT_DATABASE_CONFIG,
-	FilterOperator, NoteRow, ViewConfig,
+	FilterOperator, NoteRow, SelectOption, ViewConfig,
 } from '../types'
 import { evaluateFormulas } from '../formula-engine'
 import {
@@ -165,9 +165,18 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		[config.schema, activeView.hiddenColumns, groupByCol]
 	)
 
+	const DEFAULT_STATUS_OPTIONS: SelectOption[] = [
+		{ value: t('status_not_started'), color: '#9E9E9E' },
+		{ value: t('status_in_progress'), color: '#2196F3' },
+		{ value: t('status_done'), color: '#4CAF50' },
+		{ value: t('status_cancelled'), color: '#F44336' },
+	]
+
 	const columns = useMemo(() => {
 		if (!groupByCol) return []
-		const options = groupByCol.options ?? []
+		const options = (groupByCol.type === 'status' && !groupByCol.options?.length)
+			? DEFAULT_STATUS_OPTIONS
+			: (groupByCol.options ?? [])
 		const all = [
 			...options.map(opt => ({
 				value: opt.value,
