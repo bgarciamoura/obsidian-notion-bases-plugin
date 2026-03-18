@@ -21,12 +21,5 @@ data.json
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
 
-# Claude Code
-CLAUDE.md
-.claude/
-
 # Hot Reload plugin
 .hotreload
-
-# Local task tracking
-TODO.md
