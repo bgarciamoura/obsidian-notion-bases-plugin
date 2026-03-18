@@ -196,6 +196,10 @@ const en = {
 	board_no_select_col: 'The board requires a select or status column to group cards.',
 	board_add_select_hint: 'Add a column of that type in the table view and come back here.',
 	board_drag_reorder: 'Drag to reorder',
+	board_set_limit: 'Click to set card limit',
+	board_limit_placeholder: 'Limit (0 = none)',
+	board_show_more: 'more',
+	board_show_less: 'Show less',
 	hide_empty_cols: 'Hide empty',
 	hide_no_value_cols: 'Hide no-value',
 

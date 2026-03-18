@@ -198,6 +198,10 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	board_no_select_col: 'El tablero requiere una columna de selección o estado para agrupar tarjetas.',
 	board_add_select_hint: 'Añade una columna de ese tipo en la vista de tabla y vuelve aquí.',
 	board_drag_reorder: 'Arrastra para reordenar',
+	board_set_limit: 'Clic para definir limite de tarjetas',
+	board_limit_placeholder: 'Limite (0 = ninguno)',
+	board_show_more: 'mas',
+	board_show_less: 'Mostrar menos',
 	hide_empty_cols: 'Ocultar vacías',
 	hide_no_value_cols: 'Ocultar sin valor',
 

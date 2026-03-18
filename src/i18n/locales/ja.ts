@@ -198,6 +198,10 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	board_no_select_col: 'ボードにはカードをグループ化するための選択またはステータス列が必要です。',
 	board_add_select_hint: 'テーブルビューでそのタイプの列を追加してから、ここに戻ってください。',
 	board_drag_reorder: 'ドラッグして並べ替え',
+	board_set_limit: 'クリックしてカード制限を設定',
+	board_limit_placeholder: '制限 (0 = なし)',
+	board_show_more: '件以上',
+	board_show_less: '折りたたむ',
 	hide_empty_cols: '空を非表示',
 	hide_no_value_cols: '値なしを非表示',
 

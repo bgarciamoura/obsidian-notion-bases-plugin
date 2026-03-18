@@ -36,6 +36,8 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	const [activeView, setActiveView] = useState<ViewConfig>(externalView)
 	const [hideEmpty, setHideEmpty] = useState(false)
 	const [hideNoValue, setHideNoValue] = useState(false)
+	const [editingLimit, setEditingLimit] = useState<string | null>(null)
+	const [expandedColumns, setExpandedColumns] = useState<Set<string>>(new Set())
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const [groupByMenuOpen, setGroupByMenuOpen] = useState(false)
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
@@ -483,7 +485,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 					return (
 						<div
 							key={key}
-							className={`nb-board-column${isCardOver ? ' nb-board-column--card-over' : ''}${isColOver ? ' nb-board-column--col-over' : ''}`}
+							className={`nb-board-column${isCardOver ? ' nb-board-column--card-over' : ''}${isColOver ? ' nb-board-column--col-over' : ''}${(() => { const lim = activeView.boardColumnLimits?.[col.value]; return lim && lim > 0 && col.rows.length >= lim ? ' nb-board-column--over-limit' : '' })()}`}
 							onDragOver={e => {
 								e.preventDefault()
 								const type = e.dataTransfer.types.includes(DRAG_TYPE_CARD) ? DRAG_TYPE_CARD : DRAG_TYPE_COLUMN
@@ -532,50 +534,122 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 								) : (
 									<span className="nb-board-column-name">{col.label}</span>
 								)}
-								<span className="nb-board-column-count">{col.rows.length}</span>
+								{(() => {
+									const limit = activeView.boardColumnLimits?.[col.value]
+									const count = col.rows.length
+									const overLimit = limit !== undefined && limit > 0 && count >= limit
+									return (
+										<span
+											className={`nb-board-column-count ${overLimit ? 'nb-board-column-count--over' : ''}`}
+											onClick={e => {
+												e.stopPropagation()
+												setEditingLimit(editingLimit === col.value ? null : col.value)
+											}}
+											title={t('board_set_limit')}
+										>
+											{limit && limit > 0 ? `${count}/${limit}` : count}
+										</span>
+									)
+								})()}
 							</div>
+							{editingLimit === col.value && (
+								<div className="nb-board-limit-input-wrapper">
+									<input
+										className="nb-board-limit-input"
+										type="number"
+										min="0"
+										placeholder={t('board_limit_placeholder')}
+										defaultValue={activeView.boardColumnLimits?.[col.value] ?? ''}
+										autoFocus
+										onKeyDown={e => {
+											if (e.key === 'Enter' || e.key === 'Escape') {
+												const val = parseInt((e.target as HTMLInputElement).value)
+												const limits = { ...activeView.boardColumnLimits }
+												if (isNaN(val) || val <= 0) delete limits[col.value]
+												else limits[col.value] = val
+												void saveView({ ...activeView, boardColumnLimits: limits })
+												setEditingLimit(null)
+											}
+										}}
+										onBlur={e => {
+											const val = parseInt(e.target.value)
+											const limits = { ...activeView.boardColumnLimits }
+											if (isNaN(val) || val <= 0) delete limits[col.value]
+											else limits[col.value] = val
+											void saveView({ ...activeView, boardColumnLimits: limits })
+											setEditingLimit(null)
+										}}
+									/>
+								</div>
+							)}
 
 							{/* Cards */}
 							<div className="nb-board-cards">
-								{col.rows.map(row => (
-									<div
-										key={row._file.path}
-										className="nb-board-card"
-										draggable
-										onDragStart={e => {
-											e.stopPropagation()
-											e.dataTransfer.effectAllowed = 'move'
-											e.dataTransfer.setData('nb-drag-type', DRAG_TYPE_CARD)
-											e.dataTransfer.setData('nb-row-path', row._file.path)
-											e.dataTransfer.setData(DRAG_TYPE_CARD, '')
-										}}
-										onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
-									>
-										<div className="nb-board-card-title">{row._title}</div>
-									{(() => {
-										const dbFolder = dbFile?.parent?.path ?? ''
-										const fileFolder = row._file.parent?.path ?? ''
-										const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
-											? fileFolder.slice(dbFolder.length + 1) : ''
-										return relPath ? <div className="nb-folder-path">{relPath}</div> : null
-									})()}
-										{visibleCols.length > 0 && (
-											<div className="nb-board-card-props">
-												{visibleCols.map(c => {
-													const val = row[c.id]
-													if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
-													const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
-													return (
-														<span key={c.id} className="nb-board-card-prop">
-															<span className="nb-board-card-prop-name">{c.name}:</span>
-															<span className="nb-board-card-prop-value">{display}</span>
-														</span>
-													)
-												})}
+								{(() => {
+									const limit = activeView.boardColumnLimits?.[col.value]
+									const isExpanded = expandedColumns.has(col.value)
+									const visibleRows = (limit && limit > 0 && !isExpanded)
+										? col.rows.slice(0, limit)
+										: col.rows
+									const hiddenCount = col.rows.length - visibleRows.length
+									return <>
+										{visibleRows.map(row => (
+											<div
+												key={row._file.path}
+												className="nb-board-card"
+												draggable
+												onDragStart={e => {
+													e.stopPropagation()
+													e.dataTransfer.effectAllowed = 'move'
+													e.dataTransfer.setData('nb-drag-type', DRAG_TYPE_CARD)
+													e.dataTransfer.setData('nb-row-path', row._file.path)
+													e.dataTransfer.setData(DRAG_TYPE_CARD, '')
+												}}
+												onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
+											>
+												<div className="nb-board-card-title">{row._title}</div>
+												{(() => {
+													const dbFolder = dbFile?.parent?.path ?? ''
+													const fileFolder = row._file.parent?.path ?? ''
+													const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
+														? fileFolder.slice(dbFolder.length + 1) : ''
+													return relPath ? <div className="nb-folder-path">{relPath}</div> : null
+												})()}
+												{visibleCols.length > 0 && (
+													<div className="nb-board-card-props">
+														{visibleCols.map(c => {
+															const val = row[c.id]
+															if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
+															const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+															return (
+																<span key={c.id} className="nb-board-card-prop">
+																	<span className="nb-board-card-prop-name">{c.name}:</span>
+																	<span className="nb-board-card-prop-value">{display}</span>
+																</span>
+															)
+														})}
+													</div>
+												)}
 											</div>
+										))}
+										{hiddenCount > 0 && (
+											<button
+												className="nb-board-show-more"
+												onClick={() => setExpandedColumns(prev => { const next = new Set(prev); next.add(col.value); return next })}
+											>
+												{`+${hiddenCount} ${t('board_show_more')}`}
+											</button>
 										)}
-									</div>
-								))}
+										{isExpanded && limit && limit > 0 && col.rows.length > limit && (
+											<button
+												className="nb-board-show-more"
+												onClick={() => setExpandedColumns(prev => { const next = new Set(prev); next.delete(col.value); return next })}
+											>
+												{t('board_show_less')}
+											</button>
+										)}
+									</>
+								})()}
 							</div>
 
 							{/* Add card */}

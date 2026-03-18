@@ -198,6 +198,10 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	board_no_select_col: '看板需要一个单选或状态列来分组卡片。',
 	board_add_select_hint: '在表格视图中添加该类型的列，然后回到这里。',
 	board_drag_reorder: '拖动以重新排序',
+	board_set_limit: '点击设置卡片限制',
+	board_limit_placeholder: '限制 (0 = 无)',
+	board_show_more: '更多',
+	board_show_less: '收起',
 	hide_empty_cols: '隐藏空列',
 	hide_no_value_cols: '隐藏无值列',
 

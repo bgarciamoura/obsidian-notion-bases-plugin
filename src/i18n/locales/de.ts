@@ -198,6 +198,10 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	board_no_select_col: 'Das Board benötigt eine Auswahl- oder Statusspalte zum Gruppieren der Karten.',
 	board_add_select_hint: 'Fügen Sie eine Spalte dieses Typs in der Tabellenansicht hinzu und kehren Sie hierher zurück.',
 	board_drag_reorder: 'Ziehen zum Neuordnen',
+	board_set_limit: 'Klicken um Kartenlimit zu setzen',
+	board_limit_placeholder: 'Limit (0 = kein)',
+	board_show_more: 'mehr',
+	board_show_less: 'Weniger anzeigen',
 	hide_empty_cols: 'Leere ausblenden',
 	hide_no_value_cols: 'Ohne Wert ausblenden',
 

@@ -95,6 +95,7 @@ export interface ViewConfig {
 	wrapText?: boolean
 	groupByColumnId?: string
 	boardColumnOrder?: string[]
+	boardColumnLimits?: Record<string, number>
 	galleryCoverField?: string
 	galleryCardSize?: 'small' | 'medium' | 'large'
 	calendarDateField?: string

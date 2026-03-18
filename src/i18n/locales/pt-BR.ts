@@ -198,6 +198,10 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	board_no_select_col: 'O board precisa de uma coluna do tipo select ou status para agrupar os cards.',
 	board_add_select_hint: 'Adicione uma coluna desse tipo na view de tabela e volte aqui.',
 	board_drag_reorder: 'Arraste para reordenar',
+	board_set_limit: 'Clique para definir limite de cards',
+	board_limit_placeholder: 'Limite (0 = nenhum)',
+	board_show_more: 'mais',
+	board_show_less: 'Mostrar menos',
 	hide_empty_cols: 'Ocultar vazias',
 	hide_no_value_cols: 'Ocultar sem valor',
 

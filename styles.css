@@ -2541,6 +2541,61 @@
 	background: var(--background-modifier-border);
 	border-radius: 10px;
 	padding: 1px 7px;
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s;
+}
+
+.nb-board-column-count:hover {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.nb-board-column-count--over {
+	background: #F44336;
+	color: #fff;
+	font-weight: 600;
+}
+
+.nb-board-column--over-limit {
+	border-color: #F44336 !important;
+}
+
+.nb-board-limit-input-wrapper {
+	padding: 4px 8px 0;
+}
+
+.nb-board-limit-input {
+	width: 100%;
+	padding: 4px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller);
+	text-align: center;
+}
+
+.nb-board-limit-input:focus {
+	border-color: var(--interactive-accent);
+	outline: none;
+}
+
+.nb-board-show-more {
+	width: 100%;
+	padding: 6px;
+	margin-top: 2px;
+	background: transparent;
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s;
+}
+
+.nb-board-show-more:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
 }
 
 .nb-board-cards {
