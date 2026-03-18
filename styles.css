@@ -2201,6 +2201,18 @@
 	box-sizing: border-box;
 }
 
+.nb-relation-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px;
+}
+
+.nb-relation-check {
+	margin-right: 4px;
+	color: var(--interactive-accent);
+	font-size: var(--font-ui-smaller);
+}
+
 .nb-relation-empty {
 	padding: 8px;
 	font-size: var(--font-ui-smaller);

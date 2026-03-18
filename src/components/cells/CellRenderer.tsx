@@ -215,17 +215,20 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 				/>
 			)
 
-		case 'relation':
+		case 'relation': {
+			const rawRel = value
+			const relArray: string[] = Array.isArray(rawRel) ? rawRel : (rawRel ? [String(rawRel)] : [])
 			return (
 				<RelationCell
-					value={value as string | null}
+					value={relArray}
 					options={relationOptions.get(columnId) ?? []}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCommit={v => { void updateCell(rowIndex, columnId, v.length > 0 ? v : null); setEditingCell(null) }}
 					onCancel={() => setEditingCell(null)}
 				/>
 			)
+		}
 
 		case 'url':
 			return (
@@ -1224,11 +1227,11 @@ function LookupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 // ── RelationCell ─────────────────────────────────────────────────────────────
 
 function RelationCell({ value, options, isEditing, onStartEdit, onCommit, onCancel }: {
-	value: string | null
+	value: string[]
 	options: string[]
 	isEditing: boolean
 	onStartEdit: () => void
-	onCommit: (v: string | null) => void
+	onCommit: (v: string[]) => void
 	onCancel: () => void
 }) {
 	const wrapperRef = useRef<HTMLDivElement>(null)
@@ -1236,27 +1239,35 @@ function RelationCell({ value, options, isEditing, onStartEdit, onCommit, onCanc
 	const [search, setSearch] = useState('')
 	const inputRef = useRef<HTMLInputElement>(null)
 	const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null)
+	const [selected, setSelected] = useState<string[]>(value)
+
+	useEffect(() => { setSelected(value) }, [value])
 
 	useEffect(() => {
 		if (!isEditing) return
 		const handler = (e: MouseEvent) => {
 			const inWrapper = wrapperRef.current?.contains(e.target as Node)
 			const inDropdown = dropdownRef.current?.contains(e.target as Node)
-			if (!inWrapper && !inDropdown) onCancel()
+			if (!inWrapper && !inDropdown) { onCommit(selected); }
 		}
 		document.addEventListener('mousedown', handler)
 		return () => document.removeEventListener('mousedown', handler)
-	}, [isEditing, onCancel])
+	}, [isEditing, onCommit, selected])
 
 	useEffect(() => {
 		if (!isEditing) return
 		setSearch('')
+		setSelected(value)
 		if (wrapperRef.current) {
 			const rect = wrapperRef.current.getBoundingClientRect()
 			setDropPos({ top: rect.bottom, left: rect.left, width: rect.width })
 		}
 		setTimeout(() => inputRef.current?.focus(), 0)
 	}, [isEditing])
+
+	const toggle = (opt: string) => {
+		setSelected(prev => prev.includes(opt) ? prev.filter(v => v !== opt) : [...prev, opt])
+	}
 
 	const filtered = options.filter(o => o.toLowerCase().includes(search.toLowerCase()))
 
@@ -1272,15 +1283,18 @@ function RelationCell({ value, options, isEditing, onStartEdit, onCommit, onCanc
 				placeholder={t('relation_search_placeholder')}
 				value={search}
 				onChange={e => setSearch(e.target.value)}
-				onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
+				onKeyDown={e => { if (e.key === 'Escape') { onCommit(selected) } }}
 			/>
-			<button className="nb-select-option nb-select-clear" onClick={() => onCommit(null)}>{t('relation_clear')}</button>
+			{selected.length > 0 && (
+				<button className="nb-select-option nb-select-clear" onClick={() => setSelected([])}>{t('relation_clear')}</button>
+			)}
 			{filtered.map(opt => (
 				<button
 					key={opt}
-					className={`nb-select-option ${value === opt ? 'nb-select-option--active' : ''}`}
-					onClick={() => onCommit(opt)}
+					className={`nb-select-option ${selected.includes(opt) ? 'nb-select-option--active' : ''}`}
+					onClick={() => toggle(opt)}
 				>
+					{selected.includes(opt) && <span className="nb-relation-check">✓</span>}
 					<span className="nb-relation-badge">{opt}</span>
 				</button>
 			))}
@@ -1292,8 +1306,8 @@ function RelationCell({ value, options, isEditing, onStartEdit, onCommit, onCanc
 	return (
 		<div className="nb-cell-select-wrapper" ref={wrapperRef}>
 			<div className="nb-cell-clickable" onClick={onStartEdit}>
-				{value
-					? <span className="nb-relation-badge">{value}</span>
+				{value.length > 0
+					? <span className="nb-relation-badges">{value.map(v => <span key={v} className="nb-relation-badge">{v}</span>)}</span>
 					: <span className="nb-cell-empty">—</span>
 				}
 			</div>
