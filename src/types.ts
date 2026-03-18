@@ -43,6 +43,7 @@ export interface ColumnSchema {
 	refDatabasePath?: string  // lookup
 	refColumnId?: string      // lookup
 	refMatchColumnId?: string // lookup
+	pairedColumnId?: string   // two-way relation: column id in the target database
 	numberFormat?: NumberFormat
 	imageSourceFolder?: string
 }

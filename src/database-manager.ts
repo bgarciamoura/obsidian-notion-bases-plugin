@@ -117,6 +117,52 @@ export class DatabaseManager {
 		})
 	}
 
+	async syncTwoWayRelation(
+		sourceFile: TFile,
+		col: ColumnSchema,
+		oldValues: string[],
+		newValues: string[],
+	): Promise<void> {
+		if (!col.pairedColumnId || !col.refDatabasePath) return
+
+		const refDbFile = this.app.vault.getFileByPath(col.refDatabasePath)
+		if (!refDbFile) return
+
+		const refNotes = this.getNotesInDatabase(refDbFile)
+		const sourceTitle = sourceFile.basename
+
+		const added = newValues.filter(v => !oldValues.includes(v))
+		const removed = oldValues.filter(v => !newValues.includes(v))
+
+		for (const note of refNotes) {
+			const noteTitle = col.refColumnId === '_title' ? note.basename : undefined
+			const cache = this.app.metadataCache.getFileCache(note)
+			const fm = cache?.frontmatter ?? {}
+			const noteVal = col.refColumnId === '_title' ? note.basename : String(fm[col.refColumnId!] ?? '')
+
+			if (added.includes(noteVal)) {
+				await this.app.fileManager.processFrontMatter(note, (fm2: Record<string, unknown>) => {
+					const current = Array.isArray(fm2[col.pairedColumnId!]) ? fm2[col.pairedColumnId!] as string[] : (fm2[col.pairedColumnId!] ? [String(fm2[col.pairedColumnId!])] : [])
+					if (!current.includes(sourceTitle)) {
+						fm2[col.pairedColumnId!] = [...current, sourceTitle]
+					}
+				})
+			}
+
+			if (removed.includes(noteVal)) {
+				await this.app.fileManager.processFrontMatter(note, (fm2: Record<string, unknown>) => {
+					const current = Array.isArray(fm2[col.pairedColumnId!]) ? fm2[col.pairedColumnId!] as string[] : (fm2[col.pairedColumnId!] ? [String(fm2[col.pairedColumnId!])] : [])
+					const updated = current.filter(v => v !== sourceTitle)
+					if (updated.length > 0) {
+						fm2[col.pairedColumnId!] = updated
+					} else {
+						delete fm2[col.pairedColumnId!]
+					}
+				})
+			}
+		}
+	}
+
 	async renameNote(file: TFile, newBasename: string): Promise<void> {
 		if (!newBasename.trim() || newBasename === file.basename) return
 		const newPath = normalizePath(

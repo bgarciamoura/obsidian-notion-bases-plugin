@@ -290,6 +290,8 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	relation_search_placeholder: '検索...',
 	relation_clear: 'クリア',
 	relation_no_results: '結果なし',
+	relation_two_way: '双方向リレーション',
+	relation_two_way_hint: '対象データベースに逆方向のリレーションを自動的に作成します',
 
 	// Select cell
 	select_clear: 'クリア',

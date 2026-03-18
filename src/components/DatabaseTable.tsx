@@ -766,8 +766,17 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			await manager.renameNote(row._file, String(value))
 		} else {
 			await manager.updateNoteField(row._file, columnId, value)
+
+			// Two-way relation sync
+			const col = config.schema.find(c => c.id === columnId)
+			if (col?.type === 'relation' && col.pairedColumnId) {
+				const oldRaw = row[columnId]
+				const oldValues: string[] = Array.isArray(oldRaw) ? oldRaw as string[] : (oldRaw ? [String(oldRaw)] : [])
+				const newValues: string[] = Array.isArray(value) ? value as string[] : (value ? [String(value)] : [])
+				await manager.syncTwoWayRelation(row._file, col, oldValues, newValues)
+			}
 		}
-	}, [rows, manager])
+	}, [rows, manager, config.schema])
 
 	// ── Atualizar schema (salva no _database.md) ─────────────────────────────
 

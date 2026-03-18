@@ -290,6 +290,8 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	relation_search_placeholder: 'Buscar...',
 	relation_clear: 'Limpiar',
 	relation_no_results: 'Sin resultados',
+	relation_two_way: 'Relación bidireccional',
+	relation_two_way_hint: 'Crea automáticamente una relación inversa en la base de datos de destino',
 
 	// Select cell
 	select_clear: 'Limpiar',

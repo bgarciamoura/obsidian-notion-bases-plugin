@@ -288,6 +288,8 @@ const en = {
 	relation_search_placeholder: 'Search...',
 	relation_clear: 'Clear',
 	relation_no_results: 'No results',
+	relation_two_way: 'Two-way relation',
+	relation_two_way_hint: 'Automatically creates a reverse relation in the target database',
 
 	// Select cell
 	select_clear: 'Clear',

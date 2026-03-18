@@ -74,6 +74,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const [lookupDbPath, setLookupDbPath] = useState(col.refDatabasePath ?? '')
 	const [lookupRefColId, setLookupRefColId] = useState(col.refColumnId ?? '')
 	const [lookupMatchColId, setLookupMatchColId] = useState(col.refMatchColumnId ?? '')
+	const [twoWay, setTwoWay] = useState(!!col.pairedColumnId)
 	const [availableDbs, setAvailableDbs] = useState<Array<{ path: string; name: string }>>([])
 	const [refDbSchema, setRefDbSchema] = useState<ColumnSchema[]>([])
 	const lookupPanelRef = useRef<HTMLDivElement>(null)
@@ -368,10 +369,44 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	}
 
 	const handleSaveLookup = async () => {
+		let pairedColumnId: string | undefined = col.pairedColumnId
+
+		if (col.type === 'relation' && twoWay && lookupDbPath && !col.pairedColumnId) {
+			// Create paired column in target database
+			const refDbFile = app.vault.getFileByPath(lookupDbPath)
+			if (refDbFile) {
+				const refConfig = manager.readConfig(refDbFile)
+				const reverseColId = `rel_${col.id}_${Date.now()}`
+				const sourceName = dbFile?.parent?.name || app.vault.getName()
+				const reverseCol: ColumnSchema = {
+					id: reverseColId,
+					name: sourceName,
+					type: 'relation',
+					visible: true,
+					refDatabasePath: dbFile?.path.replace(/\/[^/]+$/, '/_database.md') ?? '',
+					refColumnId: '_title',
+					pairedColumnId: col.id,
+				}
+				refConfig.schema.push(reverseCol)
+				await manager.writeConfig(refDbFile, refConfig)
+				pairedColumnId = reverseColId
+			}
+		} else if (col.type === 'relation' && !twoWay && col.pairedColumnId) {
+			// Remove paired column from target database
+			const refDbFile = app.vault.getFileByPath(lookupDbPath || col.refDatabasePath || '')
+			if (refDbFile) {
+				const refConfig = manager.readConfig(refDbFile)
+				refConfig.schema = refConfig.schema.filter(c => c.id !== col.pairedColumnId)
+				await manager.writeConfig(refDbFile, refConfig)
+			}
+			pairedColumnId = undefined
+		}
+
 		await updateCol({
 			refDatabasePath: lookupDbPath,
 			refColumnId: lookupRefColId,
 			...(col.type === 'lookup' ? { refMatchColumnId: lookupMatchColId } : {}),
+			...(col.type === 'relation' ? { pairedColumnId } : {}),
 		})
 		setEditingLookup(false)
 		setMenuOpen(false)
@@ -678,6 +713,15 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 							{schema.filter(c => c.id !== col.id && c.type !== 'formula' && c.type !== 'lookup').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 						</select>
 						<p className="nb-lookup-hint">{t('lookup_hint')}</p>
+					</div>
+				)}
+				{col.type === 'relation' && lookupDbPath && (
+					<div className="nb-lookup-section">
+						<label className="nb-lookup-checkbox">
+							<input type="checkbox" checked={twoWay} onChange={e => setTwoWay(e.target.checked)} />
+							{t('relation_two_way')}
+						</label>
+						<p className="nb-lookup-hint">{t('relation_two_way_hint')}</p>
 					</div>
 				)}
 				<div className="nb-formula-actions">

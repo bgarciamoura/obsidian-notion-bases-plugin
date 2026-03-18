@@ -290,6 +290,8 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	relation_search_placeholder: '搜索...',
 	relation_clear: '清除',
 	relation_no_results: '无结果',
+	relation_two_way: '双向关联',
+	relation_two_way_hint: '自动在目标数据库中创建反向关联',
 
 	// Select cell
 	select_clear: '清除',

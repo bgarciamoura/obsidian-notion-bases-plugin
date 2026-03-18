@@ -2167,6 +2167,14 @@
 	line-height: 1.4;
 }
 
+.nb-lookup-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+}
+
 .nb-cell-lookup {
 	color: var(--text-accent);
 }
