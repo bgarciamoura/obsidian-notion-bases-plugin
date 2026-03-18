@@ -5,6 +5,8 @@
 ![Minimum Obsidian version](https://img.shields.io/badge/obsidian-%3E%3D1.4.0-7c3aed)
 ![License](https://img.shields.io/github/license/bgarciamoura/obsidian-notion-bases-plugin)
 
+**[Website](https://bgarciamoura.github.io/obsidian-notion-bases-plugin/)** | **[GitHub](https://github.com/bgarciamoura/obsidian-notion-bases-plugin)** | **[Latest Release](https://github.com/bgarciamoura/obsidian-notion-bases-plugin/releases/latest)**
+
 **6 views. 15 column types. Formulas, relations and lookups. Zero code required.**
 
 Turn any folder into a full-featured database with Table, Board, Gallery, List, Calendar, and Timeline views — all powered by plain Markdown and frontmatter. Your data stays yours.
