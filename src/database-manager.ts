@@ -248,7 +248,7 @@ export class DatabaseManager {
 
 		return Array.from(fieldMap.entries()).map(([key, values]) => {
 			const type = this.inferType(key, values)
-			const options = (type === 'select' || type === 'multiselect')
+			const options = (type === 'select' || type === 'multiselect' || type === 'status')
 				? this.extractOptions(values, type)
 				: undefined
 
