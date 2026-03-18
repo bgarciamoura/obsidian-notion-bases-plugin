@@ -53,7 +53,7 @@ export class DatabaseManager {
 	// ── Notas / linhas ─────────────────────────────────────────────────────
 
 	getNotesInDatabase(dbFile: TFile, includeSubfolders?: boolean): TFile[] {
-		const folder = dbFile.parent
+		const folder = dbFile.parent ?? this.app.vault.getRoot()
 		if (!folder) return []
 
 		if (includeSubfolders) {
@@ -238,7 +238,7 @@ export class DatabaseManager {
 			if (!fm) continue
 
 			for (const [key, value] of Object.entries(fm)) {
-				if (key === 'position') continue // chave interna do Obsidian
+				if (key === 'position' || key === 'notion-bases-embeds') continue // internal keys
 				if (!fieldMap.has(key)) fieldMap.set(key, [])
 				if (value !== null && value !== undefined) {
 					fieldMap.get(key)!.push(value)
