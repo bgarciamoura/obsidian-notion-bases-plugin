@@ -36,8 +36,18 @@ export class DatabaseManager {
 		const fm = cache?.frontmatter as Record<string, unknown> | undefined
 		if (!fm || !fm[DATABASE_MARKER]) return structuredClone(DEFAULT_DATABASE_CONFIG)
 
+		const rawSchema = Array.isArray(fm['schema']) ? fm['schema'] as ColumnSchema[] : []
+		// Sanitize: remove corrupted or internal entries
+		const schema = rawSchema.filter(col =>
+			col.id &&
+			typeof col.id === 'string' &&
+			!col.id.startsWith('notion-bases') &&
+			col.type &&
+			!(col.options?.some(o => o.value === '[object Object]'))
+		)
+
 		return {
-			schema: Array.isArray(fm['schema']) ? fm['schema'] as ColumnSchema[] : [],
+			schema,
 			views: Array.isArray(fm['views']) && (fm['views'] as unknown[]).length > 0 ? fm['views'] as ViewConfig[] : [DEFAULT_VIEW],
 		}
 	}
@@ -238,7 +248,7 @@ export class DatabaseManager {
 			if (!fm) continue
 
 			for (const [key, value] of Object.entries(fm)) {
-				if (key === 'position' || key === 'notion-bases-embeds') continue // internal keys
+				if (key === 'position' || key.startsWith('notion-bases')) continue // internal keys
 				if (!fieldMap.has(key)) fieldMap.set(key, [])
 				if (value !== null && value !== undefined) {
 					fieldMap.get(key)!.push(value)
