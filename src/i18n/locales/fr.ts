@@ -200,7 +200,7 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	board_drag_reorder: 'Glisser pour réorganiser',
 	board_set_limit: 'Cliquer pour definir la limite de cartes',
 	board_limit_placeholder: 'Limite (0 = aucune)',
-	board_show_more: 'de plus',
+	board_show_more: 'De plus',
 	board_show_less: 'Afficher moins',
 	hide_empty_cols: 'Masquer vides',
 	hide_no_value_cols: 'Masquer sans valeur',

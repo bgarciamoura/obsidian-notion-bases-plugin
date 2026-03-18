@@ -2,6 +2,7 @@ import tseslint from 'typescript-eslint';
 import obsidianmd from "eslint-plugin-obsidianmd";
 import globals from "globals";
 import { globalIgnores } from "eslint/config";
+import sentenceCaseLocale from "./eslint-rules/sentence-case-locale.mjs";
 
 export default tseslint.config(
 	{
@@ -27,6 +28,15 @@ export default tseslint.config(
 		extends: [tseslint.configs.recommendedTypeChecked[0]],
 		rules: {
 			"@typescript-eslint/require-await": "error",
+		},
+	},
+	{
+		files: ["src/i18n/locales/*.ts"],
+		plugins: {
+			"local": { rules: { "sentence-case-locale": sentenceCaseLocale } },
+		},
+		rules: {
+			"local/sentence-case-locale": "error",
 		},
 	},
 	globalIgnores([

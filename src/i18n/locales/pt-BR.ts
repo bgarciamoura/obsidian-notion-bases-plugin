@@ -112,7 +112,7 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 
 	// Formula panel
 	formula_panel_title: 'Fórmula',
-	formula_placeholder: 'ex: if(status = "feito", 1, 0)',
+	formula_placeholder: 'Ex: if(status = "feito", 1, 0)',
 	formula_valid: 'Sintaxe válida',
 	formula_available_cols: 'Colunas disponíveis:',
 	formula_ref_toggle: 'Referência de funções',
@@ -200,7 +200,7 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	board_drag_reorder: 'Arraste para reordenar',
 	board_set_limit: 'Clique para definir limite de cards',
 	board_limit_placeholder: 'Limite (0 = nenhum)',
-	board_show_more: 'mais',
+	board_show_more: 'Mais',
 	board_show_less: 'Mostrar menos',
 	hide_empty_cols: 'Ocultar vazias',
 	hide_no_value_cols: 'Ocultar sem valor',

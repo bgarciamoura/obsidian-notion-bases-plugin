@@ -198,7 +198,7 @@ const en = {
 	board_drag_reorder: 'Drag to reorder',
 	board_set_limit: 'Click to set card limit',
 	board_limit_placeholder: 'Limit (0 = none)',
-	board_show_more: 'more',
+	board_show_more: 'More',
 	board_show_less: 'Show less',
 	hide_empty_cols: 'Hide empty',
 	hide_no_value_cols: 'Hide no-value',
