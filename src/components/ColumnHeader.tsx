@@ -177,8 +177,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	useEffect(() => {
 		if (!editingLookup) return
 		const dbs = manager.getAllDatabases()
-			.filter(f => f.path !== dbFile?.path)
-			.map(f => ({ path: f.path, name: f.parent?.name ?? f.basename }))
+			.map(f => ({ path: f.path, name: f.parent?.name || t('picker_root') }))
 		setAvailableDbs(dbs)
 		if (menuRef.current) {
 			const rect = menuRef.current.getBoundingClientRect()
