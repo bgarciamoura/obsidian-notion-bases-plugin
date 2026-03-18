@@ -36,6 +36,7 @@ import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { isMultiValueFilter, parseMultiValue, toggleMultiValue } from './filter-utils'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconActions, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
 
@@ -149,6 +150,7 @@ function getOperatorsForType(type: string): FilterOperator[] {
 		case 'date': return DATE_OPERATORS
 		case 'select': return SELECT_OPERATORS
 		case 'multiselect': return SELECT_OPERATORS
+		case 'status': return SELECT_OPERATORS
 		case 'checkbox': return CHECKBOX_OPERATORS
 		default: return TEXT_OPERATORS
 	}
@@ -158,7 +160,7 @@ function getDefaultOperator(type: string): FilterOperator {
 	switch (type) {
 		case 'number': case 'date': return 'is'
 		case 'checkbox': return 'is_checked'
-		case 'select': case 'multiselect': return 'is'
+		case 'select': case 'multiselect': case 'status': return 'is'
 		default: return 'contains'
 	}
 }
@@ -217,6 +219,17 @@ function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 			case 'lte': return d <= v
 			default: return true
 		}
+	}
+
+	// For select/multiselect with is/is_not, support multiple selected values
+	if (isMultiValueFilter(f)) {
+		const selectedValues = parseMultiValue(f.value).map(s => s.toLowerCase())
+		if (selectedValues.length === 0) return true
+		const cellValues = Array.isArray(raw)
+			? (raw as string[]).map(s => s.toLowerCase())
+			: [String((raw as string | number | boolean | null | undefined) ?? '').toLowerCase()]
+		if (f.operator === 'is') return cellValues.some(c => selectedValues.includes(c))
+		return cellValues.every(c => !selectedValues.includes(c)) // is_not
 	}
 
 	const cell = Array.isArray(raw)
@@ -1900,14 +1913,43 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						>×</button>
 					</div>
 					{!NO_VALUE_OPERATORS.has(filter.operator) && (
-						<input
-							className="nb-filter-value-input"
-							type={filter.columnType === 'number' ? 'number' : filter.columnType === 'date' ? 'date' : 'text'}
-							placeholder={filter.columnType === 'number' ? t('filter_number_placeholder') : filter.columnType === 'date' ? '' : t('filter_value_placeholder')}
-							value={filter.value}
-							autoFocus={!isMobile}
-							onChange={e => updateFilter(filter.id, filter.operator, e.target.value)}
-						/>
+						isMultiValueFilter(filter) ? (
+							<div className="nb-filter-multi-select">
+								{(() => {
+									const col = config.schema.find(c => c.id === filter.columnId)
+									const options = col?.options ?? []
+									const selectedValues = parseMultiValue(filter.value)
+									return options.length > 0 ? options.map(opt => (
+										<label key={opt.value} className="nb-filter-multi-option">
+											<input
+												type="checkbox"
+												checked={selectedValues.includes(opt.value)}
+												onChange={() => updateFilter(filter.id, filter.operator, toggleMultiValue(filter.value, opt.value))}
+											/>
+											<span className="nb-filter-option-badge" style={opt.color ? { backgroundColor: opt.color } : undefined}>{opt.value}</span>
+										</label>
+									)) : (
+										<input
+											className="nb-filter-value-input"
+											type="text"
+											placeholder={t('filter_value_placeholder')}
+											value={filter.value}
+											autoFocus={!isMobile}
+											onChange={e => updateFilter(filter.id, filter.operator, e.target.value)}
+										/>
+									)
+								})()}
+							</div>
+						) : (
+							<input
+								className="nb-filter-value-input"
+								type={filter.columnType === 'number' ? 'number' : filter.columnType === 'date' ? 'date' : 'text'}
+								placeholder={filter.columnType === 'number' ? t('filter_number_placeholder') : filter.columnType === 'date' ? '' : t('filter_value_placeholder')}
+								value={filter.value}
+								autoFocus={!isMobile}
+								onChange={e => updateFilter(filter.id, filter.operator, e.target.value)}
+							/>
+						)
 					)}
 				</div>,
 				document.body

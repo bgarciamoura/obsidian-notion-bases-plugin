@@ -283,9 +283,11 @@ const en = {
 
 	// Select cell
 	select_clear: 'Clear',
+	select_create_placeholder: 'Create new option...',
 
 	// Status cell
 	status_new_placeholder: 'New status...',
+	color_custom: 'Custom',
 
 	// Type change validation errors
 	validate_non_numeric: 'Cell(s) contain non-numeric values (e.g.: "',

@@ -285,9 +285,11 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 
 	// Select cell
 	select_clear: 'クリア',
+	select_create_placeholder: '新しいオプションを作成...',
 
 	// Status cell
 	status_new_placeholder: '新しいステータス...',
+	color_custom: 'カスタム',
 
 	// Type change validation errors
 	validate_non_numeric: 'セルに数値でない値が含まれています（例："',

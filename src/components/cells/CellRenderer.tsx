@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef, useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { TFile } from 'obsidian'
 import { ColumnSchema, NumberFormat, SelectOption } from '../../types'
@@ -176,7 +176,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 			return (
 				<SelectCell
 					value={value as string | null}
-					options={col.options ?? []}
+					col={col}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
 					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
@@ -188,7 +188,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 			return (
 				<MultiSelectCell
 					value={Array.isArray(value) ? value as string[] : []}
-					options={col.options ?? []}
+					col={col}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
 					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
@@ -495,36 +495,115 @@ function getOptionColor(options: SelectOption[], value: string): string {
 	return SELECT_COLORS[idx % SELECT_COLORS.length] ?? '#e8e8e8'
 }
 
-function SelectCell({ value, options, isEditing, onStartEdit, onCommit, onCancel }: {
+function getContrastTextColor(hex: string): string {
+	const c = hex.replace('#', '')
+	const r = parseInt(c.substring(0, 2), 16)
+	const g = parseInt(c.substring(2, 4), 16)
+	const b = parseInt(c.substring(4, 6), 16)
+	// Relative luminance (sRGB)
+	const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+	return luminance > 0.5 ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.9)'
+}
+
+function SelectCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: {
 	value: string | null
-	options: SelectOption[]
+	col: ColumnSchema
 	isEditing: boolean
 	onStartEdit: () => void
 	onCommit: (v: string | null) => void
 	onCancel: () => void
 }) {
+	const { updateSchema, schema } = useCellContext()
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	const dropdownRef = useRef<HTMLDivElement>(null)
+	const colorPickerRef = useRef<HTMLDivElement>(null)
 	const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null)
+	const [newOptionName, setNewOptionName] = useState('')
+	const [colorPickerFor, setColorPickerFor] = useState<string | null>(null)
+	const [colorPickerPos, setColorPickerPos] = useState<{ top: number; left: number } | null>(null)
+	const [localColors, setLocalColors] = useState<Record<string, string>>({})
+	const baseOptions = col.options ?? []
+	const options = baseOptions.map(o => localColors[o.value] ? { ...o, color: localColors[o.value] } : o)
+	const pendingColorsRef = useRef<Record<string, string>>({})
+	const PICKER_W = 176
+
+	const COLOR_PALETTE = [
+		'#9E9E9E', '#F44336', '#E91E63', '#9C27B0', '#673AB7',
+		'#3F51B5', '#2196F3', '#03A9F4', '#00BCD4', '#009688',
+		'#4CAF50', '#8BC34A', '#FFEB3B', '#FF9800', '#FF5722', '#795548',
+	]
+
+	const updateOptionColor = (optValue: string, color: string) => {
+		setLocalColors(prev => ({ ...prev, [optValue]: color }))
+		pendingColorsRef.current[optValue] = color
+	}
+
+	const flushPendingColors = useCallback(() => {
+		const pending = pendingColorsRef.current
+		if (Object.keys(pending).length === 0) return
+		const newOptions = baseOptions.map(o => pending[o.value] ? { ...o, color: pending[o.value] } : o)
+		const newSchema = schema.map(c => c.id === col.id ? { ...c, options: newOptions } : c)
+		pendingColorsRef.current = {}
+		setLocalColors({})
+		void updateSchema(newSchema)
+	}, [baseOptions, schema, col.id, updateSchema])
 
 	useEffect(() => {
 		if (!isEditing) return
 		const handler = (e: MouseEvent) => {
 			const inWrapper = wrapperRef.current?.contains(e.target as Node)
 			const inDropdown = dropdownRef.current?.contains(e.target as Node)
-			if (!inWrapper && !inDropdown) onCancel()
+			const inColorPicker = colorPickerRef.current?.contains(e.target as Node)
+			if (!inWrapper && !inDropdown && !inColorPicker) {
+				flushPendingColors()
+				onCancel()
+			}
 		}
 		document.addEventListener('mousedown', handler)
 		return () => document.removeEventListener('mousedown', handler)
-	}, [isEditing, onCancel])
+	}, [isEditing, onCancel, flushPendingColors])
 
 	useEffect(() => {
-		if (!isEditing) return
+		if (!isEditing) {
+			setColorPickerFor(null)
+			return
+		}
+		setNewOptionName('')
+		setLocalColors({})
+		pendingColorsRef.current = {}
 		if (wrapperRef.current) {
 			const rect = wrapperRef.current.getBoundingClientRect()
 			setDropPos({ top: rect.bottom, left: rect.left, width: rect.width })
 		}
 	}, [isEditing])
+
+	useEffect(() => {
+		if (!colorPickerFor) return
+		const handler = (e: MouseEvent) => {
+			if (!colorPickerRef.current?.contains(e.target as Node)) setColorPickerFor(null)
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [colorPickerFor])
+
+	const addNewOption = async (name: string) => {
+		const trimmed = name.trim()
+		if (!trimmed || options.some(o => o.value === trimmed)) return
+		const color = SELECT_COLORS[options.length % SELECT_COLORS.length]
+		const newOptions = [...options, { value: trimmed, color }]
+		const newSchema = schema.map(c => c.id === col.id ? { ...c, options: newOptions } : c)
+		await updateSchema(newSchema)
+		onCommit(trimmed)
+		setNewOptionName('')
+	}
+
+	const deleteOption = async (optValue: string, e: React.MouseEvent) => {
+		e.stopPropagation()
+		const newOptions = options.filter(o => o.value !== optValue)
+		const newSchema = schema.map(c => c.id === col.id ? { ...c, options: newOptions } : c)
+		await updateSchema(newSchema)
+		if (value === optValue) onCommit(null)
+	}
 
 	const dropdown = isEditing && dropPos ? createPortal(
 		<div
@@ -532,23 +611,81 @@ function SelectCell({ value, options, isEditing, onStartEdit, onCommit, onCancel
 			className="nb-select-dropdown"
 			style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, minWidth: dropPos.width, zIndex: 9999 }}
 		>
+			<input
+				className="nb-select-new-input"
+				type="text"
+				placeholder={t('select_create_placeholder')}
+				value={newOptionName}
+				autoFocus
+				onChange={e => setNewOptionName(e.target.value)}
+				onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void addNewOption(newOptionName) } }}
+			/>
 			<button className="nb-select-option nb-select-clear" onClick={() => onCommit(null)}>
 				{t('select_clear')}
 			</button>
 			{options.map(opt => (
-				<button
-					key={opt.value}
-					className={`nb-select-option ${value === opt.value ? 'nb-select-option--active' : ''}`}
-					onClick={() => onCommit(opt.value)}
-				>
-					<span
-						className="nb-select-badge"
-						style={{ background: getOptionColor(options, opt.value) }}
+				<div key={opt.value} className="nb-select-option-row">
+					<button
+						className={`nb-select-option ${value === opt.value ? 'nb-select-option--active' : ''}`}
+						onClick={() => onCommit(opt.value)}
 					>
-						{opt.value}
-					</span>
-				</button>
+						<span
+							className="nb-select-badge"
+							style={{ background: getOptionColor(options, opt.value), color: getContrastTextColor(getOptionColor(options, opt.value)) }}
+						>
+							{opt.value}
+						</span>
+					</button>
+					<button
+						className={`nb-status-color-swatch ${colorPickerFor === opt.value ? 'nb-status-color-swatch--active' : ''}`}
+						title={t('tooltip_change_color')}
+						style={{ background: getOptionColor(options, opt.value) }}
+						onClick={e => {
+							e.stopPropagation()
+							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+							setColorPickerPos({ top: rect.bottom + 4, left: Math.min(rect.right - PICKER_W, window.innerWidth - PICKER_W - 8) })
+							setColorPickerFor(prev => prev === opt.value ? null : opt.value)
+						}}
+					/>
+					<button
+						className="nb-select-option-delete"
+						onClick={e => void deleteOption(opt.value, e)}
+						title={t('select_clear')}
+					>×</button>
+				</div>
 			))}
+		</div>,
+		document.body
+	) : null
+
+	const colorPicker = colorPickerFor && colorPickerPos ? createPortal(
+		<div
+			ref={colorPickerRef}
+			className="nb-status-color-picker"
+			style={{ position: 'fixed', top: colorPickerPos.top, left: colorPickerPos.left, zIndex: 10000 }}
+		>
+			<div className="nb-status-color-grid">
+				{COLOR_PALETTE.map(color => (
+					<button
+						key={color}
+						className="nb-status-color-dot"
+						style={{ background: color }}
+						title={color}
+						onClick={e => { e.stopPropagation(); void updateOptionColor(colorPickerFor, color) }}
+					/>
+				))}
+			</div>
+			<div className="nb-status-color-custom">
+				<label className="nb-status-color-custom-label">
+					{t('color_custom')}
+					<input
+						type="color"
+						className="nb-status-color-input"
+						defaultValue={getOptionColor(options, colorPickerFor)}
+						onChange={e => { void updateOptionColor(colorPickerFor, e.target.value) }}
+					/>
+				</label>
+			</div>
 		</div>,
 		document.body
 	) : null
@@ -559,7 +696,7 @@ function SelectCell({ value, options, isEditing, onStartEdit, onCommit, onCancel
 				{value ? (
 					<span
 						className="nb-select-badge"
-						style={{ background: getOptionColor(options, value) }}
+						style={{ background: getOptionColor(options, value), color: getContrastTextColor(getOptionColor(options, value)) }}
 					>
 						{value}
 					</span>
@@ -568,6 +705,7 @@ function SelectCell({ value, options, isEditing, onStartEdit, onCommit, onCancel
 				)}
 			</div>
 			{dropdown}
+			{colorPicker}
 		</div>
 	)
 }
@@ -591,6 +729,8 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 	const [colorPickerFor, setColorPickerFor] = useState<string | null>(null)
 	const [colorPickerPos, setColorPickerPos] = useState<{ top: number; left: number } | null>(null)
 	const colorPickerRef = useRef<HTMLDivElement>(null)
+	const [localColors, setLocalColors] = useState<Record<string, string>>({})
+	const pendingColorsRef = useRef<Record<string, string>>({})
 	const PICKER_W = 176
 
 	const STATUS_COLOR_PALETTE = [
@@ -599,14 +739,23 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 		'#4CAF50', '#8BC34A', '#FFEB3B', '#FF9800', '#FF5722', '#795548',
 	]
 
-	const options = col.options?.length ? col.options : DEFAULT_STATUS_OPTIONS
+	const baseOptions = col.options?.length ? col.options : DEFAULT_STATUS_OPTIONS
+	const options = baseOptions.map(o => localColors[o.value] ? { ...o, color: localColors[o.value] } : o)
 
-	const updateOptionColor = async (optValue: string, color: string) => {
-		const newOptions = options.map(o => o.value === optValue ? { ...o, color } : o)
-		const newSchema = schema.map(c => c.id === col.id ? { ...c, options: newOptions } : c)
-		await updateSchema(newSchema)
-		setColorPickerFor(null)
+	const updateOptionColor = (optValue: string, color: string) => {
+		setLocalColors(prev => ({ ...prev, [optValue]: color }))
+		pendingColorsRef.current[optValue] = color
 	}
+
+	const flushPendingColors = useCallback(() => {
+		const pending = pendingColorsRef.current
+		if (Object.keys(pending).length === 0) return
+		const newOptions = baseOptions.map(o => pending[o.value] ? { ...o, color: pending[o.value] } : o)
+		const newSchema = schema.map(c => c.id === col.id ? { ...c, options: newOptions } : c)
+		pendingColorsRef.current = {}
+		setLocalColors({})
+		void updateSchema(newSchema)
+	}, [baseOptions, schema, col.id, updateSchema])
 
 	useEffect(() => {
 		if (!isEditing) return
@@ -614,11 +763,14 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 			const inWrapper = wrapperRef.current?.contains(e.target as Node)
 			const inDropdown = dropdownRef.current?.contains(e.target as Node)
 			const inColorPicker = colorPickerRef.current?.contains(e.target as Node)
-			if (!inWrapper && !inDropdown && !inColorPicker) onCancel()
+			if (!inWrapper && !inDropdown && !inColorPicker) {
+				flushPendingColors()
+				onCancel()
+			}
 		}
 		document.addEventListener('mousedown', handler)
 		return () => document.removeEventListener('mousedown', handler)
-	}, [isEditing, onCancel])
+	}, [isEditing, onCancel, flushPendingColors])
 
 	useEffect(() => {
 		if (!isEditing) {
@@ -626,6 +778,8 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 			return
 		}
 		setNewStatusName('')
+		setLocalColors({})
+		pendingColorsRef.current = {}
 		if (wrapperRef.current) {
 			const rect = wrapperRef.current.getBoundingClientRect()
 			setDropPos({ top: rect.bottom, left: rect.left, width: rect.width })
@@ -670,7 +824,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 					>
 						<span
 							className="nb-select-badge"
-							style={{ background: getOptionColor(options, opt.value) }}
+							style={{ background: getOptionColor(options, opt.value), color: getContrastTextColor(getOptionColor(options, opt.value)) }}
 						>
 							{opt.value}
 						</span>
@@ -678,7 +832,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 					<button
 						className={`nb-status-color-swatch ${colorPickerFor === opt.value ? 'nb-status-color-swatch--active' : ''}`}
 						title={t('tooltip_change_color')}
-						style={{ background: getOptionColor(options, opt.value) }}
+						style={{ background: getOptionColor(options, opt.value), color: getContrastTextColor(getOptionColor(options, opt.value)) }}
 						onClick={e => {
 							e.stopPropagation()
 							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -740,7 +894,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 			</div>
 			<div className="nb-status-color-custom">
 				<label className="nb-status-color-custom-label">
-					'Personalizada'
+					{t('color_custom')}
 					<input
 						type="color"
 						className="nb-status-color-input"
@@ -759,7 +913,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 				{value ? (
 					<span
 						className="nb-select-badge"
-						style={{ background: getOptionColor(options, value) }}
+						style={{ background: getOptionColor(options, value), color: getContrastTextColor(getOptionColor(options, value)) }}
 					>
 						{value}
 					</span>
@@ -775,36 +929,86 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 
 // ── MultiSelectCell ──────────────────────────────────────────────────────────
 
-function MultiSelectCell({ value, options, isEditing, onStartEdit, onCommit, onCancel }: {
+function MultiSelectCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: {
 	value: string[]
-	options: SelectOption[]
+	col: ColumnSchema
 	isEditing: boolean
 	onStartEdit: () => void
 	onCommit: (v: string[]) => void
 	onCancel: () => void
 }) {
+	const { updateSchema, schema } = useCellContext()
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	const dropdownRef = useRef<HTMLDivElement>(null)
+	const colorPickerRef = useRef<HTMLDivElement>(null)
 	const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null)
+	const [newOptionName, setNewOptionName] = useState('')
+	const [colorPickerFor, setColorPickerFor] = useState<string | null>(null)
+	const [colorPickerPos, setColorPickerPos] = useState<{ top: number; left: number } | null>(null)
+	const [localColors, setLocalColors] = useState<Record<string, string>>({})
+	const pendingColorsRef = useRef<Record<string, string>>({})
+	const baseOptions = col.options ?? []
+	const options = baseOptions.map(o => localColors[o.value] ? { ...o, color: localColors[o.value] } : o)
+	const PICKER_W = 176
+
+	const COLOR_PALETTE = [
+		'#9E9E9E', '#F44336', '#E91E63', '#9C27B0', '#673AB7',
+		'#3F51B5', '#2196F3', '#03A9F4', '#00BCD4', '#009688',
+		'#4CAF50', '#8BC34A', '#FFEB3B', '#FF9800', '#FF5722', '#795548',
+	]
+
+	const updateOptionColor = (optValue: string, color: string) => {
+		setLocalColors(prev => ({ ...prev, [optValue]: color }))
+		pendingColorsRef.current[optValue] = color
+	}
+
+	const flushPendingColors = useCallback(() => {
+		const pending = pendingColorsRef.current
+		if (Object.keys(pending).length === 0) return
+		const newOptions = baseOptions.map(o => pending[o.value] ? { ...o, color: pending[o.value] } : o)
+		const newSchema = schema.map(c => c.id === col.id ? { ...c, options: newOptions } : c)
+		pendingColorsRef.current = {}
+		setLocalColors({})
+		void updateSchema(newSchema)
+	}, [baseOptions, schema, col.id, updateSchema])
 
 	useEffect(() => {
 		if (!isEditing) return
 		const handler = (e: MouseEvent) => {
 			const inWrapper = wrapperRef.current?.contains(e.target as Node)
 			const inDropdown = dropdownRef.current?.contains(e.target as Node)
-			if (!inWrapper && !inDropdown) onCancel()
+			const inColorPicker = colorPickerRef.current?.contains(e.target as Node)
+			if (!inWrapper && !inDropdown && !inColorPicker) {
+				flushPendingColors()
+				onCancel()
+			}
 		}
 		document.addEventListener('mousedown', handler)
 		return () => document.removeEventListener('mousedown', handler)
-	}, [isEditing, onCancel])
+	}, [isEditing, onCancel, flushPendingColors])
 
 	useEffect(() => {
-		if (!isEditing) return
+		if (!isEditing) {
+			setColorPickerFor(null)
+			return
+		}
+		setNewOptionName('')
+		setLocalColors({})
+		pendingColorsRef.current = {}
 		if (wrapperRef.current) {
 			const rect = wrapperRef.current.getBoundingClientRect()
 			setDropPos({ top: rect.bottom, left: rect.left, width: rect.width })
 		}
 	}, [isEditing])
+
+	useEffect(() => {
+		if (!colorPickerFor) return
+		const handler = (e: MouseEvent) => {
+			if (!colorPickerRef.current?.contains(e.target as Node)) setColorPickerFor(null)
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [colorPickerFor])
 
 	const toggle = (opt: string) => {
 		const next = value.includes(opt)
@@ -813,27 +1017,104 @@ function MultiSelectCell({ value, options, isEditing, onStartEdit, onCommit, onC
 		onCommit(next)
 	}
 
+	const addNewOption = async (name: string) => {
+		const trimmed = name.trim()
+		if (!trimmed || options.some(o => o.value === trimmed)) return
+		const color = SELECT_COLORS[options.length % SELECT_COLORS.length]
+		const newOptions = [...options, { value: trimmed, color }]
+		const newSchema = schema.map(c => c.id === col.id ? { ...c, options: newOptions } : c)
+		await updateSchema(newSchema)
+		onCommit([...value, trimmed])
+		setNewOptionName('')
+	}
+
+	const deleteOption = async (optValue: string, e: React.MouseEvent) => {
+		e.stopPropagation()
+		const newOptions = options.filter(o => o.value !== optValue)
+		const newSchema = schema.map(c => c.id === col.id ? { ...c, options: newOptions } : c)
+		await updateSchema(newSchema)
+		if (value.includes(optValue)) onCommit(value.filter(v => v !== optValue))
+	}
+
 	const dropdown = isEditing && dropPos ? createPortal(
 		<div
 			ref={dropdownRef}
 			className="nb-select-dropdown"
 			style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, minWidth: dropPos.width, zIndex: 9999 }}
 		>
+			<input
+				className="nb-select-new-input"
+				type="text"
+				placeholder={t('select_create_placeholder')}
+				value={newOptionName}
+				autoFocus
+				onChange={e => setNewOptionName(e.target.value)}
+				onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void addNewOption(newOptionName) } }}
+			/>
 			{options.map(opt => (
-				<button
-					key={opt.value}
-					className={`nb-select-option ${value.includes(opt.value) ? 'nb-select-option--active' : ''}`}
-					onClick={() => toggle(opt.value)}
-				>
-					<span className={`nb-checkbox-indicator ${value.includes(opt.value) ? 'nb-checkbox-indicator--checked' : ''}`} />
-					<span
-						className="nb-select-badge"
-						style={{ background: getOptionColor(options, opt.value) }}
+				<div key={opt.value} className="nb-select-option-row">
+					<button
+						className={`nb-select-option ${value.includes(opt.value) ? 'nb-select-option--active' : ''}`}
+						onClick={() => toggle(opt.value)}
 					>
-						{opt.value}
-					</span>
-				</button>
+						<span className={`nb-checkbox-indicator ${value.includes(opt.value) ? 'nb-checkbox-indicator--checked' : ''}`} />
+						<span
+							className="nb-select-badge"
+							style={{ background: getOptionColor(options, opt.value), color: getContrastTextColor(getOptionColor(options, opt.value)) }}
+						>
+							{opt.value}
+						</span>
+					</button>
+					<button
+						className={`nb-status-color-swatch ${colorPickerFor === opt.value ? 'nb-status-color-swatch--active' : ''}`}
+						title={t('tooltip_change_color')}
+						style={{ background: getOptionColor(options, opt.value), color: getContrastTextColor(getOptionColor(options, opt.value)) }}
+						onClick={e => {
+							e.stopPropagation()
+							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+							setColorPickerPos({ top: rect.bottom + 4, left: Math.min(rect.right - PICKER_W, window.innerWidth - PICKER_W - 8) })
+							setColorPickerFor(prev => prev === opt.value ? null : opt.value)
+						}}
+					/>
+					<button
+						className="nb-select-option-delete"
+						onClick={e => void deleteOption(opt.value, e)}
+						title={t('select_clear')}
+					>×</button>
+				</div>
 			))}
+		</div>,
+		document.body
+	) : null
+
+	const colorPicker = colorPickerFor && colorPickerPos ? createPortal(
+		<div
+			ref={colorPickerRef}
+			className="nb-status-color-picker"
+			style={{ position: 'fixed', top: colorPickerPos.top, left: colorPickerPos.left, zIndex: 10000 }}
+		>
+			<div className="nb-status-color-grid">
+				{COLOR_PALETTE.map(color => (
+					<button
+						key={color}
+						className="nb-status-color-dot"
+						style={{ background: color }}
+						title={color}
+						onClick={e => { e.stopPropagation(); void updateOptionColor(colorPickerFor, color) }}
+					/>
+				))}
+			</div>
+			<div className="nb-status-color-custom">
+				<label className="nb-status-color-custom-label">
+					{t('color_custom')}
+					<input
+						type="color"
+						className="nb-status-color-input"
+						defaultValue={getOptionColor(options, colorPickerFor)}
+						onChange={e => { void updateOptionColor(colorPickerFor, e.target.value) }}
+					/>
+				</label>
+			</div>
 		</div>,
 		document.body
 	) : null
@@ -846,7 +1127,7 @@ function MultiSelectCell({ value, options, isEditing, onStartEdit, onCommit, onC
 						<span
 							key={v}
 							className="nb-select-badge"
-							style={{ background: getOptionColor(options, v) }}
+							style={{ background: getOptionColor(options, v), color: getContrastTextColor(getOptionColor(options, v)) }}
 						>
 							{v}
 						</span>
@@ -855,6 +1136,7 @@ function MultiSelectCell({ value, options, isEditing, onStartEdit, onCommit, onC
 				}
 			</div>
 			{dropdown}
+			{colorPicker}
 		</div>
 	)
 }
