@@ -212,6 +212,10 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	calendar_today: '今日',
 	calendar_prev_month: '前月',
 	calendar_next_month: '翌月',
+	calendar_view_month: '月',
+	calendar_view_week: '週',
+	calendar_prev_week: '前週',
+	calendar_next_week: '翌週',
 
 	// Calendar days (short)
 	day_sun: '日',

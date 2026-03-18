@@ -37,6 +37,39 @@ function buildCalendarGrid(year: number, month: number): (number | null)[] {
 	return cells
 }
 
+function buildWeekGrid(year: number, month: number, day: number): Date[] {
+	const anchor = new Date(year, month, day)
+	const dow = anchor.getDay()
+	const sunday = new Date(anchor)
+	sunday.setDate(anchor.getDate() - dow)
+	const days: Date[] = []
+	for (let i = 0; i < 7; i++) {
+		const d = new Date(sunday)
+		d.setDate(sunday.getDate() + i)
+		days.push(d)
+	}
+	return days
+}
+
+function formatWeekRange(days: Date[]): string {
+	if (days.length === 0) return ''
+	const first = days[0]
+	const last = days[6]
+	const MONTHS_SHORT = () => [t('month_january'), t('month_february'), t('month_march'), t('month_april'), t('month_may'), t('month_june'), t('month_july'), t('month_august'), t('month_september'), t('month_october'), t('month_november'), t('month_december')]
+	const months = MONTHS_SHORT()
+	if (first.getMonth() === last.getMonth()) {
+		return `${months[first.getMonth()]} ${first.getDate()} – ${last.getDate()}, ${first.getFullYear()}`
+	}
+	if (first.getFullYear() === last.getFullYear()) {
+		return `${months[first.getMonth()]} ${first.getDate()} – ${months[last.getMonth()]} ${last.getDate()}, ${first.getFullYear()}`
+	}
+	return `${months[first.getMonth()]} ${first.getDate()}, ${first.getFullYear()} – ${months[last.getMonth()]} ${last.getDate()}, ${last.getFullYear()}`
+}
+
+function dateKey(year: number, month: number, day: number): string {
+	return `${year}-${month}-${day}`
+}
+
 function parseDateValue(val: unknown): { year: number; month: number; day: number } | null {
 	if (!val || typeof val !== 'string') return null
 	const parts = val.split('-')
@@ -57,6 +90,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	const [activeView, setActiveView] = useState<ViewConfig>(externalView)
 	const [currentYear, setCurrentYear] = useState(today.getFullYear())
 	const [currentMonth, setCurrentMonth] = useState(today.getMonth())
+	const [currentDay, setCurrentDay] = useState(today.getDate())
 	const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
@@ -76,6 +110,8 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		setActiveView(updated)
 		await onViewChange(updated)
 	}, [onViewChange])
+
+	const viewMode = activeView.calendarViewMode ?? 'month'
 
 	// ── Data loading ────────────────────────────────────────────────────────
 
@@ -173,20 +209,37 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 
 	const calendarCells = useMemo(() => buildCalendarGrid(currentYear, currentMonth), [currentYear, currentMonth])
 
-	const rowsByDay = useMemo(() => {
-		const map = new Map<number, NoteRow[]>()
+	const weekDays = useMemo(
+		() => viewMode === 'week' ? buildWeekGrid(currentYear, currentMonth, currentDay) : [],
+		[viewMode, currentYear, currentMonth, currentDay]
+	)
+
+	const rowsByDate = useMemo(() => {
+		const map = new Map<string, NoteRow[]>()
 		if (!dateField) return map
 		for (const row of filteredRows) {
 			const parsed = parseDateValue((row as Record<string, unknown>)[dateField.id])
 			if (!parsed) continue
-			if (parsed.year === currentYear && parsed.month === currentMonth) {
-				const existing = map.get(parsed.day) ?? []
-				existing.push(row)
-				map.set(parsed.day, existing)
+			const key = dateKey(parsed.year, parsed.month, parsed.day)
+			if (viewMode === 'week') {
+				const match = weekDays.some(d =>
+					d.getFullYear() === parsed.year && d.getMonth() === parsed.month && d.getDate() === parsed.day
+				)
+				if (match) {
+					const existing = map.get(key) ?? []
+					existing.push(row)
+					map.set(key, existing)
+				}
+			} else {
+				if (parsed.year === currentYear && parsed.month === currentMonth) {
+					const existing = map.get(key) ?? []
+					existing.push(row)
+					map.set(key, existing)
+				}
 			}
 		}
 		return map
-	}, [filteredRows, dateField, currentYear, currentMonth])
+	}, [filteredRows, dateField, currentYear, currentMonth, currentDay, viewMode, weekDays])
 
 	const noDateRows = useMemo(() => {
 		if (!dateField) return []
@@ -218,23 +271,34 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		await saveView({ ...activeView, hiddenColumns: hidden })
 	}, [activeView, saveView])
 
-	const goToPrevMonth = () => {
-		if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1) }
-		else setCurrentMonth(m => m - 1)
+	const goToPrev = () => {
+		if (viewMode === 'week') {
+			const d = new Date(currentYear, currentMonth, currentDay - 7)
+			setCurrentYear(d.getFullYear()); setCurrentMonth(d.getMonth()); setCurrentDay(d.getDate())
+		} else {
+			if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1) }
+			else setCurrentMonth(m => m - 1)
+		}
 	}
-	const goToNextMonth = () => {
-		if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1) }
-		else setCurrentMonth(m => m + 1)
+	const goToNext = () => {
+		if (viewMode === 'week') {
+			const d = new Date(currentYear, currentMonth, currentDay + 7)
+			setCurrentYear(d.getFullYear()); setCurrentMonth(d.getMonth()); setCurrentDay(d.getDate())
+		} else {
+			if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1) }
+			else setCurrentMonth(m => m + 1)
+		}
 	}
 	const goToToday = () => {
 		setCurrentYear(today.getFullYear())
 		setCurrentMonth(today.getMonth())
+		setCurrentDay(today.getDate())
 	}
 
-	const handleDayClick = async (day: number) => {
+	const handleDayClick = async (year: number, month: number, day: number) => {
 		if (!dbFile || !dateField) return
 		const newFile = await manager.createNote(dbFile)
-		const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+		const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 		await app.fileManager.processFrontMatter(newFile, (fm: Record<string, unknown>) => { fm[dateField.id] = dateStr })
 	}
 
@@ -255,7 +319,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverDay(null)
 	}
 
-	const handleDayDrop = async (e: React.DragEvent, day: number) => {
+	const handleDayDrop = async (e: React.DragEvent, year: number, month: number, day: number) => {
 		e.preventDefault()
 		e.stopPropagation()
 		setDragOverDay(null)
@@ -263,7 +327,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		if (!path || !dateField) return
 		const file = app.vault.getFileByPath(path)
 		if (!file) return
-		const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+		const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 		await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => { fm[dateField.id] = dateStr })
 	}
 
@@ -337,12 +401,23 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 					</button>
 				))}
 			</BottomSheet>
+			{/* View mode toggle */}
+			<div className="nb-cal-view-toggle" style={{ margin: '4px 12px' }}>
+				{(['month', 'week'] as const).map(m => (
+					<button key={m} className={`nb-cal-view-btn${viewMode === m ? ' nb-cal-view-btn--active' : ''}`}
+						onClick={() => { void saveView({ ...activeView, calendarViewMode: m }) }}>
+						{m === 'month' ? t('calendar_view_month') : t('calendar_view_week')}
+					</button>
+				))}
+			</div>
 			{/* Calendar navigation */}
 			<div className="nb-cal-nav" style={{ padding: '4px 12px' }}>
-				<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToPrevMonth} title={t('calendar_prev_month')}>‹</button>
+				<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToPrev} title={viewMode === 'week' ? t('calendar_prev_week') : t('calendar_prev_month')}>‹</button>
 				<button className="nb-toolbar-btn nb-cal-today-btn" onClick={goToToday}>{t('calendar_today')}</button>
-				<span className="nb-cal-month-label">{MONTHS_LONG()[currentMonth]} {currentYear}</span>
-				<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToNextMonth} title={t('calendar_next_month')}>›</button>
+				<span className="nb-cal-month-label">
+					{viewMode === 'week' ? formatWeekRange(weekDays) : `${MONTHS_LONG()[currentMonth]} ${currentYear}`}
+				</span>
+				<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToNext} title={viewMode === 'week' ? t('calendar_next_week') : t('calendar_next_month')}>›</button>
 			</div>
 		</MobileToolbar>
 	) : (
@@ -397,12 +472,24 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 					)}
 				</div>
 
+				{/* View mode toggle */}
+				<div className="nb-cal-view-toggle">
+					{(['month', 'week'] as const).map(m => (
+						<button key={m} className={`nb-cal-view-btn${viewMode === m ? ' nb-cal-view-btn--active' : ''}`}
+							onClick={() => { void saveView({ ...activeView, calendarViewMode: m }) }}>
+							{m === 'month' ? t('calendar_view_month') : t('calendar_view_week')}
+						</button>
+					))}
+				</div>
+
 				{/* Navegação */}
 				<div className="nb-cal-nav">
-					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToPrevMonth} title={t('calendar_prev_month')}>‹</button>
+					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToPrev} title={viewMode === 'week' ? t('calendar_prev_week') : t('calendar_prev_month')}>‹</button>
 					<button className="nb-toolbar-btn nb-cal-today-btn" onClick={goToToday}>{t('calendar_today')}</button>
-					<span className="nb-cal-month-label">{MONTHS_LONG()[currentMonth]} {currentYear}</span>
-					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToNextMonth} title={t('calendar_next_month')}>›</button>
+					<span className="nb-cal-month-label">
+						{viewMode === 'week' ? formatWeekRange(weekDays) : `${MONTHS_LONG()[currentMonth]} ${currentYear}`}
+					</span>
+					<button className="nb-toolbar-btn nb-cal-nav-arrow" onClick={goToNext} title={viewMode === 'week' ? t('calendar_next_week') : t('calendar_next_month')}>›</button>
 				</div>
 
 				<button
@@ -482,33 +569,92 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 				</div>
 			) : (
 				<>
-					<div className="nb-cal-grid">
+					<div className={`nb-cal-grid${viewMode === 'week' ? ' nb-cal-grid--week' : ''}`}>
 						{/* Day headers */}
-						{DAYS_SHORT().map(d => (
-							<div key={d} className="nb-cal-day-header">{d}</div>
-						))}
+						{viewMode === 'week'
+							? weekDays.map(d => (
+								<div key={d.toISOString()} className="nb-cal-day-header nb-cal-day-header--week">
+									{DAYS_SHORT()[d.getDay()]} {d.getDate()}
+								</div>
+							))
+							: DAYS_SHORT().map(d => (
+								<div key={d} className="nb-cal-day-header">{d}</div>
+							))
+						}
 
 						{/* Day cells */}
-						{calendarCells.map((day, idx) => {
-							if (day === null) {
-								return <div key={`empty-${idx}`} className="nb-cal-cell nb-cal-cell--outside" />
-							}
-							const isToday  = day === todayDay
-							const isDragOver = day === dragOverDay
-							const dayRows  = rowsByDay.get(day) ?? []
-							return (
-								<div
-									key={day}
-									className={`nb-cal-cell${isToday ? ' nb-cal-cell--today' : ''}${isDragOver ? ' nb-cal-cell--drag-over' : ''}`}
-									onClick={() => { void handleDayClick(day) }}
-									onDragOver={e => handleDayDragOver(e, day)}
-									onDragLeave={handleDayDragLeave}
-									onDrop={e => { void handleDayDrop(e, day) }}
-									title={t('calendar_click_to_create')}
-								>
-									<div className="nb-cal-cell-header">
-										<span className={`nb-cal-day-num${isToday ? ' nb-cal-day-num--today' : ''}`}>{day}</span>
+						{viewMode === 'week'
+							? weekDays.map(d => {
+								const key = dateKey(d.getFullYear(), d.getMonth(), d.getDate())
+								const isToday = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()
+								const isDragOver = d.getDate() === dragOverDay
+								const dayRows = rowsByDate.get(key) ?? []
+								return (
+									<div
+										key={key}
+										className={`nb-cal-cell${isToday ? ' nb-cal-cell--today' : ''}${isDragOver ? ' nb-cal-cell--drag-over' : ''}`}
+										onClick={() => { void handleDayClick(d.getFullYear(), d.getMonth(), d.getDate()) }}
+										onDragOver={e => handleDayDragOver(e, d.getDate())}
+										onDragLeave={handleDayDragLeave}
+										onDrop={e => { void handleDayDrop(e, d.getFullYear(), d.getMonth(), d.getDate()) }}
+										title={t('calendar_click_to_create')}
+									>
+										<div className="nb-cal-cell-header">
+											<span className={`nb-cal-day-num${isToday ? ' nb-cal-day-num--today' : ''}`}>{d.getDate()}</span>
+										</div>
+										<div className="nb-cal-cell-body">
+											{dayRows.map(row => (
+												<div
+													key={row._file.path}
+													className="nb-cal-card"
+													draggable
+													onDragStart={e => handleCardDragStart(e, row)}
+													onClick={(e) => { e.stopPropagation(); void app.workspace.getLeaf().openFile(row._file) }}
+												>
+													<span className="nb-cal-card-title">{row._title}</span>
+													{(() => {
+														const dbFolder = dbFile?.parent?.path ?? ''
+														const fileFolder = row._file.parent?.path ?? ''
+														const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
+															? fileFolder.slice(dbFolder.length + 1) : ''
+														return relPath ? <div className="nb-folder-path">{relPath}</div> : null
+													})()}
+													{visibleCols.length > 0 && (
+														<div className="nb-cal-card-props">
+															{visibleCols.map(col => {
+																const val = row[col.id]
+																if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
+																const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+																return <span key={col.id} className="nb-cal-card-prop">{display}</span>
+															})}
+														</div>
+													)}
+												</div>
+											))}
+										</div>
 									</div>
+								)
+							})
+							: calendarCells.map((day, idx) => {
+								if (day === null) {
+									return <div key={`empty-${idx}`} className="nb-cal-cell nb-cal-cell--outside" />
+								}
+								const isToday  = day === todayDay
+								const isDragOver = day === dragOverDay
+								const dayRows  = rowsByDate.get(dateKey(currentYear, currentMonth, day)) ?? []
+								return (
+									<div
+										key={day}
+										className={`nb-cal-cell${isToday ? ' nb-cal-cell--today' : ''}${isDragOver ? ' nb-cal-cell--drag-over' : ''}`}
+										onClick={() => { void handleDayClick(currentYear, currentMonth, day) }}
+										onDragOver={e => handleDayDragOver(e, day)}
+										onDragLeave={handleDayDragLeave}
+										onDrop={e => { void handleDayDrop(e, currentYear, currentMonth, day) }}
+										title={t('calendar_click_to_create')}
+									>
+										<div className="nb-cal-cell-header">
+											<span className={`nb-cal-day-num${isToday ? ' nb-cal-day-num--today' : ''}`}>{day}</span>
+										</div>
 									<div className="nb-cal-cell-body">
 										{dayRows.map(row => (
 											<div
@@ -545,7 +691,8 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 									</div>
 								</div>
 							)
-						})}
+						})
+						}
 					</div>
 
 					{/* No-date rows */}

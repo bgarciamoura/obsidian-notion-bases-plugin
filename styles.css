@@ -3011,7 +3011,7 @@
 
 .nb-cal-grid {
 	display: grid;
-	grid-template-columns: repeat(7, 1fr);
+	grid-template-columns: repeat(7, minmax(0, 1fr));
 	border-top: 1px solid var(--background-modifier-border);
 	border-left: 1px solid var(--background-modifier-border);
 	flex: 1;
@@ -3029,6 +3029,55 @@
 	background: var(--background-secondary);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
+}
+
+.nb-cal-day-header--week {
+	font-variant-numeric: tabular-nums;
+}
+
+/* Week grid: single row fills available space */
+.nb-cal-grid--week {
+	grid-template-rows: auto 1fr;
+}
+
+/* View mode toggle */
+.nb-cal-view-toggle {
+	display: flex;
+}
+.nb-cal-view-btn {
+	padding: 2px 10px;
+	font-size: var(--font-ui-smaller);
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	color: var(--text-muted);
+	border-radius: 0;
+}
+.nb-cal-view-btn:first-child {
+	border-radius: var(--radius-s) 0 0 var(--radius-s);
+}
+.nb-cal-view-btn:last-child {
+	border-radius: 0 var(--radius-s) var(--radius-s) 0;
+	margin-left: -1px;
+}
+.nb-cal-view-btn:hover {
+	background: var(--background-modifier-hover);
+}
+.nb-cal-view-btn--active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-weight: 600;
+	border-color: var(--interactive-accent);
+	z-index: 1;
+	position: relative;
+}
+.nb-cal-view-btn:not(.nb-cal-view-btn--active) {
+	opacity: 0.6;
+}
+
+/* Week grid: cells fill remaining height */
+.nb-cal-grid--week .nb-cal-cell {
+	min-height: 0;
 }
 
 .nb-cal-cell {
@@ -3079,17 +3128,17 @@
 	font-size: var(--font-ui-small);
 	color: var(--text-muted);
 	line-height: 1;
-}
-
-.nb-cal-day-num--today {
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border-radius: 50%;
 	width: 22px;
 	height: 22px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	border-radius: 50%;
+}
+
+.nb-cal-day-num--today {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
 	font-weight: 600;
 }
 

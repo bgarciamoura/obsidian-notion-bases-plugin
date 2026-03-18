@@ -99,6 +99,7 @@ export interface ViewConfig {
 	galleryCoverField?: string
 	galleryCardSize?: 'small' | 'medium' | 'large'
 	calendarDateField?: string
+	calendarViewMode?: 'month' | 'week'
 	timelineStartField?: string
 	timelineEndField?: string
 	timelineZoom?: 'days' | 'weeks' | 'months'

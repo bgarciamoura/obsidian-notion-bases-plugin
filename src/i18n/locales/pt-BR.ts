@@ -212,6 +212,10 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	calendar_today: 'Hoje',
 	calendar_prev_month: 'Mês anterior',
 	calendar_next_month: 'Próximo mês',
+	calendar_view_month: 'Mês',
+	calendar_view_week: 'Semana',
+	calendar_prev_week: 'Semana anterior',
+	calendar_next_week: 'Próxima semana',
 
 	// Calendar days (short)
 	day_sun: 'Dom',

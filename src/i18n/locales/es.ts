@@ -212,6 +212,10 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	calendar_today: 'Hoy',
 	calendar_prev_month: 'Mes anterior',
 	calendar_next_month: 'Mes siguiente',
+	calendar_view_month: 'Mes',
+	calendar_view_week: 'Semana',
+	calendar_prev_week: 'Semana anterior',
+	calendar_next_week: 'Semana siguiente',
 
 	// Calendar days (short)
 	day_sun: 'Dom',

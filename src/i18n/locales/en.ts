@@ -210,6 +210,10 @@ const en = {
 	calendar_today: 'Today',
 	calendar_prev_month: 'Previous month',
 	calendar_next_month: 'Next month',
+	calendar_view_month: 'Month',
+	calendar_view_week: 'Week',
+	calendar_prev_week: 'Previous week',
+	calendar_next_week: 'Next week',
 
 	// Calendar days (short)
 	day_sun: 'Sun',

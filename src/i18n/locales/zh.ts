@@ -212,6 +212,10 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	calendar_today: '今天',
 	calendar_prev_month: '上个月',
 	calendar_next_month: '下个月',
+	calendar_view_month: '月',
+	calendar_view_week: '周',
+	calendar_prev_week: '上一周',
+	calendar_next_week: '下一周',
 
 	// Calendar days (short)
 	day_sun: '日',
