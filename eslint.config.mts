@@ -50,5 +50,7 @@ export default tseslint.config(
 		"main.js",
 		"*.cjs",
 		"obsidian-notion-bases-plugin",
+		"tests",
+		"vitest.config.ts",
 	]),
 );

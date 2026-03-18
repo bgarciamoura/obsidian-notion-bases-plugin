@@ -22,6 +22,11 @@ const next =
 manifest.version = next
 writeFileSync('manifest.json', JSON.stringify(manifest, null, '\t') + '\n')
 
+// Update package.json
+const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+pkg.version = next
+writeFileSync('package.json', JSON.stringify(pkg, null, '\t') + '\n')
+
 // Update versions.json
 const versions = JSON.parse(readFileSync('versions.json', 'utf8'))
 versions[next] = manifest.minAppVersion
@@ -39,7 +44,7 @@ try {
 }
 
 // Git: commit, tag, push
-execSync(`git add manifest.json versions.json`, { stdio: 'inherit' })
+execSync(`git add manifest.json versions.json package.json`, { stdio: 'inherit' })
 execSync(`git commit -m "chore: bump version to ${next}"`, { stdio: 'inherit' })
 execSync(`git tag ${next}`, { stdio: 'inherit' })
 execSync(`git push && git push origin ${next}`, { stdio: 'inherit' })
