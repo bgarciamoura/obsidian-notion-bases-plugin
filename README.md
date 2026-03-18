@@ -38,33 +38,58 @@ Turn any folder into a Notion-style database with Table, Board (Kanban), Gallery
 
 ## Why Notion Bases?
 
-Obsidian's built-in Bases plugin is great for tables and has its own expression-based formula system. Notion Bases focuses on a different set of trade-offs — more views, more column types, and a spreadsheet-style formula syntax:
+Obsidian's built-in Bases plugin is great for tables and has its own expression-based formula system. Notion Bases focuses on a different set of trade-offs — more views, more column types, and a spreadsheet-style formula syntax.
+
+### Views
+
+| View | Notion Bases | Core Bases |
+|------|:---:|:---:|
+| Table | Yes | Yes |
+| Board / Kanban | **Yes** | No |
+| Gallery | **Yes** | No |
+| List | Yes | Yes |
+| Calendar | **Yes** | No |
+| Timeline / Gantt | **Yes** | No |
+
+> Notion Bases offers **4 exclusive views** that Core Bases doesn't have — Board, Gallery, Calendar, and Timeline — giving you the flexibility to visualize data the way that fits your workflow.
+
+### Data modeling
 
 | Feature | Notion Bases | Core Bases |
 |---------|:---:|:---:|
-| Table view | Yes | Yes |
-| Board / Kanban view | Yes | No |
-| Gallery view | Yes | No |
-| List view | Yes | Yes |
-| Calendar view | Yes | No |
-| Timeline / Gantt view | Yes | No |
-| Column types | **15** | 7 |
-| Formulas | Spreadsheet-style (IF, SUM, AVG, CONCAT) | Expression-based (JS-like) |
-| Relation columns | Yes | No |
-| Lookup columns | Yes | No |
-| Image columns (rendered) | Yes | Text only |
-| Aggregation row (sum, avg, min, max) | Yes | No |
-| Number formatting (prefix, suffix, decimals) | Yes | No |
-| Column pinning | Yes | No |
-| Column reordering (drag) | Yes | No |
-| Column resizing (drag) | Yes | No |
-| Row height options | Yes | No |
-| Text wrap toggle | Yes | No |
-| CSV import / export | Yes | No |
-| Bulk actions (delete, duplicate, move) | Yes | No |
+| Column types | **15** | 6 |
+| Formulas | Spreadsheet-style (`IF`, `SUM`, `AVG`, `CONCAT`) | Expression-based (JS-like) |
+| Relation columns | **Yes** | No |
+| Lookup columns | **Yes** | No |
+| Image columns | **Rendered in cell** | Text only |
+| Number formatting (prefix, suffix, decimals, thousands) | **Yes** | No |
+
+> With relation and lookup columns, you can link databases together and pull values across notes — just like Notion. The spreadsheet-style formula syntax is familiar to anyone who has used Excel or Google Sheets.
+
+### Table experience
+
+| Feature | Notion Bases | Core Bases |
+|---------|:---:|:---:|
+| Column reordering (drag) | Yes | Yes |
+| Column resizing (drag) | Yes | Yes |
+| Column pinning | **Yes** | No |
+| Row height options | Yes | Yes |
+| Text wrap toggle | **Yes** | No |
+| Aggregation row | **5 functions always visible** | Right-click → Summarize |
+| Multi-column sort with priority | **Yes** | Basic sort |
+| CSV import / export | **Yes** | No |
+| Bulk actions (delete, duplicate, move) | **Yes** | No |
+
+> Both plugins let you resize, reorder columns and adjust row height. Notion Bases goes further with **column pinning**, **text wrap**, a **persistent aggregation footer**, **multi-column sort with drag-to-reorder priority**, **CSV import/export**, and **bulk row actions**.
+
+### Shared features
+
+| Feature | Notion Bases | Core Bases |
+|---------|:---:|:---:|
 | Embed database in any note | Yes | Yes |
 | Multiple views per database | Yes | Yes |
 | AND/OR filter logic | Yes | Yes |
+| 100% local Markdown | Yes | Yes |
 
 **If you ever wished Obsidian had Notion-level databases without leaving your vault, this is it.**
 
