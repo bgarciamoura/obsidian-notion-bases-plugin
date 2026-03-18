@@ -217,7 +217,9 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 
 		case 'relation': {
 			const rawRel = value
-			const relArray: string[] = Array.isArray(rawRel) ? rawRel : (rawRel ? [String(rawRel)] : [])
+			const relArray: string[] = Array.isArray(rawRel)
+				? rawRel.filter((v): v is string => typeof v === 'string')
+				: (typeof rawRel === 'string' && rawRel ? [rawRel] : [])
 			return (
 				<RelationCell
 					value={relArray}
