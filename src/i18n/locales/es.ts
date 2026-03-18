@@ -285,9 +285,11 @@ const es: Partial<Record<keyof typeof en, string>> = {
 
 	// Select cell
 	select_clear: 'Limpiar',
+	select_create_placeholder: 'Crear nueva opción...',
 
 	// Status cell
 	status_new_placeholder: 'Nuevo estado...',
+	color_custom: 'Personalizado',
 
 	// Type change validation errors
 	validate_non_numeric: 'Celda(s) contienen valores no numéricos (ej: "',

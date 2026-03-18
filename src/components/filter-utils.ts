@@ -15,7 +15,7 @@ export interface ActiveFilter {
 export const TEXT_OPERATORS: FilterOperator[] = ['contains', 'not_contains', 'starts_with', 'ends_with', 'is', 'is_not', 'is_empty', 'is_not_empty']
 export const NUMBER_OPERATORS: FilterOperator[] = ['is', 'is_not', 'gt', 'gte', 'lt', 'lte', 'is_empty', 'is_not_empty']
 export const DATE_OPERATORS: FilterOperator[] = ['is', 'is_not', 'gt', 'gte', 'lt', 'lte', 'is_empty', 'is_not_empty']
-export const SELECT_OPERATORS: FilterOperator[] = ['is', 'is_not', 'is_empty', 'is_not_empty']
+export const SELECT_OPERATORS: FilterOperator[] = ['is', 'is_not', 'contains', 'not_contains', 'is_empty', 'is_not_empty']
 export const CHECKBOX_OPERATORS: FilterOperator[] = ['is_checked', 'is_unchecked', 'is_empty', 'is_not_empty']
 
 export function getOperatorsForType(type: string): FilterOperator[] {
@@ -24,6 +24,7 @@ export function getOperatorsForType(type: string): FilterOperator[] {
 		case 'date': return DATE_OPERATORS
 		case 'select': return SELECT_OPERATORS
 		case 'multiselect': return SELECT_OPERATORS
+		case 'status': return SELECT_OPERATORS
 		case 'checkbox': return CHECKBOX_OPERATORS
 		default: return TEXT_OPERATORS
 	}
@@ -33,7 +34,7 @@ export function getDefaultOperator(type: string): FilterOperator {
 	switch (type) {
 		case 'number': case 'date': return 'is'
 		case 'checkbox': return 'is_checked'
-		case 'select': case 'multiselect': return 'is'
+		case 'select': case 'multiselect': case 'status': return 'is'
 		default: return 'contains'
 	}
 }
@@ -52,6 +53,24 @@ export const OPERATOR_LABELS: Record<FilterOperator, string> = new Proxy({} as R
 })
 
 export const NO_VALUE_OPERATORS = new Set<FilterOperator>(['is_empty', 'is_not_empty', 'is_checked', 'is_unchecked'])
+export const MULTI_VALUE_SEPARATOR = '|||'
+
+export function isMultiValueFilter(f: ActiveFilter): boolean {
+	return (f.columnType === 'select' || f.columnType === 'multiselect' || f.columnType === 'status')
+		&& (f.operator === 'is' || f.operator === 'is_not')
+}
+
+export function parseMultiValue(value: string): string[] {
+	return value.split(MULTI_VALUE_SEPARATOR).filter(v => v !== '')
+}
+
+export function toggleMultiValue(current: string, option: string): string {
+	const values = parseMultiValue(current)
+	const idx = values.indexOf(option)
+	if (idx >= 0) values.splice(idx, 1)
+	else values.push(option)
+	return values.join(MULTI_VALUE_SEPARATOR)
+}
 
 export function getColumnIconStatic(type: string): string {
 	const icons: Record<string, string> = {
@@ -99,6 +118,17 @@ export function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 			case 'lte': return d <= v
 			default: return true
 		}
+	}
+
+	// For select/multiselect with is/is_not, support multiple selected values
+	if (isMultiValueFilter(f)) {
+		const selectedValues = parseMultiValue(f.value).map(s => s.toLowerCase())
+		if (selectedValues.length === 0) return true
+		const cellValues = Array.isArray(raw)
+			? (raw as string[]).map(s => s.toLowerCase())
+			: [String((raw as string | number | boolean | null | undefined) ?? '').toLowerCase()]
+		if (f.operator === 'is') return cellValues.some(c => selectedValues.includes(c))
+		return cellValues.every(c => !selectedValues.includes(c)) // is_not
 	}
 
 	const cell = Array.isArray(raw)

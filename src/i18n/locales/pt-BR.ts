@@ -285,9 +285,11 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 
 	// Select cell
 	select_clear: 'Limpar',
+	select_create_placeholder: 'Criar nova opção...',
 
 	// Status cell
 	status_new_placeholder: 'Novo status...',
+	color_custom: 'Personalizada',
 
 	// Type change validation errors
 	validate_non_numeric: 'Célula(s) contêm valores não numéricos (ex: "',

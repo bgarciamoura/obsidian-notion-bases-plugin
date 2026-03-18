@@ -285,9 +285,11 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 
 	// Select cell
 	select_clear: '清除',
+	select_create_placeholder: '创建新选项...',
 
 	// Status cell
 	status_new_placeholder: '新状态...',
+	color_custom: '自定义',
 
 	// Type change validation errors
 	validate_non_numeric: '单元格包含非数字值（例："',
