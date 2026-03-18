@@ -2,7 +2,6 @@
 # Notion Bases — The database plugin Obsidian is missing
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/bgarciamoura/obsidian-notion-bases-plugin)
-![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=7c3aed&label=downloads&query=%24%5B%22obsidian-notion-bases%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json)
 ![Minimum Obsidian version](https://img.shields.io/badge/obsidian-%3E%3D1.4.0-7c3aed)
 ![License](https://img.shields.io/github/license/bgarciamoura/obsidian-notion-bases-plugin)
 
@@ -135,17 +134,21 @@ Horizontal bar chart with three zoom levels (days / weeks / months). Drag bar ed
 
 ### Installation
 
-**Community plugins (recommended)**
+> **Note:** Notion Bases is not yet available in Obsidian's Community Plugins directory. For now, use one of the methods below.
 
-1. Open **Settings > Community plugins** and disable Safe mode if prompted
-2. Click **Browse**, search for **Notion Bases** and install
-3. Enable the plugin
+**Via BRAT (recommended)**
+
+1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin from Community Plugins
+2. Open BRAT settings and click **Add Beta plugin**
+3. Paste: `bgarciamoura/obsidian-notion-bases-plugin`
+4. Enable **Notion Bases** in **Settings > Community plugins**
 
 **Manual installation**
 
 1. Download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/bgarciamoura/obsidian-notion-bases-plugin/releases/latest)
-2. Copy the three files to `<your-vault>/.obsidian/plugins/notion-bases/`
-3. Reload Obsidian and enable the plugin in **Settings > Community plugins**
+2. Create a folder `<your-vault>/.obsidian/plugins/notion-bases/`
+3. Copy the three files into it
+4. Reload Obsidian and enable the plugin in **Settings > Community plugins**
 
 ### Create your first database
 
