@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notion Bases — The database plugin Obsidian is missing</title>
-  <meta name="description" content="6 views. 15 column types. Formulas, relations and lookups. Turn any folder into a full-featured database inside Obsidian.">
+  <meta name="description" content="6 views. 17 column types. Formulas, relations and lookups. Turn any folder into a full-featured database inside Obsidian.">
   <meta name="theme-color" content="#7c3aed">
   <meta property="og:title" content="Notion Bases — Obsidian Plugin">
-  <meta property="og:description" content="6 views. 15 column types. Formulas, relations and lookups. Zero code required.">
+  <meta property="og:description" content="6 views. 17 column types. Formulas, relations and lookups. Zero code required.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://bgarciamoura.github.io/obsidian-notion-bases-plugin/">
   <style>
@@ -763,10 +763,10 @@
   <!-- Hero -->
   <section class="hero">
     <div class="hero-content">
-      <div class="hero-badge fade-in">Obsidian Plugin</div>
+      <div class="hero-badge fade-in">v1.4.0 &mdash; Now with Audio, Video &amp; Calendar Time Slots</div>
       <h1 class="fade-in fade-in-delay-1">Notion Bases</h1>
       <p class="hero-subtitle fade-in fade-in-delay-2">The database plugin Obsidian is missing</p>
-      <p class="hero-description fade-in fade-in-delay-3">6 views. 15 column types. Formulas, relations and lookups. Turn any folder into a full-featured database &mdash; all powered by plain Markdown. Your data stays yours.</p>
+      <p class="hero-description fade-in fade-in-delay-3">6 views. 17 column types. Formulas, relations and lookups. Turn any folder into a full-featured database &mdash; all powered by plain Markdown. Your data stays yours.</p>
       <div class="hero-buttons fade-in fade-in-delay-4">
         <a href="#install" class="btn btn-primary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -783,7 +783,7 @@
           <div class="hero-stat-label">Views</div>
         </div>
         <div class="hero-stat">
-          <div class="hero-stat-value">15</div>
+          <div class="hero-stat-value">17</div>
           <div class="hero-stat-label">Column Types</div>
         </div>
         <div class="hero-stat">
@@ -868,7 +868,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <h3>Calendar</h3>
-            <p>Monthly calendar. Position notes by any date field. Click a day to create a note with the date pre-filled.</p>
+            <p>Monthly and weekly views with time slot support. The weekly view shows a Google Calendar-style time grid with positioned events, a current-time indicator, and an all-day row.</p>
           </div>
         </div>
 
@@ -902,8 +902,8 @@
           <div class="feature-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
           </div>
-          <h3>15 Column Types</h3>
-          <p>Title, Text, Number, Select, Multi-select, Checkbox, Date, URL, Email, Phone, Status, Formula, Relation, Lookup, and Image.</p>
+          <h3>17 Column Types</h3>
+          <p>Title, Text, Number, Select, Multi-select, Checkbox, Date, URL, Email, Phone, Status, Formula, Relation, Lookup, Image, Audio, and Video.</p>
         </div>
 
         <div class="feature-card fade-in fade-in-delay-1">
@@ -964,10 +964,10 @@
 
         <div class="feature-card fade-in fade-in-delay-2">
           <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
           </div>
-          <h3>Database Embed</h3>
-          <p>Embed any database inside a regular note with a simple code block. Pin a fixed view type or show the full tab bar.</p>
+          <h3>Mobile Optimized</h3>
+          <p>Touch-friendly across all 6 views. Scroll-snap on boards, long-press context menus, bottom sheets, and responsive layouts for phones and tablets.</p>
         </div>
 
       </div>
@@ -997,11 +997,14 @@
             <tr><td>List view</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td></tr>
             <tr><td>Calendar view</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
             <tr><td>Timeline / Gantt view</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Column types</td><td class="col-notion"><span class="highlight-cell">15</span></td><td>7</td></tr>
+            <tr><td>Column types</td><td class="col-notion"><span class="highlight-cell">17</span></td><td>7</td></tr>
             <tr><td>Formulas</td><td class="col-notion"><span class="highlight-cell">Spreadsheet-style</span></td><td>Expression-based</td></tr>
             <tr><td>Relation columns</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
             <tr><td>Lookup columns</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
             <tr><td>Image columns (rendered)</td><td class="col-notion"><span class="check">&#10003;</span></td><td>Text only</td></tr>
+            <tr><td>Audio / Video columns</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
+            <tr><td>Calendar time slots</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
+            <tr><td>Mobile-optimized views</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
             <tr><td>Aggregation row</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
             <tr><td>Number formatting</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
             <tr><td>Column pinning</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
