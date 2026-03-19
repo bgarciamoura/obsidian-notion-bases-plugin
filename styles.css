@@ -443,6 +443,8 @@
 	left: 0;
 	z-index: 100;
 	min-width: 180px;
+	max-height: 60vh;
+	overflow-y: auto;
 	background: var(--background-primary);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
@@ -2860,6 +2862,23 @@
 	display: block;
 }
 
+/* ── Audio cell ──────────────────────────────────────────────────────────── */
+
+.nb-cell-audio {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	height: 100%;
+	padding: 0 4px;
+	box-sizing: border-box;
+}
+
+.nb-audio-player {
+	width: 100%;
+	height: 28px;
+	min-width: 120px;
+}
+
 /* ── Image cell ──────────────────────────────────────────────────────────── */
 
 .nb-cell-image {
@@ -3688,6 +3707,10 @@ body.nb-tl-resizing * {
 .nb-cal-day-actions .nb-menu-item {
 	font-size: var(--font-ui-smaller);
 	min-height: 36px;
+}
+
+.is-mobile .nb-row-count-bar {
+	display: none;
 }
 
 .is-mobile .nb-cal-nav-arrow {

@@ -19,6 +19,7 @@ export type ColumnType =
 	| 'relation'
 	| 'lookup'
 	| 'image'
+	| 'audio'
 
 export interface SelectOption {
 	value: string
@@ -46,6 +47,7 @@ export interface ColumnSchema {
 	pairedColumnId?: string   // two-way relation: column id in the target database
 	numberFormat?: NumberFormat
 	imageSourceFolder?: string
+	audioSourceFolder?: string
 }
 
 // ── View / filter / sort ────────────────────────────────────────────────────

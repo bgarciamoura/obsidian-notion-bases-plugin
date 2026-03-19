@@ -300,6 +300,18 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 				/>
 			)
 
+		case 'audio':
+			return (
+				<AudioCell
+					col={col}
+					value={value as string | null}
+					isEditing={isEditing}
+					onStartEdit={startEditing}
+					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCancel={() => setEditingCell(null)}
+				/>
+			)
+
 		default:
 			return <span className="nb-cell-text">{String((value as string | number | boolean | null | undefined) ?? '')}</span>
 	}
@@ -1413,6 +1425,90 @@ function ImageCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 								)
 							})}
 						</div>
+					)}
+				</div>,
+				document.body
+			)}
+		</>
+	)
+}
+
+// ── AudioCell ────────────────────────────────────────────────────────────────
+
+const AUDIO_EXTS = new Set(['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'webm'])
+
+function AudioCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
+	col: ColumnSchema
+	value: string | null
+	isEditing: boolean
+	onStartEdit: () => void
+	onCommit: (v: string | null) => void
+	onCancel: () => void
+}) {
+	const app = useApp()
+	const [audioFiles, setAudioFiles] = useState<TFile[]>([])
+	const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null)
+	const cellRef = useRef<HTMLDivElement>(null)
+	const dropdownRef = useRef<HTMLDivElement>(null)
+
+	useEffect(() => {
+		if (!isEditing) return
+		const folder = col.audioSourceFolder
+		const allFiles = app.vault.getFiles()
+		const filtered = folder
+			? allFiles.filter(f => AUDIO_EXTS.has(f.extension.toLowerCase()) && (f.path.startsWith(folder + '/') || f.parent?.path === folder))
+			: allFiles.filter(f => AUDIO_EXTS.has(f.extension.toLowerCase()))
+		setAudioFiles(filtered.sort((a, b) => a.name.localeCompare(b.name)))
+		if (cellRef.current) {
+			const rect = cellRef.current.getBoundingClientRect()
+			setDropdownPos({ top: rect.bottom, left: rect.left, width: rect.width })
+		}
+	}, [isEditing, col.audioSourceFolder])
+
+	useEffect(() => {
+		if (!isEditing) return
+		const h = (e: MouseEvent) => {
+			if (dropdownRef.current?.contains(e.target as Node)) return
+			if (cellRef.current?.contains(e.target as Node)) return
+			onCancel()
+		}
+		document.addEventListener('mousedown', h)
+		return () => document.removeEventListener('mousedown', h)
+	}, [isEditing, onCancel])
+
+	const audioFile = value ? app.vault.getFileByPath(value) : null
+	const audioUrl = audioFile ? app.vault.getResourcePath(audioFile) : null
+
+	return (
+		<>
+			<div ref={cellRef} className="nb-cell-audio" onClick={onStartEdit}>
+				{audioUrl ? (
+					<audio controls preload="metadata" src={audioUrl} className="nb-audio-player" onClick={e => e.stopPropagation()} />
+				) : (
+					<span className="nb-cell-text nb-cell-placeholder">{t('audio_select_placeholder')}</span>
+				)}
+			</div>
+			{isEditing && dropdownPos && createPortal(
+				<div ref={dropdownRef} className="nb-select-dropdown" style={{ position: 'fixed', top: dropdownPos.top, left: dropdownPos.left, minWidth: dropdownPos.width, zIndex: 9999 }}>
+					<button className="nb-select-option nb-select-clear" onClick={e => { e.stopPropagation(); onCommit(null) }}>
+						{t('audio_picker_clear')}
+					</button>
+					<div className="nb-menu-separator" />
+					{audioFiles.length === 0 ? (
+						<div className="nb-select-option" style={{ color: 'var(--text-muted)', cursor: 'default' }}>
+							{col.audioSourceFolder ? `${t('audio_picker_empty_folder')} "${col.audioSourceFolder}"` : t('audio_picker_empty_vault')}
+						</div>
+					) : (
+						audioFiles.map(f => (
+							<button
+								key={f.path}
+								className={`nb-select-option${value === f.path ? ' nb-select-option--active' : ''}`}
+								onClick={e => { e.stopPropagation(); onCommit(f.path) }}
+							>
+								<span>🎵</span>
+								<span>{f.name}</span>
+							</button>
+						))
 					)}
 				</div>,
 				document.body

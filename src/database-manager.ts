@@ -330,6 +330,10 @@ export class DatabaseManager {
 		if (['done', 'completed', 'archived', 'published', 'pinned'].includes(key)) {
 			return 'checkbox'
 		}
+		if (['audio', 'sound', 'music', 'recording'].includes(key) ||
+			key.endsWith('_audio') || key.endsWith('_sound')) {
+			return 'audio'
+		}
 
 		const nonNull = values.filter(v => v !== null && v !== undefined)
 		if (nonNull.length === 0) return 'text'

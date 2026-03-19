@@ -114,6 +114,17 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	type_relation: 'Relação',
 	type_lookup: 'Lookup',
 	type_image: 'Imagem',
+	type_audio: 'Áudio',
+	audio_path_placeholder: 'Caminho para o arquivo de áudio...',
+	audio_select_placeholder: 'Selecionar áudio...',
+	audio_picker_title: 'Selecionar áudio',
+	audio_picker_clear: 'Limpar',
+	audio_picker_empty_folder: 'Nenhum arquivo de áudio na pasta',
+	audio_picker_empty_vault: 'Nenhum arquivo de áudio no vault',
+	audio_panel_title: 'Configurações de áudio',
+	audio_folder_label: 'Pasta de origem (deixe vazio para o vault inteiro)',
+	audio_folder_placeholder: 'Ex: audio/musica',
+	configure_audio_folder: 'Configurar pasta de áudio',
 
 	// Formula panel
 	formula_panel_title: 'Fórmula',

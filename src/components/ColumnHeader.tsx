@@ -23,6 +23,7 @@ const TYPE_ICONS: Record<ColumnType, string> = {
 	relation:    '🔗',
 	lookup:      '↗',
 	image:       '🖼',
+	audio:       '🎵',
 }
 
 const TYPE_LABELS = (): Record<ColumnType, string> => ({
@@ -41,6 +42,7 @@ const TYPE_LABELS = (): Record<ColumnType, string> => ({
 	relation:    t('type_relation'),
 	lookup:      t('type_lookup'),
 	image:       t('type_image'),
+	audio:       t('type_audio'),
 })
 
 interface ColumnHeaderProps {
@@ -97,13 +99,20 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const imgPanelRef = useRef<HTMLDivElement>(null)
 	const imgDragOffset = useRef<{ x: number; y: number } | null>(null)
 
+	// Audio config state
+	const [editingAudioConfig, setEditingAudioConfig] = useState(false)
+	const [audioPanelPos, setAudioPanelPos] = useState<{ x: number; y: number } | null>(null)
+	const [audioFolderInput, setAudioFolderInput] = useState(col.audioSourceFolder ?? '')
+	const audioPanelRef = useRef<HTMLDivElement>(null)
+	const audioDragOffset = useRef<{ x: number; y: number } | null>(null)
+
 	// Fechar menu ao clicar fora
 	useEffect(() => {
 		if (!menuOpen) return
 		const handler = (e: MouseEvent) => {
 			const target = e.target as Node
 			const inMenu = menuRef.current?.contains(target)
-			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target) || fmtPanelRef.current?.contains(target) || imgPanelRef.current?.contains(target)
+			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target) || fmtPanelRef.current?.contains(target) || imgPanelRef.current?.contains(target) || audioPanelRef.current?.contains(target)
 			if (!inMenu && !inPanel) {
 				setMenuOpen(false)
 				setEditingFormula(false)
@@ -277,6 +286,38 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
 	}, [editingImageConfig])
 
+	// Sync audio folder input with col
+	useEffect(() => {
+		if (!editingAudioConfig) setAudioFolderInput(col.audioSourceFolder ?? '')
+	}, [col.audioSourceFolder, editingAudioConfig])
+
+	// Position panel when audio config opens
+	useEffect(() => {
+		if (!editingAudioConfig) return
+		if (menuRef.current) {
+			const rect = menuRef.current.getBoundingClientRect()
+			const pw = 280, ph = 160
+			let x = rect.left
+			let y = rect.bottom + 4
+			if (x + pw > window.innerWidth) x = window.innerWidth - pw - 8
+			if (y + ph > window.innerHeight) y = rect.top - ph - 4
+			setAudioPanelPos({ x, y })
+		}
+	}, [editingAudioConfig])
+
+	// Drag for audio config panel
+	useEffect(() => {
+		if (!editingAudioConfig) return
+		const onMove = (e: MouseEvent) => {
+			if (!audioDragOffset.current) return
+			setAudioPanelPos({ x: e.clientX - audioDragOffset.current.x, y: e.clientY - audioDragOffset.current.y })
+		}
+		const onUp = () => { audioDragOffset.current = null }
+		document.addEventListener('mousemove', onMove)
+		document.addEventListener('mouseup', onUp)
+		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+	}, [editingAudioConfig])
+
 	// Drag for number format panel
 	useEffect(() => {
 		if (!editingNumberFmt) return
@@ -304,6 +345,23 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const handleImageTitleBarMouseDown = (e: React.MouseEvent) => {
 		if (!imagePanelPos) return
 		imgDragOffset.current = { x: e.clientX - imagePanelPos.x, y: e.clientY - imagePanelPos.y }
+		e.preventDefault()
+	}
+
+	const handleSaveAudioConfig = async () => {
+		await updateCol({ audioSourceFolder: audioFolderInput.trim() || undefined })
+		setEditingAudioConfig(false)
+		setMenuOpen(false)
+	}
+
+	const handleCloseAudioConfig = () => {
+		setEditingAudioConfig(false)
+		setMenuOpen(false)
+	}
+
+	const handleAudioTitleBarMouseDown = (e: React.MouseEvent) => {
+		if (!audioPanelPos) return
+		audioDragOffset.current = { x: e.clientX - audioPanelPos.x, y: e.clientY - audioPanelPos.y }
 		e.preventDefault()
 	}
 
@@ -760,6 +818,33 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		document.body
 	) : null
 
+	const audioCfgPanel = editingAudioConfig && audioPanelPos ? createPortal(
+		<div ref={audioPanelRef} className="nb-formula-floating-panel" style={{ top: audioPanelPos.y, left: audioPanelPos.x, minWidth: 280 }}>
+			<div className="nb-formula-titlebar" onMouseDown={handleAudioTitleBarMouseDown}>
+				<span className="nb-formula-titlebar-icon">🎵</span>
+				<span className="nb-formula-titlebar-title">{t('audio_panel_title')}: {col.name}</span>
+				<button className="nb-formula-close" onClick={handleCloseAudioConfig} title={t('tooltip_close')}>×</button>
+			</div>
+			<div className="nb-formula-body" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+				<label style={{ fontSize: 'var(--font-ui-small)', color: 'var(--text-muted)' }}>
+					{t('audio_folder_label')}
+				</label>
+				<input
+					type="text"
+					className="nb-header-rename-input"
+					value={audioFolderInput}
+					onChange={e => setAudioFolderInput(e.target.value)}
+					placeholder={t('audio_folder_placeholder')}
+				/>
+				<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+					<button className="nb-menu-item" onClick={handleCloseAudioConfig} style={{ flex: 1 }}>{t('formula_cancel')}</button>
+					<button className="nb-menu-item" onClick={() => { void handleSaveAudioConfig() }} style={{ flex: 1, color: 'var(--interactive-accent)' }}>{t('formula_save')}</button>
+				</div>
+			</div>
+		</div>,
+		document.body
+	) : null
+
 	return (
 		<div className="nb-column-header" ref={menuRef}>
 			{/* Label da coluna */}
@@ -830,9 +915,16 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						</button>
 					)}
 
+					{col.type === 'audio' && (
+						<button className="nb-menu-item" onClick={() => setEditingAudioConfig(true)}>
+							<span className="nb-menu-item-icon">🎵</span>
+							<span>{t('configure_audio_folder')}</span>
+						</button>
+					)}
+
 					<div className="nb-menu-separator" />
 					<div className="nb-menu-label">{t('field_type_label')}</div>
-					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'url', 'email', 'phone', 'status', 'formula', 'relation', 'lookup', 'image'] as ColumnType[]).map(type => (
+					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'url', 'email', 'phone', 'status', 'formula', 'relation', 'lookup', 'image', 'audio'] as ColumnType[]).map(type => (
 						<button
 							key={type}
 							className={`nb-menu-item nb-menu-type-item ${col.type === type ? 'nb-menu-item--active' : ''}`}
@@ -860,6 +952,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			{lookupPanel}
 			{numberFmtPanel}
 			{imageCfgPanel}
+			{audioCfgPanel}
 		</div>
 	)
 }

@@ -112,6 +112,17 @@ const en = {
 	type_relation: 'Relation',
 	type_lookup: 'Lookup',
 	type_image: 'Image',
+	type_audio: 'Audio',
+	audio_path_placeholder: 'Path to audio file...',
+	audio_select_placeholder: 'Select audio...',
+	audio_picker_title: 'Select audio',
+	audio_picker_clear: 'Clear',
+	audio_picker_empty_folder: 'No audio files in folder',
+	audio_picker_empty_vault: 'No audio files in vault',
+	audio_panel_title: 'Audio settings',
+	audio_folder_label: 'Source folder (leave empty for entire vault)',
+	audio_folder_placeholder: 'Ex: audio/music',
+	configure_audio_folder: 'Configure audio folder',
 
 	// Formula panel
 	formula_panel_title: 'Formula',

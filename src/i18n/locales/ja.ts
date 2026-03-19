@@ -114,6 +114,17 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	type_relation: 'リレーション',
 	type_lookup: 'Lookup',
 	type_image: '画像',
+	type_audio: 'オーディオ',
+	audio_path_placeholder: '音声ファイルのパス...',
+	audio_select_placeholder: '音声を選択...',
+	audio_picker_title: '音声を選択',
+	audio_picker_clear: 'クリア',
+	audio_picker_empty_folder: 'フォルダーに音声ファイルがありません',
+	audio_picker_empty_vault: '保管庫に音声ファイルがありません',
+	audio_panel_title: '音声設定',
+	audio_folder_label: 'ソースフォルダー（空にすると保管庫全体を対象）',
+	audio_folder_placeholder: '例：audio/music',
+	configure_audio_folder: '音声フォルダーを設定',
 
 	// Formula panel
 	formula_panel_title: '数式',

@@ -114,6 +114,17 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	type_relation: '关联',
 	type_lookup: 'Lookup',
 	type_image: '图片',
+	type_audio: '音频',
+	audio_path_placeholder: '音频文件路径...',
+	audio_select_placeholder: '选择音频...',
+	audio_picker_title: '选择音频',
+	audio_picker_clear: '清除',
+	audio_picker_empty_folder: '文件夹中没有音频文件',
+	audio_picker_empty_vault: '仓库中没有音频文件',
+	audio_panel_title: '音频设置',
+	audio_folder_label: '来源文件夹（留空则使用整个仓库）',
+	audio_folder_placeholder: '例：audio/music',
+	configure_audio_folder: '配置音频文件夹',
 
 	// Formula panel
 	formula_panel_title: '公式',

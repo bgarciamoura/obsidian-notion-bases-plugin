@@ -114,6 +114,17 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	type_relation: 'Relation',
 	type_lookup: 'Lookup',
 	type_image: 'Image',
+	type_audio: 'Audio',
+	audio_path_placeholder: 'Chemin vers le fichier audio...',
+	audio_select_placeholder: 'Sélectionner un audio...',
+	audio_picker_title: 'Sélectionner un audio',
+	audio_picker_clear: 'Effacer',
+	audio_picker_empty_folder: 'Aucun fichier audio dans le dossier',
+	audio_picker_empty_vault: 'Aucun fichier audio dans le vault',
+	audio_panel_title: 'Paramètres audio',
+	audio_folder_label: 'Dossier source (laisser vide pour tout le vault)',
+	audio_folder_placeholder: 'Ex : audio/musique',
+	configure_audio_folder: 'Configurer le dossier audio',
 
 	// Formula panel
 	formula_panel_title: 'Formule',
