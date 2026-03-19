@@ -772,9 +772,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			// Two-way relation sync
 			const col = config.schema.find(c => c.id === columnId)
 			if (col?.type === 'relation' && col.pairedColumnId) {
-				const oldRaw = row[columnId]
-				const oldValues: string[] = Array.isArray(oldRaw) ? oldRaw as string[] : (oldRaw ? [String(oldRaw)] : [])
-				const newValues: string[] = Array.isArray(value) ? value as string[] : (value ? [String(value)] : [])
+				const oldRaw: unknown = row[columnId]
+				const oldValues: string[] = Array.isArray(oldRaw) ? oldRaw.map((v: unknown) => `${v as string}`) : (typeof oldRaw === 'string' && oldRaw !== '' ? [oldRaw] : [])
+				const newValues: string[] = Array.isArray(value) ? (value as unknown[]).map((v: unknown) => `${v as string}`) : (typeof value === 'string' && value !== '' ? [value] : [])
 				await manager.syncTwoWayRelation(row._file, col, oldValues, newValues)
 			}
 		}

@@ -135,7 +135,6 @@ export class DatabaseManager {
 		const removed = oldValues.filter(v => !newValues.includes(v))
 
 		for (const note of refNotes) {
-			const noteTitle = col.refColumnId === '_title' ? note.basename : undefined
 			const cache = this.app.metadataCache.getFileCache(note)
 			const fm = cache?.frontmatter ?? {}
 			const noteVal = col.refColumnId === '_title' ? note.basename : String(fm[col.refColumnId!] ?? '')

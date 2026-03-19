@@ -2520,6 +2520,14 @@
 	cursor: grabbing;
 }
 
+.nb-touch-drag-source {
+	opacity: 0.3;
+}
+
+.nb-touch-drag-hidden {
+	visibility: hidden;
+}
+
 .nb-board-column-header {
 	display: flex;
 	align-items: center;

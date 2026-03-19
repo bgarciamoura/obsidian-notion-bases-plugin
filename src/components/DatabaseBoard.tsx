@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import {
@@ -46,8 +46,6 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	// column drag
 	const [colDragOver, setColDragOver] = useState<string | null>(null)
 	// touch drag state
-	const touchDragRef = useRef<{ rowPath: string; el: HTMLElement; startX: number; startY: number; active: boolean; overColKey: string | null } | null>(null)
-	const [touchDragActive, setTouchDragActive] = useState(false)
 
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const groupByMenuRef = useRef<HTMLDivElement>(null)
@@ -268,31 +266,28 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			ev.stopPropagation()
 			if (!active) {
 				active = true
-				el.style.opacity = '0.3'
+				el.classList.add('nb-touch-drag-source')
 				ghost = createGhost(el, t.clientX, t.clientY)
-				setTouchDragActive(true)
 			}
 			if (ghost) {
 				ghost.style.left = `${t.clientX - ghost.offsetWidth / 2}px`
 				ghost.style.top = `${t.clientY - 20}px`
 			}
-			el.style.visibility = 'hidden'
+			el.classList.add('nb-touch-drag-hidden')
 			const target = document.elementFromPoint(t.clientX, t.clientY)
-			el.style.visibility = ''
-			el.style.opacity = '0.3'
+			el.classList.remove('nb-touch-drag-hidden')
+			el.classList.add('nb-touch-drag-source')
 			const col = target?.closest('.nb-board-column') as HTMLElement | null
 			overColKey = col?.dataset.colKey ?? null
 			setCardDragOver(overColKey)
 		}
 
 		const onEnd = () => {
-			el.style.opacity = ''
-			el.style.visibility = ''
+			el.classList.remove('nb-touch-drag-source', 'nb-touch-drag-hidden')
 			ghost?.remove()
 			if (active && overColKey !== null) {
 				void moveCardRef.current(rowPath, overColKey)
 			}
-			setTouchDragActive(false)
 			setCardDragOver(null)
 			el.removeEventListener('touchmove', onMove)
 			el.removeEventListener('touchend', onEnd)
@@ -317,25 +312,24 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			ev.stopPropagation()
 			if (!active) {
 				active = true
-				el.style.opacity = '0.3'
+				el.classList.add('nb-touch-drag-source')
 				ghost = createGhost(el, t.clientX, t.clientY)
 			}
 			if (ghost) {
 				ghost.style.left = `${t.clientX - ghost.offsetWidth / 2}px`
 				ghost.style.top = `${t.clientY - 20}px`
 			}
-			el.style.visibility = 'hidden'
+			el.classList.add('nb-touch-drag-hidden')
 			const target = document.elementFromPoint(t.clientX, t.clientY)
-			el.style.visibility = ''
-			el.style.opacity = '0.3'
+			el.classList.remove('nb-touch-drag-hidden')
+			el.classList.add('nb-touch-drag-source')
 			const col = target?.closest('.nb-board-column') as HTMLElement | null
 			overColKey = col?.dataset.colKey ?? null
 			setColDragOver(overColKey)
 		}
 
 		const onEnd = () => {
-			el.style.opacity = ''
-			el.style.visibility = ''
+			el.classList.remove('nb-touch-drag-source', 'nb-touch-drag-hidden')
 			ghost?.remove()
 			if (active && overColKey !== null) {
 				void moveColumnRef.current(colValue, overColKey)
