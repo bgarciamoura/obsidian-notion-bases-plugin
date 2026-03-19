@@ -41,6 +41,95 @@ import { isMultiValueFilter, parseMultiValue, toggleMultiValue } from './filter-
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconActions, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
 
+// ── Virtual row rendering (separate component to isolate hooks) ──────────
+function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHeight: number) {
+	const [range, setRange] = useState({ scrollTop: 0, viewportHeight: 800 })
+
+	useEffect(() => {
+		const el = scrollRef.current
+		if (!el) return
+		const update = () => setRange({ scrollTop: el.scrollTop, viewportHeight: el.clientHeight })
+		update()
+		let ticking = false
+		const onScroll = () => {
+			if (!ticking) { ticking = true; requestAnimationFrame(() => { update(); ticking = false }) }
+		}
+		el.addEventListener('scroll', onScroll, { passive: true })
+		const ro = new ResizeObserver(update)
+		ro.observe(el)
+		return () => { el.removeEventListener('scroll', onScroll); ro.disconnect() }
+	}, [scrollRef])
+
+	const overscan = 15
+	const startIdx = Math.max(0, Math.floor(range.scrollTop / rowHeight) - overscan)
+	const endIdx = Math.ceil((range.scrollTop + range.viewportHeight) / rowHeight) + overscan
+	return { startIdx, endIdx, topPad: startIdx * rowHeight }
+}
+
+interface VirtualTbodyProps {
+	scrollRef: React.RefObject<HTMLElement | null>
+	rowHeight: number
+	rows: { id: string; original: { _file: TFile }; getVisibleCells: () => { id: string; column: { id: string; getSize: () => number; columnDef: { cell: unknown } }; getContext: () => unknown }[] }[]
+	stickyMap: Map<string, { left: number; isLast: boolean }>
+	isMobile: boolean
+	setEditingCell: (cell: { rowIndex: number; columnId: string } | null) => void
+	setContextMenuFile: (file: TFile | null) => void
+	longPressRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>
+	columns: unknown[]
+	onAddRow: () => void
+}
+
+function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEditingCell, setContextMenuFile, longPressRef, columns, onAddRow }: VirtualTbodyProps) {
+	const { startIdx, endIdx, topPad } = useVirtualScroll(scrollRef, rowHeight)
+	const visibleRows = rows.slice(startIdx, Math.min(rows.length, endIdx))
+	const bottomPad = Math.max(0, (rows.length - Math.min(rows.length, endIdx)) * rowHeight)
+
+	return (
+		<tbody className="nb-tbody">
+			{rows.length === 0 ? (
+				<tr><td colSpan={(columns).length + 1} className="nb-empty-rows">{t('no_results')}</td></tr>
+			) : (
+				<>
+					{topPad > 0 && <tr style={{ height: topPad }} />}
+					{visibleRows.map(row => (
+						<tr
+							key={row.id}
+							className="nb-row"
+							onClick={() => setEditingCell(null)}
+							onContextMenu={e => { e.preventDefault(); setContextMenuFile(row.original._file) }}
+							onTouchStart={isMobile ? () => { longPressRef.current = setTimeout(() => setContextMenuFile(row.original._file), 500) } : undefined}
+							onTouchMove={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+							onTouchEnd={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+						>
+							{row.getVisibleCells().map(cell => {
+								const sticky = stickyMap.get(cell.column.id)
+								return (
+									<td
+										key={cell.id}
+										data-col-id={cell.column.id}
+										className={['nb-td', sticky ? 'nb-td--sticky' : '', sticky?.isLast ? 'nb-td--sticky-last' : ''].filter(Boolean).join(' ')}
+										style={{ width: cell.column.getSize(), ...(sticky ? { left: sticky.left, zIndex: 1 } : {}) }}
+										onClick={e => e.stopPropagation()}
+									>
+										<div className="nb-td-inner">{flexRender(cell.column.columnDef.cell as never, cell.getContext() as never)}</div>
+									</td>
+								)
+							})}
+							<td className="nb-td nb-td-empty" />
+						</tr>
+					))}
+					{bottomPad > 0 && <tr style={{ height: bottomPad }} />}
+				</>
+			)}
+			<tr>
+				<td colSpan={(columns).length + 1} className="nb-add-row-td">
+					<button className="nb-add-row-btn" onClick={onAddRow}>{'+ ' + t('add_row')}</button>
+				</td>
+			</tr>
+		</tbody>
+	)
+}
+
 // ── Validação de compatibilidade de tipos ────────────────────────────────────
 
 function validateTypeChange(rows: NoteRow[], columnId: string, fromType: ColumnType, toType: ColumnType): string | null {
@@ -602,6 +691,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const mobileActionBarRef = useRef<HTMLDivElement>(null)
 	const tableRef = useRef<HTMLTableElement>(null)
 	const lastCreatedPath = useRef<string | null>(null)
+	const tableWrapperRef = useRef<HTMLDivElement>(null)
 	const [pinnedColumnId, setPinnedColumnId] = useState<string | null>(null)
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 	const filterMenuRef = useRef<HTMLDivElement>(null)
@@ -1978,7 +2068,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 		{/* Tabela */}
 			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema, relationOptions, updateSchema }}>
-			<div className={`nb-table-wrapper${activeView.wrapText ? ' nb-table--wrap' : ''}`}
+			<div ref={tableWrapperRef} className={`nb-table-wrapper${activeView.wrapText ? ' nb-table--wrap' : ''}`}
 				style={{ '--nb-row-height': activeView.rowHeight === 'compact' ? '28px' : activeView.rowHeight === 'tall' ? '64px' : '36px' } as React.CSSProperties}>
 				<table ref={tableRef} className="nb-table">
 					<thead className="nb-thead">
@@ -2084,62 +2174,18 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						})}
 					</thead>
 
-					<tbody className="nb-tbody">
-						{tableRows.length === 0 ? (
-							<tr>
-								<td
-									colSpan={columns.length + 1}
-									className="nb-empty-rows"
-								>
-									{t('no_results')}
-								</td>
-							</tr>
-						) : (
-							tableRows.map(row => (
-								<tr
-									key={row.id}
-									className="nb-row"
-									onClick={() => setEditingCell(null)}
-									onContextMenu={e => { e.preventDefault(); setContextMenuFile(row.original._file) }}
-									onTouchStart={isMobile ? () => { longPressRef.current = setTimeout(() => setContextMenuFile(row.original._file), 500) } : undefined}
-									onTouchMove={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
-									onTouchEnd={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
-								>
-									{row.getVisibleCells().map(cell => {
-										const sticky = stickyMap.get(cell.column.id)
-										return (
-											<td
-												key={cell.id}
-												data-col-id={cell.column.id}
-												className={[
-													'nb-td',
-													sticky ? 'nb-td--sticky' : '',
-													sticky?.isLast ? 'nb-td--sticky-last' : '',
-												].filter(Boolean).join(' ')}
-												style={{
-													width: cell.column.getSize(),
-													...(sticky ? { left: sticky.left, zIndex: 1 } : {}),
-												}}
-												onClick={e => e.stopPropagation()}
-											>
-												<div className="nb-td-inner">
-													{flexRender(cell.column.columnDef.cell, cell.getContext())}
-												</div>
-											</td>
-										)
-									})}
-									<td className="nb-td nb-td-empty" />
-								</tr>
-							))
-						)}
-						<tr>
-							<td colSpan={columns.length + 1} className="nb-add-row-td">
-								<button className="nb-add-row-btn" onClick={() => { void handleAddRow() }}>
-									{'+ ' + t('add_row')}
-								</button>
-							</td>
-						</tr>
-					</tbody>
+					<VirtualTbody
+						scrollRef={tableWrapperRef}
+						rowHeight={activeView.rowHeight === 'compact' ? 28 : activeView.rowHeight === 'tall' ? 64 : 36}
+						rows={tableRows as VirtualTbodyProps['rows']}
+						stickyMap={stickyMap}
+						isMobile={isMobile}
+						setEditingCell={setEditingCell}
+						setContextMenuFile={setContextMenuFile}
+						longPressRef={longPressRef}
+						columns={columns}
+						onAddRow={() => { void handleAddRow() }}
+					/>
 					<tfoot className="nb-tfoot">
 					<tr>
 						<td className="nb-td nb-agg-td nb-td--sticky" style={{ left: 0, zIndex: 1, width: 40 }} />

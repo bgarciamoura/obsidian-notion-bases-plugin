@@ -559,7 +559,8 @@
 /* ── Linhas ──────────────────────────────────────────────────────────────── */
 
 .nb-row {
-	/* border-bottom movida para .nb-td (border-separate ignora border em <tr>) */
+	content-visibility: auto;
+	contain-intrinsic-height: auto var(--nb-row-height, 36px);
 }
 
 .nb-row:hover .nb-td,
