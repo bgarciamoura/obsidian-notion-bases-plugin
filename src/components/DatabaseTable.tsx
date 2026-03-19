@@ -592,6 +592,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 	const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
+	const [contextMenuFile, setContextMenuFile] = useState<TFile | null>(null)
+	const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const [rowHeightMenuOpen, setRowHeightMenuOpen] = useState(false)
 	const [openAggCol, setOpenAggCol] = useState<string | null>(null)
 	const actionsMenuRef = useRef<HTMLDivElement>(null)
@@ -2092,6 +2094,10 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 									key={row.id}
 									className="nb-row"
 									onClick={() => setEditingCell(null)}
+									onContextMenu={e => { e.preventDefault(); setContextMenuFile(row.original._file) }}
+									onTouchStart={isMobile ? () => { longPressRef.current = setTimeout(() => setContextMenuFile(row.original._file), 500) } : undefined}
+									onTouchMove={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+									onTouchEnd={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
 								>
 									{row.getVisibleCells().map(cell => {
 										const sticky = stickyMap.get(cell.column.id)
@@ -2186,6 +2192,20 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			</div>
 
 			</CellContext.Provider>
+
+			{/* Context menu (long-press mobile / right-click desktop) */}
+			<BottomSheet open={contextMenuFile !== null} onClose={() => setContextMenuFile(null)} title={contextMenuFile?.basename ?? ''}>
+				<button className="nb-menu-item" onClick={() => { if (contextMenuFile) { void app.workspace.getLeaf().openFile(contextMenuFile) } setContextMenuFile(null) }}>
+					<span className="nb-menu-item-icon">📄</span><span>{t('open_note')}</span>
+				</button>
+				<button className="nb-menu-item" onClick={() => { if (contextMenuFile) { void manager.duplicateNotes([contextMenuFile]) } setContextMenuFile(null) }}>
+					<span className="nb-menu-item-icon">📋</span><span>{t('duplicate_note')}</span>
+				</button>
+				<div className="nb-menu-separator" />
+				<button className="nb-menu-item nb-menu-item--danger" onClick={() => { if (contextMenuFile) { void manager.deleteNotes([contextMenuFile]) } setContextMenuFile(null) }}>
+					<span className="nb-menu-item-icon">🗑</span><span>{t('delete_note')}</span>
+				</button>
+			</BottomSheet>
 		</div>
 	)
 }

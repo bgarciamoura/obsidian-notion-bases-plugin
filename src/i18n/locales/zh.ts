@@ -75,6 +75,11 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	export_csv: '导出 CSV',
 	import_csv: '导入 CSV',
 
+	// Context menu (single note)
+	open_note: '打开笔记',
+	delete_note: '删除笔记',
+	duplicate_note: '复制笔记',
+
 	// Sort directions
 	sort_asc: '升序',
 	sort_desc: '降序',

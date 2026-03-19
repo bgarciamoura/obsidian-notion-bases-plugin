@@ -75,6 +75,11 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	export_csv: 'Exporter CSV',
 	import_csv: 'Importer CSV',
 
+	// Context menu (single note)
+	open_note: 'Ouvrir la note',
+	delete_note: 'Supprimer la note',
+	duplicate_note: 'Dupliquer la note',
+
 	// Sort directions
 	sort_asc: 'Croissant',
 	sort_desc: 'Décroissant',

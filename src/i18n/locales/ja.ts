@@ -75,6 +75,11 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	export_csv: 'CSV エクスポート',
 	import_csv: 'CSV インポート',
 
+	// Context menu (single note)
+	open_note: 'ノートを開く',
+	delete_note: 'ノートを削除',
+	duplicate_note: 'ノートを複製',
+
 	// Sort directions
 	sort_asc: '昇順',
 	sort_desc: '降順',

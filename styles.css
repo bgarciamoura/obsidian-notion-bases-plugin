@@ -4173,6 +4173,7 @@ body.nb-tl-resizing * {
 	padding: 10px 16px;
 	border: none;
 	border-bottom: 1px solid var(--background-modifier-border);
+	border-radius: 0;
 	background: transparent;
 	color: var(--text-normal);
 	font-size: var(--font-ui-small);

@@ -45,7 +45,8 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	const [cardDragOver, setCardDragOver] = useState<string | null>(null)
 	// column drag
 	const [colDragOver, setColDragOver] = useState<string | null>(null)
-	// touch drag state
+	// context menu state
+	const [contextMenuFile, setContextMenuFile] = useState<TFile | null>(null)
 
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const groupByMenuRef = useRef<HTMLDivElement>(null)
@@ -254,11 +255,18 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		return ghost
 	}
 
-	const handleCardTouchStart = useCallback((e: React.TouchEvent, rowPath: string) => {
+	const handleCardTouchStart = useCallback((e: React.TouchEvent, rowFile: TFile) => {
 		const touch = e.touches[0]
 		const el = e.currentTarget as HTMLElement
 		let active = false, overColKey: string | null = null, ghost: HTMLElement | null = null
 		let scrollInterval: ReturnType<typeof setInterval> | null = null
+		let longPressHandled = false
+
+		const longPressTimer = setTimeout(() => {
+			longPressHandled = true
+			cleanup()
+			setContextMenuFile(rowFile)
+		}, 500)
 
 		const startEdgeScroll = (clientX: number) => {
 			const board = boardRef.current
@@ -284,9 +292,16 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null }
 		}
 
+		const cleanup = () => {
+			el.removeEventListener('touchmove', onMove)
+			el.removeEventListener('touchend', onEnd)
+			el.removeEventListener('touchcancel', onEnd)
+		}
+
 		const onMove = (ev: TouchEvent) => {
 			const t = ev.touches[0]
 			if (!active && Math.abs(t.clientX - touch.clientX) < 12 && Math.abs(t.clientY - touch.clientY) < 12) return
+			clearTimeout(longPressTimer)
 			ev.preventDefault()
 			ev.stopPropagation()
 			if (!active) {
@@ -310,17 +325,16 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		}
 
 		const onEnd = () => {
+			clearTimeout(longPressTimer)
 			stopEdgeScroll()
 			boardRef.current?.classList.remove('nb-board--dragging')
 			el.classList.remove('nb-touch-drag-source', 'nb-touch-drag-hidden')
 			ghost?.remove()
-			if (active && overColKey !== null) {
-				void moveCardRef.current(rowPath, overColKey)
+			if (!longPressHandled && active && overColKey !== null) {
+				void moveCardRef.current(rowFile.path, overColKey)
 			}
 			setCardDragOver(null)
-			el.removeEventListener('touchmove', onMove)
-			el.removeEventListener('touchend', onEnd)
-			el.removeEventListener('touchcancel', onEnd)
+			cleanup()
 		}
 
 		el.addEventListener('touchmove', onMove, { passive: false })
@@ -777,7 +791,8 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 													e.dataTransfer.setData('nb-row-path', row._file.path)
 													e.dataTransfer.setData(DRAG_TYPE_CARD, '')
 												} : undefined}
-												onTouchStart={isMobile ? e => handleCardTouchStart(e, row._file.path) : undefined}
+												onTouchStart={isMobile ? e => handleCardTouchStart(e, row._file) : undefined}
+											onContextMenu={!isMobile ? e => { e.preventDefault(); setContextMenuFile(row._file) } : undefined}
 												onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
 											>
 												<div className="nb-board-card-title">{row._title}</div>
@@ -833,6 +848,20 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 					)
 				})}
 			</div>
+
+			{/* Context menu (long-press mobile / right-click desktop) */}
+			<BottomSheet open={contextMenuFile !== null} onClose={() => setContextMenuFile(null)} title={contextMenuFile?.basename ?? ''}>
+				<button className="nb-menu-item" onClick={() => { if (contextMenuFile) { void app.workspace.getLeaf().openFile(contextMenuFile) } setContextMenuFile(null) }}>
+					<span className="nb-menu-item-icon">📄</span><span>{t('open_note')}</span>
+				</button>
+				<button className="nb-menu-item" onClick={() => { if (contextMenuFile) { void manager.duplicateNotes([contextMenuFile]) } setContextMenuFile(null) }}>
+					<span className="nb-menu-item-icon">📋</span><span>{t('duplicate_note')}</span>
+				</button>
+				<div className="nb-menu-separator" />
+				<button className="nb-menu-item nb-menu-item--danger" onClick={() => { if (contextMenuFile) { void manager.deleteNotes([contextMenuFile]) } setContextMenuFile(null) }}>
+					<span className="nb-menu-item-icon">🗑</span><span>{t('delete_note')}</span>
+				</button>
+			</BottomSheet>
 		</div>
 	)
 }

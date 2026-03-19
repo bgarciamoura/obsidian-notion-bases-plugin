@@ -73,6 +73,11 @@ const en = {
 	export_csv: 'Export CSV',
 	import_csv: 'Import CSV',
 
+	// Context menu (single note)
+	open_note: 'Open note',
+	delete_note: 'Delete note',
+	duplicate_note: 'Duplicate note',
+
 	// Sort directions
 	sort_asc: 'Ascending',
 	sort_desc: 'Descending',

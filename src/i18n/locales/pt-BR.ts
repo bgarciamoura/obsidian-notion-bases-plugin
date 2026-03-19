@@ -75,6 +75,11 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	export_csv: 'Exportar CSV',
 	import_csv: 'Importar CSV',
 
+	// Context menu (single note)
+	open_note: 'Abrir nota',
+	delete_note: 'Excluir nota',
+	duplicate_note: 'Duplicar nota',
+
 	// Sort directions
 	sort_asc: 'Ascendente',
 	sort_desc: 'Descendente',
