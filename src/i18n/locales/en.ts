@@ -241,6 +241,9 @@ const en = {
 	calendar_view_week: 'Week',
 	calendar_prev_week: 'Previous week',
 	calendar_next_week: 'Next week',
+	calendar_add_time: 'Add time',
+	calendar_remove_time: 'Remove time',
+	calendar_all_day: 'All day',
 
 	// Calendar days (short)
 	day_sun: 'Sun',

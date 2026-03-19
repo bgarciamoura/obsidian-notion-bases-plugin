@@ -243,6 +243,9 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	calendar_view_week: '週',
 	calendar_prev_week: '前週',
 	calendar_next_week: '翌週',
+	calendar_add_time: '時刻を追加',
+	calendar_remove_time: '時刻を削除',
+	calendar_all_day: '終日',
 
 	// Calendar days (short)
 	day_sun: '日',

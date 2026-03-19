@@ -202,8 +202,8 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 					value={value as string | null}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
-					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
-					onCancel={() => setEditingCell(null)}
+					onSave={v => { void updateCell(rowIndex, columnId, v) }}
+					onClose={() => setEditingCell(null)}
 				/>
 			)
 
@@ -1170,43 +1170,141 @@ function MultiSelectCell({ value, col, isEditing, onStartEdit, onCommit, onCance
 	)
 }
 
+// ── TimeInput24h ─────────────────────────────────────────────────────────────
+
+function TimeInput24h({ defaultValue, onChange, onEscape }: {
+	defaultValue: string
+	onChange: (v: string) => void
+	onEscape: () => void
+}) {
+	const [draft, setDraft] = useState(defaultValue)
+
+	const applyTimeMask = (raw: string): string => {
+		const digits = raw.replace(/\D/g, '').slice(0, 4)
+		if (digits.length <= 2) return digits
+		return `${digits.slice(0, 2)}:${digits.slice(2)}`
+	}
+
+	const commit = (val: string) => {
+		const match = val.match(/^(\d{1,2}):(\d{2})$/)
+		if (!match) return
+		const h = Math.min(23, parseInt(match[1]))
+		const m = Math.min(59, parseInt(match[2]))
+		const normalized = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+		setDraft(normalized)
+		onChange(normalized)
+	}
+
+	return (
+		<input
+			type="text"
+			inputMode="numeric"
+			className="nb-cell-input nb-cell-input--time"
+			value={draft}
+			placeholder="HH:mm"
+			onChange={e => {
+				const masked = applyTimeMask(e.target.value)
+				setDraft(masked)
+				if (/^\d{2}:\d{2}$/.test(masked)) commit(masked)
+			}}
+			onBlur={() => commit(draft)}
+			onKeyDown={e => {
+				if (e.key === 'Enter') commit(draft)
+				if (e.key === 'Escape') onEscape()
+			}}
+		/>
+	)
+}
+
 // ── DateCell ─────────────────────────────────────────────────────────────────
 
-function DateCell({ value, isEditing, onStartEdit, onCommit, onCancel }: {
+function DateCell({ value, isEditing, onStartEdit, onSave, onClose }: {
 	value: string | null
 	isEditing: boolean
 	onStartEdit: () => void
-	onCommit: (v: string | null) => void
-	onCancel: () => void
+	onSave: (v: string | null) => void
+	onClose: () => void
 }) {
-	const inputRef = useRef<HTMLInputElement>(null)
+	const wrapperRef = useRef<HTMLDivElement>(null)
+	const hasTime = value ? value.includes('T') : false
+	const datePart = value ? value.split('T')[0] : null
+	const timePart = value && hasTime ? value.split('T')[1] : null
+	const [showTime, setShowTime] = useState(hasTime)
 
 	useEffect(() => {
-		if (isEditing) requestAnimationFrame(() => inputRef.current?.showPicker?.())
+		if (isEditing) setShowTime(hasTime)
 	}, [isEditing])
 
-	const formatted = value
-		? (([y,m,d]) => new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }))(value.split('-'))
-		: null
+	// Close on outside click
+	useEffect(() => {
+		if (!isEditing) return
+		const handler = (e: MouseEvent) => {
+			if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) onClose()
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [isEditing, onClose])
+
+	const formatted = (() => {
+		if (!datePart) return null
+		const [y, m, d] = datePart.split('-')
+		const dateStr = new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+		if (hasTime && timePart) return `${dateStr} ${timePart}`
+		return dateStr
+	})()
 
 	if (!isEditing) {
 		return (
-			<div className="nb-cell-text nb-cell-clickable nb-cell-date" onClick={onStartEdit}>
+			<div className="nb-cell-clickable nb-cell-date" onClick={onStartEdit}>
 				{formatted ?? <span className="nb-cell-empty">—</span>}
 			</div>
 		)
 	}
 
+	const handleDateChange = (newDate: string) => {
+		if (!newDate) { onSave(null); return }
+		if (showTime && timePart) onSave(`${newDate}T${timePart}`)
+		else if (showTime) onSave(`${newDate}T00:00`)
+		else onSave(newDate)
+	}
+
+	const handleTimeChange = (newTime: string) => {
+		const d = datePart ?? new Date().toISOString().slice(0, 10)
+		if (!newTime) onSave(d)
+		else onSave(`${d}T${newTime}`)
+	}
+
+	const toggleTime = () => {
+		const next = !showTime
+		setShowTime(next)
+		if (!next && datePart) onSave(datePart)
+		else if (next && datePart) onSave(`${datePart}T${timePart ?? '00:00'}`)
+	}
+
 	return (
-		<input
-			ref={inputRef}
-			type="date"
-			className="nb-cell-input nb-cell-input--date"
-			defaultValue={value ?? ''}
-			onChange={e => onCommit(e.target.value || null)}
-			onBlur={onCancel}
-			onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
-		/>
+		<div ref={wrapperRef} className="nb-cell-date-editor">
+			<input
+				type="date"
+				className="nb-cell-input nb-cell-input--date"
+				defaultValue={datePart ?? ''}
+				onChange={e => handleDateChange(e.target.value)}
+				onKeyDown={e => { if (e.key === 'Escape') onClose() }}
+			/>
+			{showTime && (
+				<TimeInput24h
+					defaultValue={timePart ?? '00:00'}
+					onChange={handleTimeChange}
+					onEscape={onClose}
+				/>
+			)}
+			<button
+				className={`nb-cell-time-toggle${showTime ? ' nb-cell-time-toggle--active' : ''}`}
+				onClick={e => { e.stopPropagation(); toggleTime() }}
+				title={showTime ? t('calendar_remove_time') : t('calendar_add_time')}
+			>
+				🕐
+			</button>
+		</div>
 	)
 }
 

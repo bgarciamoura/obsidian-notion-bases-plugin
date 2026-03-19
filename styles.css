@@ -921,6 +921,10 @@
 
 .nb-cell-date {
 	font-size: var(--font-ui-smaller);
+	border-radius: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .nb-cell-formula {
@@ -1460,8 +1464,54 @@
 	text-align: right;
 }
 
-.nb-cell-input--date {
+.nb-cell-input--date,
+.nb-cell-input--time {
 	font-size: var(--font-ui-smaller);
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	border-radius: 0 !important;
+}
+
+.nb-cell-date-editor {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	width: 100%;
+	border-radius: 0;
+}
+
+.nb-cell-date-editor .nb-cell-input--date {
+	flex: 1;
+	min-width: 0;
+}
+
+.nb-cell-input--time {
+	font-size: var(--font-ui-smaller);
+	width: 80px;
+	flex-shrink: 0;
+}
+
+.nb-cell-time-toggle {
+	flex-shrink: 0;
+	background: none;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	cursor: pointer;
+	padding: 2px 4px;
+	font-size: 12px;
+	opacity: 0.5;
+	transition: opacity 0.15s;
+}
+
+.nb-cell-time-toggle:hover {
+	opacity: 0.8;
+}
+
+.nb-cell-time-toggle--active {
+	opacity: 1;
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
 }
 
 /* ── Checkbox ────────────────────────────────────────────────────────────── */
@@ -3162,14 +3212,6 @@
 	letter-spacing: 0.04em;
 }
 
-.nb-cal-day-header--week {
-	font-variant-numeric: tabular-nums;
-}
-
-/* Week grid: single row fills available space */
-.nb-cal-grid--week {
-	grid-template-rows: auto 1fr;
-}
 
 /* View mode toggle */
 .nb-cal-view-toggle {
@@ -3207,9 +3249,7 @@
 }
 
 /* Week grid: cells fill remaining height */
-.nb-cal-grid--week .nb-cal-cell {
-	min-height: 0;
-}
+
 
 .nb-cal-cell {
 	border-right: 1px solid var(--background-modifier-border);
@@ -3299,6 +3339,21 @@
 	filter: brightness(1.15);
 }
 
+.nb-cal-card-title-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+}
+
+.nb-cal-time-badge {
+	font-size: 9px;
+	font-weight: 600;
+	opacity: 0.9;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
 .nb-cal-card-title {
 	white-space: nowrap;
 	overflow: hidden;
@@ -3319,6 +3374,147 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	max-width: 100%;
+}
+
+/* ── Week view with time slots ──────────────────────────────────────────── */
+
+.nb-cal-week-container {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 0;
+	overflow: hidden;
+}
+
+.nb-cal-week-header {
+	display: grid;
+	grid-template-columns: 50px repeat(7, 1fr);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.nb-cal-week-day-header {
+	text-align: center;
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	padding: 6px 4px;
+	color: var(--text-muted);
+}
+
+.nb-cal-week-day-header--today {
+	color: var(--interactive-accent);
+}
+
+/* All-day row */
+.nb-cal-week-allday {
+	display: grid;
+	grid-template-columns: 50px repeat(7, 1fr);
+	border-bottom: 2px solid var(--background-modifier-border);
+	min-height: 28px;
+}
+
+.nb-cal-week-allday-label {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 9px;
+	color: var(--text-muted);
+	text-transform: uppercase;
+}
+
+.nb-cal-week-allday-cell {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px;
+	padding: 2px;
+	border-left: 1px solid var(--background-modifier-border);
+	min-height: 24px;
+	cursor: pointer;
+}
+
+.nb-cal-card--allday {
+	font-size: 10px;
+	padding: 1px 4px;
+}
+
+/* Time body (scrollable) */
+.nb-cal-week-body {
+	display: grid;
+	grid-template-columns: 50px repeat(7, 1fr);
+	max-height: 600px;
+	overflow-y: auto;
+	position: relative;
+}
+
+.nb-cal-week-time-gutter {
+	display: flex;
+	flex-direction: column;
+}
+
+.nb-cal-week-hour-label {
+	height: 48px;
+	font-size: 9px;
+	color: var(--text-muted);
+	text-align: right;
+	padding-right: 6px;
+	padding-top: 0;
+	line-height: 1;
+	box-sizing: border-box;
+	border-bottom: 1px solid transparent;
+}
+
+.nb-cal-week-day-col {
+	position: relative;
+	border-left: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+}
+
+.nb-cal-week-day-col--today {
+	background: var(--background-secondary-alt);
+}
+
+.nb-cal-week-hour-slot {
+	height: 48px;
+	border-bottom: 1px solid var(--background-modifier-border-hover);
+	box-sizing: border-box;
+}
+
+.nb-cal-week-hour-slot:nth-child(even) {
+	border-bottom-style: dotted;
+}
+
+/* Timed event cards (absolutely positioned) */
+.nb-cal-card--timed {
+	position: absolute;
+	left: 2px;
+	right: 2px;
+	min-height: 20px;
+	z-index: 1;
+	font-size: 10px;
+	padding: 1px 4px;
+	border-radius: 3px;
+}
+
+/* Current time indicator line (spans full week body width) */
+.nb-cal-now-line {
+	position: absolute;
+	left: 50px;
+	right: 0;
+	height: 2px;
+	background: var(--color-red, #e53935);
+	z-index: 3;
+	pointer-events: none;
+	grid-column: 1 / -1;
+}
+
+.nb-cal-now-line::before {
+	content: '';
+	position: absolute;
+	left: -4px;
+	top: -3px;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--color-red, #e53935);
 }
 
 /* No-date section */
@@ -3800,6 +3996,41 @@ body.nb-tl-resizing * {
 
 .is-mobile .nb-cal-today-btn {
 	min-height: 44px;
+}
+
+/* Week view mobile */
+.is-mobile .nb-cal-week-body {
+	max-height: 400px;
+}
+
+.is-mobile .nb-cal-week-time-gutter {
+	min-width: 36px;
+}
+
+.is-mobile .nb-cal-week-header {
+	grid-template-columns: 36px repeat(7, 1fr);
+}
+
+.is-mobile .nb-cal-week-allday {
+	grid-template-columns: 36px repeat(7, 1fr);
+}
+
+.is-mobile .nb-cal-week-body {
+	grid-template-columns: 36px repeat(7, 1fr);
+}
+
+.is-mobile .nb-cal-week-hour-label {
+	font-size: 8px;
+	padding-right: 3px;
+}
+
+.is-mobile .nb-cal-week-day-header {
+	font-size: 10px;
+	padding: 4px 2px;
+}
+
+.is-mobile .nb-cal-now-line {
+	left: 36px;
 }
 
 .is-mobile .nb-tl-sidebar {

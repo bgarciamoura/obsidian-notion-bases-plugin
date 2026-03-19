@@ -70,14 +70,35 @@ function dateKey(year: number, month: number, day: number): string {
 	return `${year}-${month}-${day}`
 }
 
-function parseDateValue(val: unknown): { year: number; month: number; day: number } | null {
+function formatTime(hour: number, minute: number): string {
+	return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+}
+
+function getRowTime(row: NoteRow, fieldId: string): string | null {
+	const parsed = parseDateValue((row as Record<string, unknown>)[fieldId])
+	if (!parsed || parsed.hour === undefined || parsed.minute === undefined) return null
+	return formatTime(parsed.hour, parsed.minute)
+}
+
+function parseDateValue(val: unknown): { year: number; month: number; day: number; hour?: number; minute?: number } | null {
 	if (!val || typeof val !== 'string') return null
-	const parts = val.split('-')
+	const tIdx = val.indexOf('T')
+	const datePart = tIdx >= 0 ? val.slice(0, tIdx) : val
+	const parts = datePart.split('-')
 	if (parts.length !== 3) return null
 	const year = parseInt(parts[0])
 	const month = parseInt(parts[1]) - 1
 	const day = parseInt(parts[2])
 	if (isNaN(year) || isNaN(month) || isNaN(day)) return null
+	if (tIdx >= 0) {
+		const timePart = val.slice(tIdx + 1)
+		const tp = timePart.split(':')
+		if (tp.length >= 2) {
+			const hour = parseInt(tp[0])
+			const minute = parseInt(tp[1])
+			if (!isNaN(hour) && !isNaN(minute)) return { year, month, day, hour, minute }
+		}
+	}
 	return { year, month, day }
 }
 
@@ -99,6 +120,8 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	const [expandedDay, setExpandedDay] = useState<string | null>(null)
 	const [actionDay, setActionDay] = useState<{ year: number; month: number; day: number } | null>(null)
 	const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const weekBodyRef = useRef<HTMLDivElement>(null)
+	const [nowMinutes, setNowMinutes] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes() })
 
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
@@ -108,6 +131,13 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	const loadVersion = useRef(0)
 
 	useEffect(() => { setActiveView(externalView) }, [externalView.id])
+
+	// Update current time indicator every minute
+	useEffect(() => {
+		const tick = () => { const n = new Date(); setNowMinutes(n.getHours() * 60 + n.getMinutes()) }
+		const id = setInterval(tick, 60_000)
+		return () => clearInterval(id)
+	}, [])
 
 	const saveView = useCallback(async (updated: ViewConfig) => {
 		setActiveView(updated)
@@ -241,6 +271,17 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 				}
 			}
 		}
+		// Sort entries within each day by time (entries without time come first)
+		for (const [key, dayRows] of map) {
+			dayRows.sort((a, b) => {
+				const pa = parseDateValue((a as Record<string, unknown>)[dateField.id])
+				const pb = parseDateValue((b as Record<string, unknown>)[dateField.id])
+				const ta = (pa?.hour ?? -1) * 60 + (pa?.minute ?? -1)
+				const tb = (pb?.hour ?? -1) * 60 + (pb?.minute ?? -1)
+				return ta - tb
+			})
+			map.set(key, dayRows)
+		}
 		return map
 	}, [filteredRows, dateField, currentYear, currentMonth, currentDay, viewMode, weekDays])
 
@@ -251,6 +292,39 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 			return !val || String(val as string | number | boolean).trim() === ''
 		})
 	}, [filteredRows, dateField])
+
+	// Earliest timed card in current week (minutes from midnight)
+	const earliestTimedMinute = useMemo(() => {
+		if (viewMode !== 'week' || !dateField) return null
+		let earliest: number | null = null
+		for (const [, dayRows] of rowsByDate) {
+			for (const row of dayRows) {
+				const p = parseDateValue((row as Record<string, unknown>)[dateField.id])
+				if (p && p.hour !== undefined && p.minute !== undefined) {
+					const m = p.hour * 60 + p.minute
+					if (earliest === null || m < earliest) earliest = m
+				}
+			}
+		}
+		return earliest
+	}, [viewMode, dateField, rowsByDate])
+
+	// Auto-scroll week body to current time or earliest card
+	const weekAnchor = viewMode === 'week' && weekDays.length > 0 ? weekDays[0].toISOString() : ''
+	useEffect(() => {
+		if (viewMode !== 'week' || loading) return
+		const timer = setTimeout(() => {
+			const el = weekBodyRef.current
+			if (!el || el.scrollHeight <= el.clientHeight) return
+			const SLOT_HEIGHT = 48
+			const totalHeight = SLOT_HEIGHT * 24
+			const targetMinutes = earliestTimedMinute !== null ? Math.min(earliestTimedMinute, nowMinutes) : nowMinutes
+			const targetPx = (targetMinutes / 1440) * totalHeight
+			const viewportHeight = el.clientHeight
+			el.scrollTo({ top: Math.max(0, targetPx - viewportHeight * 0.25), behavior: 'smooth' })
+		}, 100)
+		return () => clearTimeout(timer)
+	}, [viewMode, weekAnchor, loading])
 
 	// ── Actions ───────────────────────────────────────────────────────────────
 
@@ -330,8 +404,15 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		if (!path || !dateField) return
 		const file = app.vault.getFileByPath(path)
 		if (!file) return
-		const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-		await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => { fm[dateField.id] = dateStr })
+		const datePart = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+		await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+			const existing = fm[dateField.id]
+			if (typeof existing === 'string' && existing.includes('T')) {
+				fm[dateField.id] = `${datePart}T${existing.split('T')[1]}`
+			} else {
+				fm[dateField.id] = datePart
+			}
+		})
 	}
 
 	// ── Render ────────────────────────────────────────────────────────────────
@@ -572,73 +653,124 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 				</div>
 			) : (
 				<>
-					<div className={`nb-cal-grid${viewMode === 'week' ? ' nb-cal-grid--week' : ''}`}>
-						{/* Day headers */}
-						{viewMode === 'week'
-							? weekDays.map(d => (
-								<div key={d.toISOString()} className="nb-cal-day-header nb-cal-day-header--week">
-									{DAYS_SHORT()[d.getDay()]} {d.getDate()}
-								</div>
-							))
-							: DAYS_SHORT().map(d => (
-								<div key={d} className="nb-cal-day-header">{d}</div>
-							))
-						}
-
-						{/* Day cells */}
-						{viewMode === 'week'
-							? weekDays.map(d => {
-								const key = dateKey(d.getFullYear(), d.getMonth(), d.getDate())
-								const isToday = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()
-								const isDragOver = d.getDate() === dragOverDay
-								const dayRows = rowsByDate.get(key) ?? []
-								return (
-									<div
-										key={key}
-										className={`nb-cal-cell${isToday ? ' nb-cal-cell--today' : ''}${isDragOver ? ' nb-cal-cell--drag-over' : ''}`}
-										onClick={() => { void handleDayClick(d.getFullYear(), d.getMonth(), d.getDate()) }}
-										onDragOver={e => handleDayDragOver(e, d.getDate())}
-										onDragLeave={handleDayDragLeave}
-										onDrop={e => { void handleDayDrop(e, d.getFullYear(), d.getMonth(), d.getDate()) }}
-										title={t('calendar_click_to_create')}
-									>
-										<div className="nb-cal-cell-header">
-											<span className={`nb-cal-day-num${isToday ? ' nb-cal-day-num--today' : ''}`}>{d.getDate()}</span>
-										</div>
-										<div className="nb-cal-cell-body">
+					{viewMode === 'week' ? (
+						<div className="nb-cal-week-container">
+							{/* All-day row */}
+							<div className="nb-cal-week-allday">
+								<div className="nb-cal-week-time-gutter nb-cal-week-allday-label">{t('calendar_all_day')}</div>
+								{weekDays.map(d => {
+									const key = dateKey(d.getFullYear(), d.getMonth(), d.getDate())
+									const dayRows = (rowsByDate.get(key) ?? []).filter(row => {
+										const p = parseDateValue((row as Record<string, unknown>)[dateField.id])
+										return !p || p.hour === undefined
+									})
+									return (
+										<div
+											key={key}
+											className="nb-cal-week-allday-cell"
+											onClick={() => { void handleDayClick(d.getFullYear(), d.getMonth(), d.getDate()) }}
+											onDragOver={e => handleDayDragOver(e, d.getDate())}
+											onDragLeave={handleDayDragLeave}
+											onDrop={e => { void handleDayDrop(e, d.getFullYear(), d.getMonth(), d.getDate()) }}
+										>
 											{dayRows.map(row => (
 												<div
 													key={row._file.path}
-													className="nb-cal-card"
+													className="nb-cal-card nb-cal-card--allday"
 													draggable
 													onDragStart={e => handleCardDragStart(e, row)}
-													onClick={(e) => { e.stopPropagation(); void app.workspace.getLeaf().openFile(row._file) }}
+													onClick={e => { e.stopPropagation(); void app.workspace.getLeaf().openFile(row._file) }}
 												>
 													<span className="nb-cal-card-title">{row._title}</span>
-													{(() => {
-														const dbFolder = dbFile?.parent?.path ?? ''
-														const fileFolder = row._file.parent?.path ?? ''
-														const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
-															? fileFolder.slice(dbFolder.length + 1) : ''
-														return relPath ? <div className="nb-folder-path">{relPath}</div> : null
-													})()}
-													{visibleCols.length > 0 && (
-														<div className="nb-cal-card-props">
-															{visibleCols.map(col => {
-																const val = row[col.id]
-																if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
-																const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
-																return <span key={col.id} className="nb-cal-card-prop">{display}</span>
-															})}
-														</div>
-													)}
 												</div>
 											))}
 										</div>
-									</div>
-								)
-							})
-							: calendarCells.map((day, idx) => {
+									)
+								})}
+							</div>
+							{/* Day headers */}
+							<div className="nb-cal-week-header">
+								<div className="nb-cal-week-time-gutter" />
+								{weekDays.map(d => {
+									const isToday = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()
+									return (
+										<div key={d.toISOString()} className={`nb-cal-week-day-header${isToday ? ' nb-cal-week-day-header--today' : ''}`}>
+											{DAYS_SHORT()[d.getDay()]} {d.getDate()}
+										</div>
+									)
+								})}
+							</div>
+							{/* Time grid */}
+							<div className="nb-cal-week-body" ref={weekBodyRef}>
+								{/* Current time indicator spanning full width */}
+								{weekDays.some(d => d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()) && (
+									<div
+										className="nb-cal-now-line"
+										style={{ top: `${(nowMinutes / 1440) * 48 * 24}px` }}
+									/>
+								)}
+								<div className="nb-cal-week-time-gutter">
+									{Array.from({ length: 24 }, (_, h) => (
+										<div key={h} className="nb-cal-week-hour-label">
+											{formatTime(h, 0)}
+										</div>
+									))}
+								</div>
+								{weekDays.map(d => {
+									const key = dateKey(d.getFullYear(), d.getMonth(), d.getDate())
+									const isToday = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()
+									const timedRows = (rowsByDate.get(key) ?? []).filter(row => {
+										const p = parseDateValue((row as Record<string, unknown>)[dateField.id])
+										return p && p.hour !== undefined
+									})
+									return (
+										<div
+											key={key}
+											className={`nb-cal-week-day-col${isToday ? ' nb-cal-week-day-col--today' : ''}`}
+											onClick={() => { void handleDayClick(d.getFullYear(), d.getMonth(), d.getDate()) }}
+											onDragOver={e => handleDayDragOver(e, d.getDate())}
+											onDragLeave={handleDayDragLeave}
+											onDrop={e => { void handleDayDrop(e, d.getFullYear(), d.getMonth(), d.getDate()) }}
+										>
+											{/* Hour grid lines */}
+											{Array.from({ length: 24 }, (_, h) => (
+												<div key={h} className="nb-cal-week-hour-slot" />
+											))}
+											{/* Positioned timed events */}
+											{timedRows.map(row => {
+												const p = parseDateValue((row as Record<string, unknown>)[dateField.id])
+												if (!p || p.hour === undefined || p.minute === undefined) return null
+												const topPct = ((p.hour * 60 + p.minute) / 1440) * 100
+												return (
+													<div
+														key={row._file.path}
+														className="nb-cal-card nb-cal-card--timed"
+														draggable
+														onDragStart={e => handleCardDragStart(e, row)}
+														onClick={e => { e.stopPropagation(); void app.workspace.getLeaf().openFile(row._file) }}
+														style={{ top: `${topPct}%` }}
+													>
+														<div className="nb-cal-card-title-row">
+															<span className="nb-cal-time-badge">{formatTime(p.hour, p.minute)}</span>
+															<span className="nb-cal-card-title">{row._title}</span>
+														</div>
+													</div>
+												)
+											})}
+										</div>
+									)
+								})}
+							</div>
+						</div>
+					) : (
+					<div className="nb-cal-grid">
+						{/* Day headers */}
+						{DAYS_SHORT().map(d => (
+							<div key={d} className="nb-cal-day-header">{d}</div>
+						))}
+
+						{/* Day cells */}
+						{calendarCells.map((day, idx) => {
 								if (day === null) {
 									return <div key={`empty-${idx}`} className="nb-cal-cell nb-cal-cell--outside" />
 								}
@@ -676,7 +808,10 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 														onDragStart={!isMobile ? e => handleCardDragStart(e, row) : undefined}
 														onClick={(e) => { e.stopPropagation(); void app.workspace.getLeaf().openFile(row._file) }}
 													>
-														<span className="nb-cal-card-title">{row._title}</span>
+														<div className="nb-cal-card-title-row">
+															{dateField && (() => { const tm = getRowTime(row, dateField.id); return tm ? <span className="nb-cal-time-badge">{tm}</span> : null })()}
+															<span className="nb-cal-card-title">{row._title}</span>
+														</div>
 														{!isMobile && (() => {
 															const dbFolder = dbFile?.parent?.path ?? ''
 															const fileFolder = row._file.parent?.path ?? ''
@@ -713,6 +848,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 						})
 						}
 					</div>
+					)}
 
 					{/* No-date rows */}
 					{noDateRows.length > 0 && (

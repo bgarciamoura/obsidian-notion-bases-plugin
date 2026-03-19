@@ -243,6 +243,9 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	calendar_view_week: 'Semana',
 	calendar_prev_week: 'Semana anterior',
 	calendar_next_week: 'Próxima semana',
+	calendar_add_time: 'Adicionar horário',
+	calendar_remove_time: 'Remover horário',
+	calendar_all_day: 'Dia inteiro',
 
 	// Calendar days (short)
 	day_sun: 'Dom',

@@ -243,6 +243,9 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	calendar_view_week: 'Semana',
 	calendar_prev_week: 'Semana anterior',
 	calendar_next_week: 'Semana siguiente',
+	calendar_add_time: 'Añadir hora',
+	calendar_remove_time: 'Quitar hora',
+	calendar_all_day: 'Todo el día',
 
 	// Calendar days (short)
 	day_sun: 'Dom',

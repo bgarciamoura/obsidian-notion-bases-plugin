@@ -243,6 +243,9 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	calendar_view_week: '周',
 	calendar_prev_week: '上一周',
 	calendar_next_week: '下一周',
+	calendar_add_time: '添加时间',
+	calendar_remove_time: '移除时间',
+	calendar_all_day: '全天',
 
 	// Calendar days (short)
 	day_sun: '日',
