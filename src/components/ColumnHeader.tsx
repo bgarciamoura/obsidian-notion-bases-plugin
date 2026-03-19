@@ -24,6 +24,7 @@ const TYPE_ICONS: Record<ColumnType, string> = {
 	lookup:      '↗',
 	image:       '🖼',
 	audio:       '🎵',
+	video:       '🎬',
 }
 
 const TYPE_LABELS = (): Record<ColumnType, string> => ({
@@ -43,6 +44,7 @@ const TYPE_LABELS = (): Record<ColumnType, string> => ({
 	lookup:      t('type_lookup'),
 	image:       t('type_image'),
 	audio:       t('type_audio'),
+	video:       t('type_video'),
 })
 
 interface ColumnHeaderProps {
@@ -106,13 +108,20 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const audioPanelRef = useRef<HTMLDivElement>(null)
 	const audioDragOffset = useRef<{ x: number; y: number } | null>(null)
 
+	// Video config state
+	const [editingVideoConfig, setEditingVideoConfig] = useState(false)
+	const [videoPanelPos, setVideoPanelPos] = useState<{ x: number; y: number } | null>(null)
+	const [videoFolderInput, setVideoFolderInput] = useState(col.videoSourceFolder ?? '')
+	const videoPanelRef = useRef<HTMLDivElement>(null)
+	const videoDragOffset = useRef<{ x: number; y: number } | null>(null)
+
 	// Fechar menu ao clicar fora
 	useEffect(() => {
 		if (!menuOpen) return
 		const handler = (e: MouseEvent) => {
 			const target = e.target as Node
 			const inMenu = menuRef.current?.contains(target)
-			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target) || fmtPanelRef.current?.contains(target) || imgPanelRef.current?.contains(target) || audioPanelRef.current?.contains(target)
+			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target) || fmtPanelRef.current?.contains(target) || imgPanelRef.current?.contains(target) || audioPanelRef.current?.contains(target) || videoPanelRef.current?.contains(target)
 			if (!inMenu && !inPanel) {
 				setMenuOpen(false)
 				setEditingFormula(false)
@@ -318,6 +327,38 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
 	}, [editingAudioConfig])
 
+	// Sync video folder input with col
+	useEffect(() => {
+		if (!editingVideoConfig) setVideoFolderInput(col.videoSourceFolder ?? '')
+	}, [col.videoSourceFolder, editingVideoConfig])
+
+	// Position panel when video config opens
+	useEffect(() => {
+		if (!editingVideoConfig) return
+		if (menuRef.current) {
+			const rect = menuRef.current.getBoundingClientRect()
+			const pw = 280, ph = 160
+			let x = rect.left
+			let y = rect.bottom + 4
+			if (x + pw > window.innerWidth) x = window.innerWidth - pw - 8
+			if (y + ph > window.innerHeight) y = rect.top - ph - 4
+			setVideoPanelPos({ x, y })
+		}
+	}, [editingVideoConfig])
+
+	// Drag for video config panel
+	useEffect(() => {
+		if (!editingVideoConfig) return
+		const onMove = (e: MouseEvent) => {
+			if (!videoDragOffset.current) return
+			setVideoPanelPos({ x: e.clientX - videoDragOffset.current.x, y: e.clientY - videoDragOffset.current.y })
+		}
+		const onUp = () => { videoDragOffset.current = null }
+		document.addEventListener('mousemove', onMove)
+		document.addEventListener('mouseup', onUp)
+		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+	}, [editingVideoConfig])
+
 	// Drag for number format panel
 	useEffect(() => {
 		if (!editingNumberFmt) return
@@ -362,6 +403,23 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const handleAudioTitleBarMouseDown = (e: React.MouseEvent) => {
 		if (!audioPanelPos) return
 		audioDragOffset.current = { x: e.clientX - audioPanelPos.x, y: e.clientY - audioPanelPos.y }
+		e.preventDefault()
+	}
+
+	const handleSaveVideoConfig = async () => {
+		await updateCol({ videoSourceFolder: videoFolderInput.trim() || undefined })
+		setEditingVideoConfig(false)
+		setMenuOpen(false)
+	}
+
+	const handleCloseVideoConfig = () => {
+		setEditingVideoConfig(false)
+		setMenuOpen(false)
+	}
+
+	const handleVideoTitleBarMouseDown = (e: React.MouseEvent) => {
+		if (!videoPanelPos) return
+		videoDragOffset.current = { x: e.clientX - videoPanelPos.x, y: e.clientY - videoPanelPos.y }
 		e.preventDefault()
 	}
 
@@ -845,6 +903,33 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		document.body
 	) : null
 
+	const videoCfgPanel = editingVideoConfig && videoPanelPos ? createPortal(
+		<div ref={videoPanelRef} className="nb-formula-floating-panel" style={{ top: videoPanelPos.y, left: videoPanelPos.x, minWidth: 280 }}>
+			<div className="nb-formula-titlebar" onMouseDown={handleVideoTitleBarMouseDown}>
+				<span className="nb-formula-titlebar-icon">🎬</span>
+				<span className="nb-formula-titlebar-title">{t('video_panel_title')}: {col.name}</span>
+				<button className="nb-formula-close" onClick={handleCloseVideoConfig} title={t('tooltip_close')}>×</button>
+			</div>
+			<div className="nb-formula-body" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+				<label style={{ fontSize: 'var(--font-ui-small)', color: 'var(--text-muted)' }}>
+					{t('video_folder_label')}
+				</label>
+				<input
+					type="text"
+					className="nb-header-rename-input"
+					value={videoFolderInput}
+					onChange={e => setVideoFolderInput(e.target.value)}
+					placeholder={t('video_folder_placeholder')}
+				/>
+				<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+					<button className="nb-menu-item" onClick={handleCloseVideoConfig} style={{ flex: 1 }}>{t('formula_cancel')}</button>
+					<button className="nb-menu-item" onClick={() => { void handleSaveVideoConfig() }} style={{ flex: 1, color: 'var(--interactive-accent)' }}>{t('formula_save')}</button>
+				</div>
+			</div>
+		</div>,
+		document.body
+	) : null
+
 	return (
 		<div className="nb-column-header" ref={menuRef}>
 			{/* Label da coluna */}
@@ -922,9 +1007,16 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						</button>
 					)}
 
+					{col.type === 'video' && (
+						<button className="nb-menu-item" onClick={() => setEditingVideoConfig(true)}>
+							<span className="nb-menu-item-icon">🎬</span>
+							<span>{t('configure_video_folder')}</span>
+						</button>
+					)}
+
 					<div className="nb-menu-separator" />
 					<div className="nb-menu-label">{t('field_type_label')}</div>
-					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'url', 'email', 'phone', 'status', 'formula', 'relation', 'lookup', 'image', 'audio'] as ColumnType[]).map(type => (
+					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'url', 'email', 'phone', 'status', 'formula', 'relation', 'lookup', 'image', 'audio', 'video'] as ColumnType[]).map(type => (
 						<button
 							key={type}
 							className={`nb-menu-item nb-menu-type-item ${col.type === type ? 'nb-menu-item--active' : ''}`}
@@ -953,6 +1045,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			{numberFmtPanel}
 			{imageCfgPanel}
 			{audioCfgPanel}
+			{videoCfgPanel}
 		</div>
 	)
 }

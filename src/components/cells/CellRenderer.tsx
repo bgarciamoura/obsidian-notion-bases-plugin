@@ -312,6 +312,18 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 				/>
 			)
 
+		case 'video':
+			return (
+				<VideoCell
+					col={col}
+					value={value as string | null}
+					isEditing={isEditing}
+					onStartEdit={startEditing}
+					onCommit={v => { void updateCell(rowIndex, columnId, v); setEditingCell(null) }}
+					onCancel={() => setEditingCell(null)}
+				/>
+			)
+
 		default:
 			return <span className="nb-cell-text">{String((value as string | number | boolean | null | undefined) ?? '')}</span>
 	}
@@ -1506,6 +1518,106 @@ function AudioCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 								onClick={e => { e.stopPropagation(); onCommit(f.path) }}
 							>
 								<span>🎵</span>
+								<span>{f.name}</span>
+							</button>
+						))
+					)}
+				</div>,
+				document.body
+			)}
+		</>
+	)
+}
+
+// ── VideoCell ────────────────────────────────────────────────────────────────
+
+const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogv', 'mov', 'mkv'])
+
+function VideoCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
+	col: ColumnSchema
+	value: string | null
+	isEditing: boolean
+	onStartEdit: () => void
+	onCommit: (v: string | null) => void
+	onCancel: () => void
+}) {
+	const app = useApp()
+	const [videoFiles, setVideoFiles] = useState<TFile[]>([])
+	const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null)
+	const cellRef = useRef<HTMLDivElement>(null)
+	const dropdownRef = useRef<HTMLDivElement>(null)
+
+	useEffect(() => {
+		if (!isEditing) return
+		const folder = col.videoSourceFolder
+		const allFiles = app.vault.getFiles()
+		const filtered = folder
+			? allFiles.filter(f => VIDEO_EXTS.has(f.extension.toLowerCase()) && (f.path.startsWith(folder + '/') || f.parent?.path === folder))
+			: allFiles.filter(f => VIDEO_EXTS.has(f.extension.toLowerCase()))
+		setVideoFiles(filtered.sort((a, b) => a.name.localeCompare(b.name)))
+		if (cellRef.current) {
+			const rect = cellRef.current.getBoundingClientRect()
+			setDropPos({ top: rect.bottom, left: rect.left, width: rect.width })
+		}
+	}, [isEditing, col.videoSourceFolder])
+
+	useEffect(() => {
+		if (!isEditing) return
+		const h = (e: MouseEvent) => {
+			if (dropdownRef.current?.contains(e.target as Node)) return
+			if (cellRef.current?.contains(e.target as Node)) return
+			onCancel()
+		}
+		document.addEventListener('mousedown', h)
+		return () => document.removeEventListener('mousedown', h)
+	}, [isEditing, onCancel])
+
+	const [playerOpen, setPlayerOpen] = useState(false)
+
+	const videoFile = value ? app.vault.getFileByPath(value) : null
+	const videoUrl = videoFile ? app.vault.getResourcePath(videoFile) : null
+
+	return (
+		<>
+			<div ref={cellRef} className="nb-cell-video" onClick={onStartEdit}>
+				{videoFile ? (
+					<div className="nb-video-cell-content">
+						<span className="nb-video-cell-icon" onClick={e => { e.stopPropagation(); setPlayerOpen(true) }}>▶</span>
+						<a className="nb-video-cell-link" onClick={e => { e.stopPropagation(); setPlayerOpen(true) }} title={value ?? ''}>
+							{videoFile.name}
+						</a>
+					</div>
+				) : (
+					<span className="nb-cell-text nb-cell-placeholder">{t('video_select_placeholder')}</span>
+				)}
+			</div>
+			{playerOpen && videoUrl && createPortal(
+				<div className="nb-video-modal-backdrop" onClick={() => setPlayerOpen(false)}>
+					<div className="nb-video-modal" onClick={e => e.stopPropagation()}>
+						<video controls autoPlay src={videoUrl} className="nb-video-modal-player" />
+						<button className="nb-video-modal-close" onClick={() => setPlayerOpen(false)}>×</button>
+					</div>
+				</div>,
+				document.body
+			)}
+			{isEditing && dropPos && createPortal(
+				<div ref={dropdownRef} className="nb-select-dropdown" style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, minWidth: dropPos.width, zIndex: 9999 }}>
+					<button className="nb-select-option nb-select-clear" onClick={e => { e.stopPropagation(); onCommit(null) }}>
+						{t('video_picker_clear')}
+					</button>
+					<div className="nb-menu-separator" />
+					{videoFiles.length === 0 ? (
+						<div className="nb-select-option" style={{ color: 'var(--text-muted)', cursor: 'default' }}>
+							{col.videoSourceFolder ? `${t('video_picker_empty_folder')} "${col.videoSourceFolder}"` : t('video_picker_empty_vault')}
+						</div>
+					) : (
+						videoFiles.map(f => (
+							<button
+								key={f.path}
+								className={`nb-select-option${value === f.path ? ' nb-select-option--active' : ''}`}
+								onClick={e => { e.stopPropagation(); onCommit(f.path) }}
+							>
+								<span>🎬</span>
 								<span>{f.name}</span>
 							</button>
 						))

@@ -20,6 +20,7 @@ export type ColumnType =
 	| 'lookup'
 	| 'image'
 	| 'audio'
+	| 'video'
 
 export interface SelectOption {
 	value: string
@@ -48,6 +49,7 @@ export interface ColumnSchema {
 	numberFormat?: NumberFormat
 	imageSourceFolder?: string
 	audioSourceFolder?: string
+	videoSourceFolder?: string
 }
 
 // ── View / filter / sort ────────────────────────────────────────────────────

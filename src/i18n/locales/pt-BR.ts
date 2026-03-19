@@ -126,6 +126,17 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	audio_folder_placeholder: 'Ex: audio/musica',
 	configure_audio_folder: 'Configurar pasta de áudio',
 
+	// Video column
+	type_video: 'Vídeo',
+	video_select_placeholder: 'Selecionar vídeo...',
+	video_picker_clear: 'Limpar',
+	video_picker_empty_folder: 'Nenhum arquivo de vídeo na pasta',
+	video_picker_empty_vault: 'Nenhum arquivo de vídeo no vault',
+	video_panel_title: 'Configurações de vídeo',
+	video_folder_label: 'Pasta de origem (deixe vazio para o vault inteiro)',
+	video_folder_placeholder: 'Ex: video/clipes',
+	configure_video_folder: 'Configurar pasta de vídeo',
+
 	// Formula panel
 	formula_panel_title: 'Fórmula',
 	formula_placeholder: 'Ex: if(status = "feito", 1, 0)',

@@ -334,6 +334,10 @@ export class DatabaseManager {
 			key.endsWith('_audio') || key.endsWith('_sound')) {
 			return 'audio'
 		}
+		if (['video', 'clip', 'movie'].includes(key) ||
+			key.endsWith('_video') || key.endsWith('_clip')) {
+			return 'video'
+		}
 
 		const nonNull = values.filter(v => v !== null && v !== undefined)
 		if (nonNull.length === 0) return 'text'

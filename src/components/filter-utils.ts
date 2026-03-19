@@ -76,7 +76,7 @@ export function getColumnIconStatic(type: string): string {
 	const icons: Record<string, string> = {
 		title: '📄', text: 'Aa', number: '#', select: '◉',
 		multiselect: '◈', date: '📅', checkbox: '☑', formula: 'ƒ', relation: '🔗', lookup: '↗',
-		image: '🖼', audio: '🎵',
+		image: '🖼', audio: '🎵', video: '🎬',
 	}
 	return icons[type] ?? '·'
 }

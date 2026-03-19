@@ -124,6 +124,17 @@ const en = {
 	audio_folder_placeholder: 'Ex: audio/music',
 	configure_audio_folder: 'Configure audio folder',
 
+	// Video column
+	type_video: 'Video',
+	video_select_placeholder: 'Select video...',
+	video_picker_clear: 'Clear',
+	video_picker_empty_folder: 'No video files in folder',
+	video_picker_empty_vault: 'No video files in vault',
+	video_panel_title: 'Video settings',
+	video_folder_label: 'Source folder (leave empty for entire vault)',
+	video_folder_placeholder: 'Ex: video/clips',
+	configure_video_folder: 'Configure video folder',
+
 	// Formula panel
 	formula_panel_title: 'Formula',
 	formula_placeholder: 'Example: if(status = "done", 1, 0)',

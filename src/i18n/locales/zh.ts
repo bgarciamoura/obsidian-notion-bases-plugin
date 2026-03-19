@@ -126,6 +126,17 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	audio_folder_placeholder: '例：audio/music',
 	configure_audio_folder: '配置音频文件夹',
 
+	// Video column
+	type_video: '视频',
+	video_select_placeholder: '选择视频...',
+	video_picker_clear: '清除',
+	video_picker_empty_folder: '文件夹中没有视频文件',
+	video_picker_empty_vault: '仓库中没有视频文件',
+	video_panel_title: '视频设置',
+	video_folder_label: '来源文件夹（留空则使用整个仓库）',
+	video_folder_placeholder: '例：video/clips',
+	configure_video_folder: '配置视频文件夹',
+
 	// Formula panel
 	formula_panel_title: '公式',
 	formula_placeholder: '示例：if(status = "done", 1, 0)',

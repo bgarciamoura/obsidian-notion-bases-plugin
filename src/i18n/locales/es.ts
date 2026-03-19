@@ -126,6 +126,17 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	audio_folder_placeholder: 'Ej: audio/musica',
 	configure_audio_folder: 'Configurar carpeta de audio',
 
+	// Video column
+	type_video: 'Vídeo',
+	video_select_placeholder: 'Seleccionar vídeo...',
+	video_picker_clear: 'Limpiar',
+	video_picker_empty_folder: 'No hay archivos de vídeo en la carpeta',
+	video_picker_empty_vault: 'No hay archivos de vídeo en el vault',
+	video_panel_title: 'Configuración de vídeo',
+	video_folder_label: 'Carpeta de origen (dejar vacío para todo el vault)',
+	video_folder_placeholder: 'Ej: video/clips',
+	configure_video_folder: 'Configurar carpeta de vídeo',
+
 	// Formula panel
 	formula_panel_title: 'Fórmula',
 	formula_placeholder: 'Ejemplo: if(status = "done", 1, 0)',

@@ -126,6 +126,17 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	audio_folder_placeholder: '例：audio/music',
 	configure_audio_folder: '音声フォルダーを設定',
 
+	// Video column
+	type_video: '動画',
+	video_select_placeholder: '動画を選択...',
+	video_picker_clear: 'クリア',
+	video_picker_empty_folder: 'フォルダーに動画ファイルがありません',
+	video_picker_empty_vault: '保管庫に動画ファイルがありません',
+	video_panel_title: '動画設定',
+	video_folder_label: 'ソースフォルダー（空にすると保管庫全体を対象）',
+	video_folder_placeholder: '例：video/clips',
+	configure_video_folder: '動画フォルダーを設定',
+
 	// Formula panel
 	formula_panel_title: '数式',
 	formula_placeholder: '例：if(status = "done", 1, 0)',

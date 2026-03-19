@@ -126,6 +126,17 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	audio_folder_placeholder: 'Z.B.: audio/musik',
 	configure_audio_folder: 'Audioordner konfigurieren',
 
+	// Video column
+	type_video: 'Video',
+	video_select_placeholder: 'Video auswählen...',
+	video_picker_clear: 'Löschen',
+	video_picker_empty_folder: 'Keine Videodateien im Ordner',
+	video_picker_empty_vault: 'Keine Videodateien im Vault',
+	video_panel_title: 'Videoeinstellungen',
+	video_folder_label: 'Quellordner (leer lassen für den gesamten Vault)',
+	video_folder_placeholder: 'Z.B.: video/clips',
+	configure_video_folder: 'Videoordner konfigurieren',
+
 	// Formula panel
 	formula_panel_title: 'Formel',
 	formula_placeholder: 'Beispiel: if(status = "done", 1, 0)',
