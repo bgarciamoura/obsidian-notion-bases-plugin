@@ -159,6 +159,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 		startFieldId: string | null; endFieldId: string | null
 	} | null>(null)
 	const [resizeDelta, setResizeDelta] = useState(0)
+	const [contextMenuFile, setContextMenuFile] = useState<TFile | null>(null)
 
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
@@ -722,8 +723,9 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 											return (
 												<div className="nb-tl-bar"
 													style={{ left: bLeft, width: bWidth, top: (ROW_H - 22) / 2, height: 22 }}
-													onClick={() => { if (justResized.current) return; void app.workspace.getLeaf().openFile(item.row._file) }}
-													title={item.row._title}>
+													onClick={() => { if (justResized.current) return; if (isMobile) { setContextMenuFile(item.row._file) } else { void app.workspace.getLeaf().openFile(item.row._file) } }}
+													onContextMenu={!isMobile ? e => { e.preventDefault(); setContextMenuFile(item.row._file) } : undefined}
+													title={!isMobile ? item.row._title : undefined}>
 													<div className="nb-tl-bar-handle nb-tl-bar-handle--left"
 														onMouseDown={e => {
 															e.stopPropagation(); e.preventDefault()
@@ -784,6 +786,20 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 					)}
 				</div>
 			)}
+
+			{/* Bar context menu (mobile tap) */}
+			<BottomSheet open={contextMenuFile !== null} onClose={() => setContextMenuFile(null)} title={contextMenuFile?.basename ?? ''}>
+				<button className="nb-menu-item" onClick={() => { if (contextMenuFile) { void app.workspace.getLeaf().openFile(contextMenuFile) } setContextMenuFile(null) }}>
+					<span className="nb-menu-item-icon">📄</span><span>{t('open_note')}</span>
+				</button>
+				<button className="nb-menu-item" onClick={() => { if (contextMenuFile) { void manager.duplicateNotes([contextMenuFile]) } setContextMenuFile(null) }}>
+					<span className="nb-menu-item-icon">📋</span><span>{t('duplicate_note')}</span>
+				</button>
+				<div className="nb-menu-separator" />
+				<button className="nb-menu-item nb-menu-item--danger" onClick={() => { if (contextMenuFile) { void manager.deleteNotes([contextMenuFile]) } setContextMenuFile(null) }}>
+					<span className="nb-menu-item-icon">🗑</span><span>{t('delete_note')}</span>
+				</button>
+			</BottomSheet>
 		</div>
 	)
 }

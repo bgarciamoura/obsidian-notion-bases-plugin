@@ -3699,6 +3699,14 @@ body.nb-tl-resizing * {
 	min-height: 44px;
 }
 
+.is-mobile .nb-tl-sidebar {
+	display: none;
+}
+
+.is-mobile .nb-tl-bar {
+	min-height: 28px;
+}
+
 .is-mobile .nb-tl-zoom-btn {
 	min-height: 44px;
 	padding: 8px 14px;
