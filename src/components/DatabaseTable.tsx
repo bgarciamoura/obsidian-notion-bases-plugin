@@ -757,13 +757,17 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	// ── Atualizar célula (salva no frontmatter) ──────────────────────────────
 
+	const filteredRowsRef = useRef<NoteRow[]>(rows)
+
 	const updateCell = useCallback(async (rowIndex: number, columnId: string, value: unknown) => {
-		const row = rows[rowIndex]
+		// rowIndex comes from TanStack Table which uses filteredRows as data,
+		// so we must look up the row from the filtered list, not the full rows array.
+		const row = filteredRowsRef.current[rowIndex]
 		if (!row) return
 
-		// Atualização otimista
-		setRows(prev => prev.map((r, i) =>
-			i === rowIndex ? { ...r, [columnId]: value } : r
+		// Atualização otimista — match by file path to update the correct row in full array
+		setRows(prev => prev.map(r =>
+			r._file.path === row._file.path ? { ...r, [columnId]: value } : r
 		))
 
 		if (columnId === '_title') {
@@ -780,7 +784,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				await manager.syncTwoWayRelation(row._file, col, oldValues, newValues)
 			}
 		}
-	}, [rows, manager, config.schema])
+	}, [manager, config.schema])
 
 	// ── Atualizar schema (salva no _database.md) ─────────────────────────────
 
@@ -1020,6 +1024,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		if (current.length > 0) groups.push(current)
 		return rows.filter(row => groups.some(group => group.every(f => matchesFilter(row, f))))
 	}, [rows, activeFilters])
+
+	filteredRowsRef.current = filteredRows
 
 	const table = useReactTable({
 		data: filteredRows,
