@@ -2520,6 +2520,10 @@
 	cursor: grabbing;
 }
 
+.nb-board--dragging {
+	scroll-snap-type: none !important;
+}
+
 .nb-touch-drag-source {
 	opacity: 0.3;
 }
@@ -3755,6 +3759,13 @@ body.nb-tl-resizing * {
 
 .is-mobile .nb-board {
 	padding-bottom: 20px;
+	scroll-snap-type: x mandatory;
+	scroll-padding: 0 12px;
+}
+
+.is-mobile .nb-board-column {
+	flex: 0 0 85%;
+	scroll-snap-align: start;
 }
 
 /* Narrow containers (mobile phones + narrow sidebars on desktop) */

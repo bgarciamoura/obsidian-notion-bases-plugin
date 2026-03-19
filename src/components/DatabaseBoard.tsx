@@ -258,6 +258,31 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		const touch = e.touches[0]
 		const el = e.currentTarget as HTMLElement
 		let active = false, overColKey: string | null = null, ghost: HTMLElement | null = null
+		let scrollInterval: ReturnType<typeof setInterval> | null = null
+
+		const startEdgeScroll = (clientX: number) => {
+			const board = boardRef.current
+			if (!board) return
+			const boardRect = board.getBoundingClientRect()
+			const edgeZone = 50
+			const speed = 8
+			const nearLeft = clientX - boardRect.left < edgeZone
+			const nearRight = boardRect.right - clientX < edgeZone
+
+			if (!nearLeft && !nearRight) {
+				if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null }
+				return
+			}
+			if (scrollInterval) return
+			const dir = nearRight ? 1 : -1
+			scrollInterval = setInterval(() => {
+				board.scrollLeft += dir * speed
+			}, 16)
+		}
+
+		const stopEdgeScroll = () => {
+			if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null }
+		}
 
 		const onMove = (ev: TouchEvent) => {
 			const t = ev.touches[0]
@@ -267,6 +292,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			if (!active) {
 				active = true
 				el.classList.add('nb-touch-drag-source')
+				boardRef.current?.classList.add('nb-board--dragging')
 				ghost = createGhost(el, t.clientX, t.clientY)
 			}
 			if (ghost) {
@@ -280,9 +306,12 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			const col = target?.closest('.nb-board-column') as HTMLElement | null
 			overColKey = col?.dataset.colKey ?? null
 			setCardDragOver(overColKey)
+			startEdgeScroll(t.clientX)
 		}
 
 		const onEnd = () => {
+			stopEdgeScroll()
+			boardRef.current?.classList.remove('nb-board--dragging')
 			el.classList.remove('nb-touch-drag-source', 'nb-touch-drag-hidden')
 			ghost?.remove()
 			if (active && overColKey !== null) {
@@ -304,6 +333,31 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		const el = e.currentTarget.closest('.nb-board-column') as HTMLElement
 		if (!el) return
 		let active = false, overColKey: string | null = null, ghost: HTMLElement | null = null
+		let scrollInterval: ReturnType<typeof setInterval> | null = null
+
+		const startEdgeScroll = (clientX: number) => {
+			const board = boardRef.current
+			if (!board) return
+			const boardRect = board.getBoundingClientRect()
+			const edgeZone = 50
+			const speed = 8
+			const nearLeft = clientX - boardRect.left < edgeZone
+			const nearRight = boardRect.right - clientX < edgeZone
+
+			if (!nearLeft && !nearRight) {
+				if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null }
+				return
+			}
+			if (scrollInterval) return
+			const dir = nearRight ? 1 : -1
+			scrollInterval = setInterval(() => {
+				board.scrollLeft += dir * speed
+			}, 16)
+		}
+
+		const stopEdgeScroll = () => {
+			if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null }
+		}
 
 		const onMove = (ev: TouchEvent) => {
 			const t = ev.touches[0]
@@ -313,6 +367,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			if (!active) {
 				active = true
 				el.classList.add('nb-touch-drag-source')
+				boardRef.current?.classList.add('nb-board--dragging')
 				ghost = createGhost(el, t.clientX, t.clientY)
 			}
 			if (ghost) {
@@ -326,9 +381,12 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			const col = target?.closest('.nb-board-column') as HTMLElement | null
 			overColKey = col?.dataset.colKey ?? null
 			setColDragOver(overColKey)
+			startEdgeScroll(t.clientX)
 		}
 
 		const onEnd = () => {
+			stopEdgeScroll()
+			boardRef.current?.classList.remove('nb-board--dragging')
 			el.classList.remove('nb-touch-drag-source', 'nb-touch-drag-hidden')
 			ghost?.remove()
 			if (active && overColKey !== null) {
