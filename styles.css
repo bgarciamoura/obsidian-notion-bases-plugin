@@ -3651,9 +3651,34 @@ body.nb-tl-resizing * {
 	padding: 8px 12px;
 }
 
+.is-mobile .nb-cal-cell {
+	min-height: 60px;
+}
+
 .is-mobile .nb-cal-card {
-	min-height: 32px;
-	padding: 4px 6px;
+	min-height: 28px;
+	padding: 3px 6px;
+}
+
+.nb-cal-more-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 24px;
+	height: 20px;
+	padding: 0 6px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	border-radius: 10px;
+	font-size: 11px;
+	font-weight: 600;
+	cursor: pointer;
+	margin-top: 2px;
+}
+
+.nb-cal-more-badge:active {
+	opacity: 0.8;
 }
 
 .is-mobile .nb-cal-nav-arrow {

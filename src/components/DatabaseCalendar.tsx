@@ -96,6 +96,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const [dateFieldMenuOpen, setDateFieldMenuOpen] = useState(false)
 	const [dragOverDay, setDragOverDay] = useState<number | null>(null)
+	const [expandedDay, setExpandedDay] = useState<string | null>(null)
 
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
@@ -656,38 +657,51 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 											<span className={`nb-cal-day-num${isToday ? ' nb-cal-day-num--today' : ''}`}>{day}</span>
 										</div>
 									<div className="nb-cal-cell-body">
-										{dayRows.map(row => (
-											<div
-												key={row._file.path}
-												className="nb-cal-card"
-												draggable
-												onDragStart={e => handleCardDragStart(e, row)}
-												onClick={(e) => { e.stopPropagation(); void app.workspace.getLeaf().openFile(row._file) }}
-											>
-												<span className="nb-cal-card-title">{row._title}</span>
-												{(() => {
-													const dbFolder = dbFile?.parent?.path ?? ''
-													const fileFolder = row._file.parent?.path ?? ''
-													const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
-														? fileFolder.slice(dbFolder.length + 1) : ''
-													return relPath ? <div className="nb-folder-path">{relPath}</div> : null
-												})()}
-												{visibleCols.length > 0 && (
-													<div className="nb-cal-card-props">
-														{visibleCols.map(col => {
-															const val = row[col.id]
-															if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
-															const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
-															return (
-																<span key={col.id} className="nb-cal-card-prop">
-																	{display}
-																</span>
-															)
-														})}
+										{(() => {
+											const mobileMax = 1
+											const showRows = isMobile && dayRows.length > mobileMax ? dayRows.slice(0, mobileMax) : dayRows
+											const extraCount = isMobile ? dayRows.length - showRows.length : 0
+											const dayKey = dateKey(currentYear, currentMonth, day)
+											return <>
+												{showRows.map(row => (
+													<div
+														key={row._file.path}
+														className="nb-cal-card"
+														draggable={!isMobile}
+														onDragStart={!isMobile ? e => handleCardDragStart(e, row) : undefined}
+														onClick={(e) => { e.stopPropagation(); void app.workspace.getLeaf().openFile(row._file) }}
+													>
+														<span className="nb-cal-card-title">{row._title}</span>
+														{!isMobile && (() => {
+															const dbFolder = dbFile?.parent?.path ?? ''
+															const fileFolder = row._file.parent?.path ?? ''
+															const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
+																? fileFolder.slice(dbFolder.length + 1) : ''
+															return relPath ? <div className="nb-folder-path">{relPath}</div> : null
+														})()}
+														{!isMobile && visibleCols.length > 0 && (
+															<div className="nb-cal-card-props">
+																{visibleCols.map(col => {
+																	const val = row[col.id]
+																	if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
+																	const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+																	return (
+																		<span key={col.id} className="nb-cal-card-prop">
+																			{display}
+																		</span>
+																	)
+																})}
+															</div>
+														)}
 													</div>
+												))}
+												{extraCount > 0 && (
+													<button className="nb-cal-more-badge" onClick={e => { e.stopPropagation(); setExpandedDay(dayKey) }}>
+														+{extraCount}
+													</button>
 												)}
-											</div>
-										))}
+											</>
+										})()}
 									</div>
 								</div>
 							)
@@ -723,6 +737,15 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 					)}
 				</>
 			)}
+
+			{/* Expanded day BottomSheet (mobile) */}
+			<BottomSheet open={expandedDay !== null} onClose={() => setExpandedDay(null)} title={expandedDay ?? ''}>
+				{(expandedDay !== null ? (rowsByDate.get(expandedDay) ?? []) : []).map(row => (
+					<button key={row._file.path} className="nb-menu-item" onClick={() => { void app.workspace.getLeaf().openFile(row._file); setExpandedDay(null) }}>
+						<span className="nb-menu-item-icon">📄</span><span>{row._title}</span>
+					</button>
+				))}
+			</BottomSheet>
 		</div>
 	)
 }
