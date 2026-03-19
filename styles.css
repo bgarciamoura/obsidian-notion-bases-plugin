@@ -3681,6 +3681,15 @@ body.nb-tl-resizing * {
 	opacity: 0.8;
 }
 
+.nb-cal-day-actions {
+	padding-left: 20px;
+}
+
+.nb-cal-day-actions .nb-menu-item {
+	font-size: var(--font-ui-smaller);
+	min-height: 36px;
+}
+
 .is-mobile .nb-cal-nav-arrow {
 	min-height: 44px;
 	padding: 8px 12px;

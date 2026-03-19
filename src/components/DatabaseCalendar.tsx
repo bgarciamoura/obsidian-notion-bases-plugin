@@ -97,6 +97,8 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	const [dateFieldMenuOpen, setDateFieldMenuOpen] = useState(false)
 	const [dragOverDay, setDragOverDay] = useState<number | null>(null)
 	const [expandedDay, setExpandedDay] = useState<string | null>(null)
+	const [actionDay, setActionDay] = useState<{ year: number; month: number; day: number } | null>(null)
+	const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
@@ -647,11 +649,14 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 									<div
 										key={day}
 										className={`nb-cal-cell${isToday ? ' nb-cal-cell--today' : ''}${isDragOver ? ' nb-cal-cell--drag-over' : ''}`}
-										onClick={() => { void handleDayClick(currentYear, currentMonth, day) }}
+										onClick={!isMobile ? () => { void handleDayClick(currentYear, currentMonth, day) } : undefined}
 										onDragOver={e => handleDayDragOver(e, day)}
 										onDragLeave={handleDayDragLeave}
 										onDrop={e => { void handleDayDrop(e, currentYear, currentMonth, day) }}
-										title={t('calendar_click_to_create')}
+										title={!isMobile ? t('calendar_click_to_create') : undefined}
+										onTouchStart={isMobile ? () => { longPressRef.current = setTimeout(() => { setActionDay({ year: currentYear, month: currentMonth, day }) }, 500) } : undefined}
+										onTouchMove={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+										onTouchEnd={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
 									>
 										<div className="nb-cal-cell-header">
 											<span className={`nb-cal-day-num${isToday ? ' nb-cal-day-num--today' : ''}`}>{day}</span>
@@ -745,6 +750,35 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 						<span className="nb-menu-item-icon">📄</span><span>{row._title}</span>
 					</button>
 				))}
+			</BottomSheet>
+
+			{/* Day actions BottomSheet (mobile long-press) */}
+			<BottomSheet open={actionDay !== null} onClose={() => setActionDay(null)} title={actionDay ? `${actionDay.day}/${actionDay.month + 1}/${actionDay.year}` : ''}>
+				{actionDay && (() => {
+					const dayKey = dateKey(actionDay.year, actionDay.month, actionDay.day)
+					const dayRows = rowsByDate.get(dayKey) ?? []
+					return <>
+						<button className="nb-menu-item" onClick={() => { void handleDayClick(actionDay.year, actionDay.month, actionDay.day); setActionDay(null) }}>
+							<span className="nb-menu-item-icon">➕</span><span>{t('add_card')}</span>
+						</button>
+						{dayRows.length > 0 && <div className="nb-menu-separator" />}
+						{dayRows.map(row => (
+							<Fragment key={row._file.path}>
+								<button className="nb-menu-item" onClick={() => { void app.workspace.getLeaf().openFile(row._file); setActionDay(null) }}>
+									<span className="nb-menu-item-icon">📄</span><span>{row._title}</span>
+								</button>
+								<div className="nb-cal-day-actions">
+									<button className="nb-menu-item" onClick={() => { void manager.duplicateNotes([row._file]); setActionDay(null) }}>
+										<span className="nb-menu-item-icon">📋</span><span>{t('duplicate_note')}</span>
+									</button>
+									<button className="nb-menu-item nb-menu-item--danger" onClick={() => { void manager.deleteNotes([row._file]); setActionDay(null) }}>
+										<span className="nb-menu-item-icon">🗑</span><span>{t('delete_note')}</span>
+									</button>
+								</div>
+							</Fragment>
+						))}
+					</>
+				})()}
 			</BottomSheet>
 		</div>
 	)
