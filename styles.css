@@ -559,8 +559,6 @@
 /* ── Linhas ──────────────────────────────────────────────────────────────── */
 
 .nb-row {
-	content-visibility: auto;
-	contain-intrinsic-height: auto var(--nb-row-height, 36px);
 }
 
 .nb-row:hover .nb-td,

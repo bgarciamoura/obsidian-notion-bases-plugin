@@ -44,23 +44,28 @@ import { BottomSheet } from './BottomSheet'
 // ── Virtual row rendering (separate component to isolate hooks) ──────────
 function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHeight: number) {
 	const [range, setRange] = useState({ scrollTop: 0, viewportHeight: 800 })
+	const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	useEffect(() => {
 		const el = scrollRef.current
 		if (!el) return
-		const update = () => setRange({ scrollTop: el.scrollTop, viewportHeight: el.clientHeight })
-		update()
-		let ticking = false
+		const flush = () => setRange({ scrollTop: el.scrollTop, viewportHeight: el.clientHeight })
+		flush()
 		const onScroll = () => {
-			if (!ticking) { ticking = true; requestAnimationFrame(() => { update(); ticking = false }) }
+			// Only re-render when scroll crosses a row boundary (reduces React updates)
+			if (pendingRef.current) return
+			pendingRef.current = setTimeout(() => {
+				pendingRef.current = null
+				flush()
+			}, 32) // ~30fps update rate — smooth enough, halves React work vs RAF
 		}
 		el.addEventListener('scroll', onScroll, { passive: true })
-		const ro = new ResizeObserver(update)
+		const ro = new ResizeObserver(flush)
 		ro.observe(el)
-		return () => { el.removeEventListener('scroll', onScroll); ro.disconnect() }
+		return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); if (pendingRef.current) clearTimeout(pendingRef.current) }
 	}, [scrollRef])
 
-	const overscan = 15
+	const overscan = 20
 	const startIdx = Math.max(0, Math.floor(range.scrollTop / rowHeight) - overscan)
 	const endIdx = Math.ceil((range.scrollTop + range.viewportHeight) / rowHeight) + overscan
 	return { startIdx, endIdx, topPad: startIdx * rowHeight }
