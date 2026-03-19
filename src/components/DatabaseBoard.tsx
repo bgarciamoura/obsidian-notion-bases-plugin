@@ -45,6 +45,9 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	const [cardDragOver, setCardDragOver] = useState<string | null>(null)
 	// column drag
 	const [colDragOver, setColDragOver] = useState<string | null>(null)
+	// touch drag state
+	const touchDragRef = useRef<{ rowPath: string; el: HTMLElement; startX: number; startY: number; active: boolean; overColKey: string | null } | null>(null)
+	const [touchDragActive, setTouchDragActive] = useState(false)
 
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const groupByMenuRef = useRef<HTMLDivElement>(null)
@@ -235,6 +238,119 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		next.splice(toIdx, 0, fromValue)
 		await saveView({ ...activeView, boardColumnOrder: next })
 	}, [columns, activeView, saveView])
+
+	// Touch drag for mobile — registers listeners directly on element with { passive: false }
+	const boardRef = useRef<HTMLDivElement>(null)
+	const moveCardRef = useRef(moveCard)
+	moveCardRef.current = moveCard
+	const moveColumnRef = useRef(moveColumn)
+	moveColumnRef.current = moveColumn
+
+	const createGhost = (el: HTMLElement, x: number, y: number): HTMLElement => {
+		const ghost = el.cloneNode(true) as HTMLElement
+		const rect = el.getBoundingClientRect()
+		ghost.style.cssText = `position:fixed;z-index:9999;pointer-events:none;opacity:0.85;width:${rect.width}px;transform:rotate(2deg);box-shadow:0 8px 24px rgba(0,0,0,0.2);`
+		ghost.style.left = `${x - rect.width / 2}px`
+		ghost.style.top = `${y - 20}px`
+		document.body.appendChild(ghost)
+		return ghost
+	}
+
+	const handleCardTouchStart = useCallback((e: React.TouchEvent, rowPath: string) => {
+		const touch = e.touches[0]
+		const el = e.currentTarget as HTMLElement
+		let active = false, overColKey: string | null = null, ghost: HTMLElement | null = null
+
+		const onMove = (ev: TouchEvent) => {
+			const t = ev.touches[0]
+			if (!active && Math.abs(t.clientX - touch.clientX) < 12 && Math.abs(t.clientY - touch.clientY) < 12) return
+			ev.preventDefault()
+			ev.stopPropagation()
+			if (!active) {
+				active = true
+				el.style.opacity = '0.3'
+				ghost = createGhost(el, t.clientX, t.clientY)
+				setTouchDragActive(true)
+			}
+			if (ghost) {
+				ghost.style.left = `${t.clientX - ghost.offsetWidth / 2}px`
+				ghost.style.top = `${t.clientY - 20}px`
+			}
+			el.style.visibility = 'hidden'
+			const target = document.elementFromPoint(t.clientX, t.clientY)
+			el.style.visibility = ''
+			el.style.opacity = '0.3'
+			const col = target?.closest('.nb-board-column') as HTMLElement | null
+			overColKey = col?.dataset.colKey ?? null
+			setCardDragOver(overColKey)
+		}
+
+		const onEnd = () => {
+			el.style.opacity = ''
+			el.style.visibility = ''
+			ghost?.remove()
+			if (active && overColKey !== null) {
+				void moveCardRef.current(rowPath, overColKey)
+			}
+			setTouchDragActive(false)
+			setCardDragOver(null)
+			el.removeEventListener('touchmove', onMove)
+			el.removeEventListener('touchend', onEnd)
+			el.removeEventListener('touchcancel', onEnd)
+		}
+
+		el.addEventListener('touchmove', onMove, { passive: false })
+		el.addEventListener('touchend', onEnd)
+		el.addEventListener('touchcancel', onEnd)
+	}, [])
+
+	const handleColumnTouchStart = useCallback((e: React.TouchEvent, colValue: string) => {
+		const touch = e.touches[0]
+		const el = e.currentTarget.closest('.nb-board-column') as HTMLElement
+		if (!el) return
+		let active = false, overColKey: string | null = null, ghost: HTMLElement | null = null
+
+		const onMove = (ev: TouchEvent) => {
+			const t = ev.touches[0]
+			if (!active && Math.abs(t.clientX - touch.clientX) < 12 && Math.abs(t.clientY - touch.clientY) < 12) return
+			ev.preventDefault()
+			ev.stopPropagation()
+			if (!active) {
+				active = true
+				el.style.opacity = '0.3'
+				ghost = createGhost(el, t.clientX, t.clientY)
+			}
+			if (ghost) {
+				ghost.style.left = `${t.clientX - ghost.offsetWidth / 2}px`
+				ghost.style.top = `${t.clientY - 20}px`
+			}
+			el.style.visibility = 'hidden'
+			const target = document.elementFromPoint(t.clientX, t.clientY)
+			el.style.visibility = ''
+			el.style.opacity = '0.3'
+			const col = target?.closest('.nb-board-column') as HTMLElement | null
+			overColKey = col?.dataset.colKey ?? null
+			setColDragOver(overColKey)
+		}
+
+		const onEnd = () => {
+			el.style.opacity = ''
+			el.style.visibility = ''
+			ghost?.remove()
+			if (active && overColKey !== null) {
+				void moveColumnRef.current(colValue, overColKey)
+			}
+			setColDragOver(null)
+			el.removeEventListener('touchmove', onMove)
+			el.removeEventListener('touchend', onEnd)
+			el.removeEventListener('touchcancel', onEnd)
+		}
+
+		el.addEventListener('touchmove', onMove, { passive: false })
+		el.addEventListener('touchend', onEnd)
+		el.addEventListener('touchcancel', onEnd)
+	}, [])
+
 
 	const addCardToColumn = useCallback(async (columnValue: string) => {
 		if (!dbFile || !groupByCol) return
@@ -477,7 +593,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			{toolbarContent}
 
 			{/* Board */}
-			<div className="nb-board">
+			<div className="nb-board" ref={boardRef}>
 				{columns.map(col => {
 					const key = col.value || '__no_value__'
 					const isCardOver = cardDragOver === key
@@ -485,6 +601,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 					return (
 						<div
 							key={key}
+							data-col-key={key}
 							className={`nb-board-column${isCardOver ? ' nb-board-column--card-over' : ''}${isColOver ? ' nb-board-column--col-over' : ''}${(() => { const lim = activeView.boardColumnLimits?.[col.value]; return lim && lim > 0 && col.rows.length >= lim ? ' nb-board-column--over-limit' : '' })()}`}
 							onDragOver={e => {
 								e.preventDefault()
@@ -517,18 +634,21 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 							{/* Column header with drag handle */}
 							<div
 								className="nb-board-column-header"
-								draggable
-								onDragStart={e => {
+								draggable={!isMobile}
+								onDragStart={!isMobile ? e => {
 									e.stopPropagation()
 									e.dataTransfer.effectAllowed = 'move'
 									e.dataTransfer.setData('nb-drag-type', DRAG_TYPE_COLUMN)
 									e.dataTransfer.setData('nb-col-value', col.value)
 									e.dataTransfer.setData(DRAG_TYPE_COLUMN, '')
-								}}
-								onDragEnd={() => setColDragOver(null)}
+								} : undefined}
+								onDragEnd={!isMobile ? () => setColDragOver(null) : undefined}
 								title={t('board_drag_reorder')}
 							>
-								<span className="nb-board-column-drag-handle">⠿</span>
+								<span
+									className="nb-board-column-drag-handle"
+									onTouchStart={isMobile ? e => handleColumnTouchStart(e, col.value) : undefined}
+								>⠿</span>
 								{col.color ? (
 									<span className="nb-board-column-badge" style={{ background: col.color }}>{col.label}</span>
 								) : (
@@ -597,14 +717,15 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 											<div
 												key={row._file.path}
 												className="nb-board-card"
-												draggable
-												onDragStart={e => {
+												draggable={!isMobile}
+												onDragStart={!isMobile ? e => {
 													e.stopPropagation()
 													e.dataTransfer.effectAllowed = 'move'
 													e.dataTransfer.setData('nb-drag-type', DRAG_TYPE_CARD)
 													e.dataTransfer.setData('nb-row-path', row._file.path)
 													e.dataTransfer.setData(DRAG_TYPE_CARD, '')
-												}}
+												} : undefined}
+												onTouchStart={isMobile ? e => handleCardTouchStart(e, row._file.path) : undefined}
 												onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
 											>
 												<div className="nb-board-card-title">{row._title}</div>

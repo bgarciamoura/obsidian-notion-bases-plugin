@@ -14,6 +14,7 @@ import {
 	DragEndEvent,
 	closestCenter,
 	PointerSensor,
+	TouchSensor,
 	useSensor,
 	useSensors,
 } from '@dnd-kit/core'
@@ -616,7 +617,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const searchInactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	const sensors = useSensors(
-		useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+		useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+		useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
 	)
 
 	// Estado local da view do embed — inicializado com externalView e atualizado a cada mudança
