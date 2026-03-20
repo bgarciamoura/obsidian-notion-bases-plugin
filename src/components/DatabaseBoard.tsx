@@ -26,6 +26,42 @@ interface DatabaseBoardProps {
 
 const DRAG_TYPE_CARD = 'nb-card'
 const DRAG_TYPE_COLUMN = 'nb-column'
+const CARD_ESTIMATED_HEIGHT = 60
+const VIRTUALIZATION_THRESHOLD = 30
+
+function LazyCard({ children }: { children: React.ReactNode }) {
+	const ref = useRef<HTMLDivElement>(null)
+	const [visible, setVisible] = useState(false)
+	const heightRef = useRef(CARD_ESTIMATED_HEIGHT)
+
+	useEffect(() => {
+		const el = ref.current
+		if (!el) return
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				if (entry.isIntersecting) {
+					setVisible(true)
+					observer.disconnect()
+				}
+			},
+			{ rootMargin: '200px 0px' }
+		)
+		observer.observe(el)
+		return () => observer.disconnect()
+	}, [])
+
+	useEffect(() => {
+		if (visible && ref.current) {
+			heightRef.current = ref.current.offsetHeight
+		}
+	}, [visible])
+
+	if (!visible) {
+		return <div ref={ref} style={{ minHeight: heightRef.current }} />
+	}
+
+	return <div ref={ref}>{children}</div>
+}
 
 export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: DatabaseBoardProps) {
 	const app = useApp()
@@ -779,47 +815,53 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 										: col.rows
 									const hiddenCount = col.rows.length - visibleRows.length
 									return <>
-										{visibleRows.map(row => (
-											<div
-												key={row._file.path}
-												className="nb-board-card"
-												draggable={!isMobile}
-												onDragStart={!isMobile ? e => {
-													e.stopPropagation()
-													e.dataTransfer.effectAllowed = 'move'
-													e.dataTransfer.setData('nb-drag-type', DRAG_TYPE_CARD)
-													e.dataTransfer.setData('nb-row-path', row._file.path)
-													e.dataTransfer.setData(DRAG_TYPE_CARD, '')
-												} : undefined}
-												onTouchStart={isMobile ? e => handleCardTouchStart(e, row._file) : undefined}
-											onContextMenu={!isMobile ? e => { e.preventDefault(); setContextMenuFile(row._file) } : undefined}
-												onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
-											>
-												<div className="nb-board-card-title">{row._title}</div>
-												{(() => {
-													const dbFolder = dbFile?.parent?.path ?? ''
-													const fileFolder = row._file.parent?.path ?? ''
-													const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
-														? fileFolder.slice(dbFolder.length + 1) : ''
-													return relPath ? <div className="nb-folder-path">{relPath}</div> : null
-												})()}
-												{visibleCols.length > 0 && (
-													<div className="nb-board-card-props">
-														{visibleCols.map(c => {
-															const val = row[c.id]
-															if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
-															const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
-															return (
-																<span key={c.id} className="nb-board-card-prop">
-																	<span className="nb-board-card-prop-name">{c.name}:</span>
-																	<span className="nb-board-card-prop-value">{display}</span>
-																</span>
-															)
-														})}
-													</div>
-												)}
-											</div>
-										))}
+										{visibleRows.map((row, idx) => {
+											const shouldVirtualize = visibleRows.length >= VIRTUALIZATION_THRESHOLD
+											const cardContent = (
+												<div
+													key={row._file.path}
+													className="nb-board-card"
+													draggable={!isMobile}
+													onDragStart={!isMobile ? e => {
+														e.stopPropagation()
+														e.dataTransfer.effectAllowed = 'move'
+														e.dataTransfer.setData('nb-drag-type', DRAG_TYPE_CARD)
+														e.dataTransfer.setData('nb-row-path', row._file.path)
+														e.dataTransfer.setData(DRAG_TYPE_CARD, '')
+													} : undefined}
+													onTouchStart={isMobile ? e => handleCardTouchStart(e, row._file) : undefined}
+													onContextMenu={!isMobile ? e => { e.preventDefault(); setContextMenuFile(row._file) } : undefined}
+													onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
+												>
+													<div className="nb-board-card-title">{row._title}</div>
+													{(() => {
+														const dbFolder = dbFile?.parent?.path ?? ''
+														const fileFolder = row._file.parent?.path ?? ''
+														const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
+															? fileFolder.slice(dbFolder.length + 1) : ''
+														return relPath ? <div className="nb-folder-path">{relPath}</div> : null
+													})()}
+													{visibleCols.length > 0 && (
+														<div className="nb-board-card-props">
+															{visibleCols.map(c => {
+																const val = row[c.id]
+																if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
+																const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+																return (
+																	<span key={c.id} className="nb-board-card-prop">
+																		<span className="nb-board-card-prop-name">{c.name}:</span>
+																		<span className="nb-board-card-prop-value">{display}</span>
+																	</span>
+																)
+															})}
+														</div>
+													)}
+												</div>
+											)
+											return shouldVirtualize
+												? <LazyCard key={row._file.path}>{cardContent}</LazyCard>
+												: <Fragment key={row._file.path}>{cardContent}</Fragment>
+										})}
 										{hiddenCount > 0 && (
 											<button
 												className="nb-board-show-more"
