@@ -42,6 +42,36 @@ interface ChartDataPoint {
 	color: string
 }
 
+function formatAxisValue(v: number): string {
+	const abs = Math.abs(v)
+	if (abs >= 1_000_000) return (v / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
+	if (abs >= 10_000) return (v / 1_000).toFixed(0) + 'k'
+	if (abs >= 1_000) return (v / 1_000).toFixed(1).replace(/\.0$/, '') + 'k'
+	if (Number.isInteger(v)) return String(v)
+	return v.toFixed(1)
+}
+
+function formatTooltipValue(v: number): string {
+	if (Number.isInteger(v)) return v.toLocaleString()
+	return v.toLocaleString(undefined, { maximumFractionDigits: 2 })
+}
+
+function computeTicks(maxVal: number, count: number): number[] {
+	if (maxVal <= count && Number.isInteger(maxVal)) {
+		return Array.from({ length: Math.floor(maxVal) + 1 }, (_, i) => i)
+	}
+	const rawStep = maxVal / count
+	const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)))
+	const residual = rawStep / magnitude
+	const niceStep = residual <= 1.5 ? magnitude : residual <= 3 ? 2 * magnitude : residual <= 7 ? 5 * magnitude : 10 * magnitude
+	const ticks: number[] = []
+	for (let v = 0; v <= maxVal + niceStep * 0.01; v += niceStep) {
+		ticks.push(Math.round(v * 1000) / 1000)
+	}
+	if (ticks[ticks.length - 1] < maxVal) ticks.push(ticks[ticks.length - 1] + niceStep)
+	return ticks
+}
+
 function aggregateData(
 	rows: NoteRow[],
 	xAxis: string,
@@ -93,7 +123,7 @@ function aggregateData(
 		colorIdx++
 	}
 
-	return points.sort((a, b) => b.value - a.value)
+	return points
 }
 
 // ── SVG Bar Chart ────────────────────────────────────────────────────────────
@@ -101,7 +131,7 @@ function aggregateData(
 function BarChart({ data, width, height }: { data: ChartDataPoint[]; width: number; height: number }) {
 	if (data.length === 0) return <text x={width / 2} y={height / 2} textAnchor="middle" fill="var(--text-muted)">{t('no_results')}</text>
 
-	const margin = { top: 20, right: 20, bottom: 60, left: 50 }
+	const margin = { top: 20, right: 20, bottom: 60, left: 60 }
 	const chartW = width - margin.left - margin.right
 	const chartH = height - margin.top - margin.bottom
 	const maxVal = Math.max(...data.map(d => d.value), 1)
@@ -109,8 +139,8 @@ function BarChart({ data, width, height }: { data: ChartDataPoint[]; width: numb
 	const totalBarsW = data.length * (barWidth + 4)
 	const offsetX = Math.max((chartW - totalBarsW) / 2, 0)
 
-	const ticks = 5
-	const tickValues = Array.from({ length: ticks + 1 }, (_, i) => Math.round((maxVal / ticks) * i * 100) / 100)
+	const tickValues = computeTicks(maxVal, 5)
+	const scaleMax = tickValues[tickValues.length - 1] || maxVal
 
 	const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
 
@@ -118,12 +148,12 @@ function BarChart({ data, width, height }: { data: ChartDataPoint[]; width: numb
 		<g transform={`translate(${margin.left},${margin.top})`}>
 			{/* Y axis grid + labels */}
 			{tickValues.map((v, i) => {
-				const y = chartH - (v / maxVal) * chartH
+				const y = chartH - (v / scaleMax) * chartH
 				return (
 					<g key={i}>
 						<line x1={0} y1={y} x2={chartW} y2={y} stroke="var(--background-modifier-border)" strokeDasharray="2,2" />
 						<text x={-8} y={y + 4} textAnchor="end" fontSize={11} fill="var(--text-muted)">
-							{Number.isInteger(v) ? v : v.toFixed(1)}
+							{formatAxisValue(v)}
 						</text>
 					</g>
 				)
@@ -131,9 +161,11 @@ function BarChart({ data, width, height }: { data: ChartDataPoint[]; width: numb
 
 			{/* Bars */}
 			{data.map((d, i) => {
-				const barH = (d.value / maxVal) * chartH
+				const barH = (d.value / scaleMax) * chartH
 				const x = offsetX + i * (barWidth + 4)
 				const y = chartH - barH
+				const tooltipText = `${d.label}: ${formatTooltipValue(d.value)}`
+				const tooltipW = Math.max(tooltipText.length * 7, 60)
 				return (
 					<g key={i}
 						onMouseEnter={() => setHoveredIdx(i)}
@@ -157,12 +189,12 @@ function BarChart({ data, width, height }: { data: ChartDataPoint[]; width: numb
 						{hoveredIdx === i && (
 							<g>
 								<rect
-									x={x + barWidth / 2 - 30} y={y - 28}
-									width={60} height={22} rx={4}
+									x={x + barWidth / 2 - tooltipW / 2} y={y - 28}
+									width={tooltipW} height={22} rx={4}
 									fill="var(--background-primary)" stroke="var(--background-modifier-border)"
 								/>
 								<text x={x + barWidth / 2} y={y - 13} textAnchor="middle" fontSize={12} fontWeight="600" fill="var(--text-normal)">
-									{Number.isInteger(d.value) ? d.value : d.value.toFixed(2)}
+									{tooltipText}
 								</text>
 							</g>
 						)}
@@ -246,7 +278,7 @@ function PieChart({ data, width, height }: { data: ChartDataPoint[]; width: numb
 				>
 					<rect width={12} height={12} rx={2} fill={d.color} />
 					<text x={18} y={10} fontSize={12} fill="var(--text-normal)">
-						{d.label.length > 16 ? d.label.slice(0, 15) + '…' : d.label} ({d.value})
+						{d.label.length > 16 ? d.label.slice(0, 15) + '…' : d.label} ({formatTooltipValue(d.value)})
 					</text>
 				</g>
 			))}
@@ -264,20 +296,22 @@ function PieChart({ data, width, height }: { data: ChartDataPoint[]; width: numb
 function LineChart({ data, width, height }: { data: ChartDataPoint[]; width: number; height: number }) {
 	if (data.length === 0) return <text x={width / 2} y={height / 2} textAnchor="middle" fill="var(--text-muted)">{t('no_results')}</text>
 
-	const margin = { top: 20, right: 20, bottom: 60, left: 50 }
+	const margin = { top: 20, right: 20, bottom: 60, left: 60 }
 	const chartW = width - margin.left - margin.right
 	const chartH = height - margin.top - margin.bottom
 	const maxVal = Math.max(...data.map(d => d.value), 1)
-	const stepX = data.length > 1 ? chartW / (data.length - 1) : chartW / 2
+	const padX = 30
+	const usableW = chartW - padX * 2
+	const stepX = data.length > 1 ? usableW / (data.length - 1) : 0
 
-	const ticks = 5
-	const tickValues = Array.from({ length: ticks + 1 }, (_, i) => Math.round((maxVal / ticks) * i * 100) / 100)
+	const tickValues = computeTicks(maxVal, 5)
+	const scaleMax = tickValues[tickValues.length - 1] || maxVal
 
 	const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
 
 	const points = data.map((d, i) => ({
-		x: data.length === 1 ? chartW / 2 : i * stepX,
-		y: chartH - (d.value / maxVal) * chartH,
+		x: padX + (data.length === 1 ? usableW / 2 : i * stepX),
+		y: chartH - (d.value / scaleMax) * chartH,
 	}))
 
 	const polyline = points.map(p => `${p.x},${p.y}`).join(' ')
@@ -291,12 +325,12 @@ function LineChart({ data, width, height }: { data: ChartDataPoint[]; width: num
 		<g transform={`translate(${margin.left},${margin.top})`}>
 			{/* Y axis grid + labels */}
 			{tickValues.map((v, i) => {
-				const y = chartH - (v / maxVal) * chartH
+				const y = chartH - (v / scaleMax) * chartH
 				return (
 					<g key={i}>
 						<line x1={0} y1={y} x2={chartW} y2={y} stroke="var(--background-modifier-border)" strokeDasharray="2,2" />
 						<text x={-8} y={y + 4} textAnchor="end" fontSize={11} fill="var(--text-muted)">
-							{Number.isInteger(v) ? v : v.toFixed(1)}
+							{formatAxisValue(v)}
 						</text>
 					</g>
 				)
@@ -313,39 +347,43 @@ function LineChart({ data, width, height }: { data: ChartDataPoint[]; width: num
 			/>
 
 			{/* Dots + labels */}
-			{data.map((d, i) => (
-				<g key={i}
-					onMouseEnter={() => setHoveredIdx(i)}
-					onMouseLeave={() => setHoveredIdx(null)}
-				>
-					<circle
-						cx={points[i].x} cy={points[i].y} r={hoveredIdx === i ? 6 : 4}
-						fill={CHART_COLORS[0]} stroke="var(--background-primary)" strokeWidth={2}
-						style={{ transition: 'r 0.15s' }}
-					/>
-					{/* X label */}
-					<text
-						x={points[i].x} y={chartH + 14}
-						textAnchor="end" fontSize={11} fill="var(--text-normal)"
-						transform={`rotate(-35, ${points[i].x}, ${chartH + 14})`}
+			{data.map((d, i) => {
+				const tooltipText = `${d.label}: ${formatTooltipValue(d.value)}`
+				const tooltipW = Math.max(tooltipText.length * 7, 60)
+				return (
+					<g key={i}
+						onMouseEnter={() => setHoveredIdx(i)}
+						onMouseLeave={() => setHoveredIdx(null)}
 					>
-						{d.label.length > 12 ? d.label.slice(0, 11) + '…' : d.label}
-					</text>
-					{/* Tooltip */}
-					{hoveredIdx === i && (
-						<g>
-							<rect
-								x={points[i].x - 30} y={points[i].y - 28}
-								width={60} height={22} rx={4}
-								fill="var(--background-primary)" stroke="var(--background-modifier-border)"
-							/>
-							<text x={points[i].x} y={points[i].y - 13} textAnchor="middle" fontSize={12} fontWeight="600" fill="var(--text-normal)">
-								{Number.isInteger(d.value) ? d.value : d.value.toFixed(2)}
-							</text>
-						</g>
-					)}
-				</g>
-			))}
+						<circle
+							cx={points[i].x} cy={points[i].y} r={hoveredIdx === i ? 6 : 4}
+							fill={CHART_COLORS[0]} stroke="var(--background-primary)" strokeWidth={2}
+							style={{ transition: 'r 0.15s' }}
+						/>
+						{/* X label */}
+						<text
+							x={points[i].x} y={chartH + 14}
+							textAnchor="end" fontSize={11} fill="var(--text-normal)"
+							transform={`rotate(-35, ${points[i].x}, ${chartH + 14})`}
+						>
+							{d.label.length > 12 ? d.label.slice(0, 11) + '…' : d.label}
+						</text>
+						{/* Tooltip */}
+						{hoveredIdx === i && (
+							<g>
+								<rect
+									x={points[i].x - tooltipW / 2} y={points[i].y - 28}
+									width={tooltipW} height={22} rx={4}
+									fill="var(--background-primary)" stroke="var(--background-modifier-border)"
+								/>
+								<text x={points[i].x} y={points[i].y - 13} textAnchor="middle" fontSize={12} fontWeight="600" fill="var(--text-normal)">
+									{tooltipText}
+								</text>
+							</g>
+						)}
+					</g>
+				)
+			})}
 
 			{/* Axes */}
 			<line x1={0} y1={0} x2={0} y2={chartH} stroke="var(--background-modifier-border)" />
@@ -642,8 +680,10 @@ export function DatabaseCharts({ dbFile, manager, externalView, onViewChange }: 
 
 	const chartData = useMemo(() => {
 		if (!chartXAxis) return []
-		return aggregateData(displayRows, chartXAxis, chartYAxis === '_count' ? undefined : chartYAxis, chartAggregation, config.schema)
-	}, [displayRows, chartXAxis, chartYAxis, chartAggregation, config.schema])
+		const points = aggregateData(displayRows, chartXAxis, chartYAxis === '_count' ? undefined : chartYAxis, chartAggregation, config.schema)
+		if (activeView.sorts.length === 0) points.sort((a, b) => b.value - a.value)
+		return points
+	}, [displayRows, chartXAxis, chartYAxis, chartAggregation, config.schema, activeView.sorts.length])
 
 	// ── Column options for config ────────────────────────────────────────────
 
