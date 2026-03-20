@@ -3953,6 +3953,8 @@ body.nb-tl-resizing * {
 }
 
 .is-mobile .nb-list {
+	display: grid;
+	grid-template-columns: max-content;
 	overflow-x: auto;
 	-webkit-overflow-scrolling: touch;
 }
