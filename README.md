@@ -4,9 +4,9 @@
 
 ### The database engine Obsidian deserves
 
-**6 views. 15 column types. Formulas, relations and lookups. Zero code required.**
+**7 views. 18 column types. Charts, subtasks, formulas and relations. Zero code required.**
 
-Turn any folder into a Notion-style database with Table, Board (Kanban), Gallery, List, Calendar, and Timeline (Gantt) views — powered by plain Markdown and frontmatter. Your data stays yours, always.
+Turn any folder into a Notion-style database with Table, Board (Kanban), Gallery, List, Calendar, Timeline (Gantt), and Chart views — powered by plain Markdown and frontmatter. Your data stays yours, always.
 
 [![GitHub release](https://img.shields.io/github/v/release/bgarciamoura/obsidian-notion-bases-plugin?style=for-the-badge&color=7c3aed)](https://github.com/bgarciamoura/obsidian-notion-bases-plugin/releases/latest)
 [![Obsidian](https://img.shields.io/badge/Obsidian-%E2%89%A5%201.4.0-7c3aed?style=for-the-badge&logo=obsidian&logoColor=white)](https://obsidian.md)
@@ -27,8 +27,11 @@ Turn any folder into a Notion-style database with Table, Board (Kanban), Gallery
 
 ## Highlights
 
-- **6 views** — Table, Board (Kanban), Gallery, List, Calendar, Timeline (Gantt)
-- **15 column types** — Title, Text, Number, Select, Multi-select, Checkbox, Date, URL, Email, Phone, Status, Formula, Relation, Lookup, Image
+- **7 views** — Table, Board (Kanban), Gallery, List, Calendar, Timeline (Gantt), Chart
+- **18 column types** — Title, Text, Number, Select, Multi-select, Checkbox, Date, URL, Email, Phone, Status, Formula, Relation, Lookup, Rollup, Image, Audio, Video
+- **Charts** — Bar, line, and pie charts with configurable axes, aggregations, and smart formatting — pure SVG, zero dependencies
+- **Subtasks** — Hierarchical rows with expand/collapse, up to 3 levels deep, powered by self-relation columns
+- **Rollup columns** — Aggregate values across related databases with 7 functions (sum, count, avg, min, max, count_values, list)
 - **Formula engine** — Spreadsheet-style functions: `IF`, `SUM`, `AVG`, `CONCAT`, `LEFT`, `ROUND`, and [many more](docs/formulas.md)
 - **Relations & Lookups** — Link rows across databases and pull values from related notes
 - **Advanced filters** — Type-aware operators with AND/OR logic
@@ -50,18 +53,21 @@ Obsidian's built-in Bases plugin is great for tables and has its own expression-
 | List | Yes | Yes |
 | Calendar | **Yes** | No |
 | Timeline / Gantt | **Yes** | No |
+| Chart view | **Yes** | No |
 
-> Notion Bases offers **4 exclusive views** that Core Bases doesn't have — Board, Gallery, Calendar, and Timeline — giving you the flexibility to visualize data the way that fits your workflow.
+> Notion Bases offers **5 exclusive views** that Core Bases doesn't have — Board, Gallery, Calendar, Timeline, and Chart — giving you the flexibility to visualize data the way that fits your workflow.
 
 ### Data modeling
 
 | Feature | Notion Bases | Core Bases |
 |---------|:---:|:---:|
-| Column types | **15** | 6 |
+| Column types | **18** | 6 |
 | Formulas | Spreadsheet-style (`IF`, `SUM`, `AVG`, `CONCAT`) | Expression-based (JS-like) |
 | Relation columns | **Yes** | No |
 | Lookup columns | **Yes** | No |
+| Rollup columns | **Yes** | No |
 | Image columns | **Rendered in cell** | Text only |
+| Subtasks / Sub-rows | **Yes** | No |
 | Number formatting (prefix, suffix, decimals, thousands) | **Yes** | No |
 
 > With relation and lookup columns, you can link databases together and pull values across notes — just like Notion. The spreadsheet-style formula syntax is familiar to anyone who has used Excel or Google Sheets.
@@ -137,15 +143,24 @@ Horizontal bar chart with three zoom levels (days / weeks / months). Drag bar ed
 
 ![Timeline resize](docs/images/feature-timeline-resize.gif)
 
+### Chart
+
+Bar, line, and pie charts rendered as pure SVG. Pick a category column (X axis), choose count or a number column (Y axis), and select an aggregation function. Smart axis formatting with k/M suffixes and integer ticks. Responsive sizing and full mobile support.
+
+![Chart view](docs/images/view-chart.png)
+
 ---
 
 ## Features
 
 | Category | What you get |
 |----------|-------------|
-| **Column types** | Title, Text, Number, Select, Multi-select, Checkbox, Date, URL, Email, Phone, Status, Formula, Relation, Lookup, Image |
+| **Column types** | Title, Text, Number, Select, Multi-select, Checkbox, Date, URL, Email, Phone, Status, Formula, Relation, Lookup, Rollup, Image, Audio, Video |
 | **Formulas** | `IF`, `SUM`, `AVG`, `CONCAT`, `LEFT`, `ROUND` and [more](docs/formulas.md) |
 | **Relations & Lookups** | Link rows across databases, pull values from related notes |
+| **Rollup** | Aggregate values across related databases: sum, count, avg, min, max, count_values, list |
+| **Charts** | Bar, line, pie — pure SVG with aggregations and smart axis formatting |
+| **Subtasks** | Hierarchical rows with expand/collapse up to 3 levels via self-relations |
 | **Filters** | Type-aware operators, AND/OR groups |
 | **Sorts** | Multi-column with priority ordering |
 | **Aggregation** | Sum, Average, Min, Max, Count — updates live |
@@ -183,6 +198,9 @@ Horizontal bar chart with three zoom levels (days / weeks / months). Drag bar ed
 | `relation` | Link to a note in another database |
 | `lookup` | Pull a field from a related database |
 | `image` | Display an image from the vault |
+| `rollup` | Aggregate values from related databases |
+| `audio` | Inline audio player with folder-based file picker |
+| `video` | Video with modal player and folder-based file picker |
 
 ---
 
