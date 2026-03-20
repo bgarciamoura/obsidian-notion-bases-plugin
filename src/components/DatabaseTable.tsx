@@ -829,21 +829,16 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			}
 		}
 
-		// Load relation options
+		// Load relation options — relations always use file names (_title)
 		const relOpts = new Map<string, string[]>()
-		for (const col of cfg.schema.filter(c => c.type === 'relation' && c.refDatabasePath && c.refColumnId)) {
+		for (const col of cfg.schema.filter(c => c.type === 'relation' && c.refDatabasePath)) {
 			const refDbFile = app.vault.getFileByPath(col.refDatabasePath!)
 			if (!refDbFile) continue
-			const refConfig = manager.readConfig(refDbFile)
 			const refNotes = manager.getNotesInDatabase(refDbFile)
 			const values = new Set<string>()
 			for (const note of refNotes) {
-				const row = manager.getNoteData(note, refConfig.schema)
-				const val = col.refColumnId === '_title' ? row._title : row[col.refColumnId!]
-				if (val !== null && val !== undefined) {
-					const s = String(val as string | number | boolean).trim()
-					if (s) values.add(s)
-				}
+				const s = note.basename.trim()
+				if (s) values.add(s)
 			}
 			relOpts.set(col.id, Array.from(values).sort())
 		}
