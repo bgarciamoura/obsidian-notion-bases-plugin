@@ -8,6 +8,7 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	view_gallery: 'ギャラリー',
 	view_calendar: 'カレンダー',
 	view_timeline: 'タイムライン',
+	view_chart: 'チャート',
 
 	// View tabs
 	add_view: 'ビューを追加',
@@ -308,6 +309,20 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	month_short_oct: '10月',
 	month_short_nov: '11月',
 	month_short_dec: '12月',
+
+	// Chart view
+	chart_configure: '設定',
+	chart_type: 'グラフの種類',
+	chart_type_bar: '棒グラフ',
+	chart_type_line: '折れ線グラフ',
+	chart_type_pie: '円グラフ',
+	chart_x_axis: 'カテゴリー (X 軸)',
+	chart_y_axis: '値 (Y 軸)',
+	chart_aggregation: '集計',
+	chart_select_column: '列を選択...',
+	chart_count_records: 'カウント',
+	chart_no_config: 'グラフを設定して始めましょう。',
+	chart_no_config_hint: '上のツールバーでカテゴリー用の列を選択してください。',
 
 	// Misc tooltips
 	tooltip_pin_column: 'ここまでの列を固定',

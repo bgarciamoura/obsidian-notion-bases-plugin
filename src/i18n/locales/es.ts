@@ -8,6 +8,7 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	view_gallery: 'Galería',
 	view_calendar: 'Calendario',
 	view_timeline: 'Línea de tiempo',
+	view_chart: 'Gráfico',
 
 	// View tabs
 	add_view: 'Añadir vista',
@@ -308,6 +309,20 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	month_short_oct: 'Oct',
 	month_short_nov: 'Nov',
 	month_short_dec: 'Dic',
+
+	// Chart view
+	chart_configure: 'Configurar',
+	chart_type: 'Tipo de gráfico',
+	chart_type_bar: 'Barras',
+	chart_type_line: 'Líneas',
+	chart_type_pie: 'Circular',
+	chart_x_axis: 'Categorías (eje X)',
+	chart_y_axis: 'Valores (eje Y)',
+	chart_aggregation: 'Agregación',
+	chart_select_column: 'Seleccionar columna...',
+	chart_count_records: 'Contar',
+	chart_no_config: 'Configura el gráfico para empezar.',
+	chart_no_config_hint: 'Selecciona una columna para categorías en la barra de herramientas de arriba.',
 
 	// Misc tooltips
 	tooltip_pin_column: 'Fijar columnas hasta aquí',

@@ -8,6 +8,7 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	view_gallery: 'Galerie',
 	view_calendar: 'Kalender',
 	view_timeline: 'Zeitleiste',
+	view_chart: 'Diagramm',
 
 	// View tabs
 	add_view: 'Ansicht hinzufügen',
@@ -308,6 +309,20 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	month_short_oct: 'Okt',
 	month_short_nov: 'Nov',
 	month_short_dec: 'Dez',
+
+	// Chart view
+	chart_configure: 'Konfigurieren',
+	chart_type: 'Diagrammtyp',
+	chart_type_bar: 'Balken',
+	chart_type_line: 'Linie',
+	chart_type_pie: 'Kreis',
+	chart_x_axis: 'Kategorien (X-Achse)',
+	chart_y_axis: 'Werte (Y-Achse)',
+	chart_aggregation: 'Aggregation',
+	chart_select_column: 'Spalte auswählen...',
+	chart_count_records: 'Anzahl',
+	chart_no_config: 'Konfigurieren Sie das Diagramm, um zu beginnen.',
+	chart_no_config_hint: 'Wählen Sie oben in der Symbolleiste eine Spalte für Kategorien aus.',
 
 	// Misc tooltips
 	tooltip_pin_column: 'Spalten bis hier fixieren',

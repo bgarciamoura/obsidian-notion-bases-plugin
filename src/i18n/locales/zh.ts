@@ -8,6 +8,7 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	view_gallery: '画廊',
 	view_calendar: '日历',
 	view_timeline: '时间线',
+	view_chart: '图表',
 
 	// View tabs
 	add_view: '添加视图',
@@ -308,6 +309,20 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	month_short_oct: '10月',
 	month_short_nov: '11月',
 	month_short_dec: '12月',
+
+	// Chart view
+	chart_configure: '配置',
+	chart_type: '图表类型',
+	chart_type_bar: '柱状图',
+	chart_type_line: '折线图',
+	chart_type_pie: '饼图',
+	chart_x_axis: '分类 (X 轴)',
+	chart_y_axis: '数值 (Y 轴)',
+	chart_aggregation: '聚合',
+	chart_select_column: '选择列...',
+	chart_count_records: '计数',
+	chart_no_config: '请配置图表以开始使用。',
+	chart_no_config_hint: '在上方工具栏中选择一个分类列。',
 
 	// Misc tooltips
 	tooltip_pin_column: '固定到此列',

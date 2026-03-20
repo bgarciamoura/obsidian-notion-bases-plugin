@@ -9,6 +9,7 @@ import { DatabaseBoard } from './DatabaseBoard'
 import { DatabaseGallery } from './DatabaseGallery'
 import { DatabaseCalendar } from './DatabaseCalendar'
 import { DatabaseTimeline } from './DatabaseTimeline'
+import { DatabaseCharts } from './DatabaseCharts'
 import { t } from '../i18n'
 
 interface DatabaseRootProps {
@@ -22,8 +23,8 @@ interface DatabaseRootProps {
 	onEmbedStateChange?: (state: EmbedState) => Promise<void>
 }
 
-const VIEW_ICONS: Record<string, string> = { table: '⊞', list: '≡', board: '▦', gallery: '⊟', calendar: '📅', timeline: '▬' }
-const VIEW_LABELS = () => ({ table: t('view_table'), list: t('view_list'), board: t('view_board'), gallery: t('view_gallery'), calendar: t('view_calendar'), timeline: t('view_timeline') })
+const VIEW_ICONS: Record<string, string> = { table: '⊞', list: '≡', board: '▦', gallery: '⊟', calendar: '📅', timeline: '▬', chart: '📊' }
+const VIEW_LABELS = () => ({ table: t('view_table'), list: t('view_list'), board: t('view_board'), gallery: t('view_gallery'), calendar: t('view_calendar'), timeline: t('view_timeline'), chart: t('view_chart') })
 
 export function DatabaseRoot({
 	dbFile, manager,
@@ -165,6 +166,7 @@ export function DatabaseRoot({
 		if (view.type === 'gallery') return <DatabaseGallery {...props} />
 		if (view.type === 'calendar') return <DatabaseCalendar {...props} />
 		if (view.type === 'timeline') return <DatabaseTimeline {...props} />
+		if (view.type === 'chart') return <DatabaseCharts {...props} />
 		return <DatabaseTable key={key} dbFile={dbFile} manager={manager} externalView={view} onViewChange={onChange} />
 	}
 
@@ -274,7 +276,7 @@ export function DatabaseRoot({
 						{embedAddMenuOpen && (
 							<div className="nb-view-add-menu nb-fields-dropdown">
 								<div className="nb-fields-dropdown-label">{t('add_view')}</div>
-								{(['table', 'list', 'board', 'gallery', 'calendar', 'timeline'] as ViewConfig['type'][]).map(type => (
+								{(['table', 'list', 'board', 'gallery', 'calendar', 'timeline', 'chart'] as ViewConfig['type'][]).map(type => (
 									<button key={type} className="nb-menu-item" onClick={() => { void addEmbedView(type) }}>
 										<span className="nb-menu-item-icon">{VIEW_ICONS[type]}</span>
 										<span>{VIEW_LABELS()[type]}</span>
@@ -397,7 +399,7 @@ export function DatabaseRoot({
 					{addMenuOpen && (
 						<div className="nb-view-add-menu nb-fields-dropdown">
 							<div className="nb-fields-dropdown-label">{t('add_view')}</div>
-							{(['table', 'list', 'board', 'gallery', 'calendar', 'timeline'] as ViewConfig['type'][]).map(type => (
+							{(['table', 'list', 'board', 'gallery', 'calendar', 'timeline', 'chart'] as ViewConfig['type'][]).map(type => (
 								<button key={type} className="nb-menu-item" onClick={() => { void addView(type) }}>
 									<span className="nb-menu-item-icon">{VIEW_ICONS[type]}</span>
 									<span>{VIEW_LABELS()[type]}</span>

@@ -6,6 +6,7 @@ const en = {
 	view_gallery: 'Gallery',
 	view_calendar: 'Calendar',
 	view_timeline: 'Timeline',
+	view_chart: 'Chart',
 
 	// View tabs
 	add_view: 'Add view',
@@ -306,6 +307,20 @@ const en = {
 	month_short_oct: 'Oct',
 	month_short_nov: 'Nov',
 	month_short_dec: 'Dec',
+
+	// Chart view
+	chart_configure: 'Configure',
+	chart_type: 'Chart type',
+	chart_type_bar: 'Bar',
+	chart_type_line: 'Line',
+	chart_type_pie: 'Pie',
+	chart_x_axis: 'Categories (X axis)',
+	chart_y_axis: 'Values (Y Axis)',
+	chart_aggregation: 'Aggregation',
+	chart_select_column: 'Select column...',
+	chart_count_records: 'Count',
+	chart_no_config: 'Configure the chart to get started.',
+	chart_no_config_hint: 'Select a column for categories in the toolbar above.',
 
 	// Misc tooltips
 	tooltip_pin_column: 'Pin columns up to here',

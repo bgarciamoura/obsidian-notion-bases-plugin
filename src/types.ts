@@ -93,7 +93,7 @@ export type AggregationType = 'none' | 'count' | 'count_values' | 'sum' | 'avg' 
 export interface ViewConfig {
 	id: string
 	name?: string
-	type: 'table' | 'list' | 'board' | 'gallery' | 'calendar' | 'timeline'
+	type: 'table' | 'list' | 'board' | 'gallery' | 'calendar' | 'timeline' | 'chart'
 	filters: FilterConfig[]
 	sorts: SortConfig[]
 	hiddenColumns: string[]
@@ -116,6 +116,10 @@ export interface ViewConfig {
 	timelineZoom?: 'days' | 'weeks' | 'months'
 	timelineGroupByField?: string
 	includeSubfolders?: boolean
+	chartType?: 'bar' | 'pie' | 'line'
+	chartXAxis?: string
+	chartYAxis?: string
+	chartAggregation?: 'count' | 'sum' | 'avg' | 'min' | 'max'
 }
 
 // ── Embed multi-view state (stored in hosting note frontmatter) ─────────────
