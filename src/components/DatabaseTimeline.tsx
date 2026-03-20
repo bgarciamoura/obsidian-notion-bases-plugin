@@ -3,10 +3,8 @@ import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } fr
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import {
-	DatabaseConfig, DEFAULT_DATABASE_CONFIG,
 	FilterOperator, NoteRow, ViewConfig,
 } from '../types'
-import { evaluateFormulas } from '../formula-engine'
 import {
 	ActiveFilter, applyFilters, applySorts,
 	getColumnIconStatic, getDefaultOperator,
@@ -14,6 +12,7 @@ import {
 } from './filter-utils'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { useDatabaseRows } from '../hooks/useDatabaseRows'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
 
@@ -140,11 +139,10 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 	const app   = useApp()
 	const today = useMemo(() => new Date(), [])
 
-	const [rows,   setRows]   = useState<NoteRow[]>([])
-	const [config, setConfig] = useState<DatabaseConfig>(DEFAULT_DATABASE_CONFIG)
-	const [loading, setLoading] = useState(true)
+	const { rows, config, loading, activeFilters, setActiveFilters } = useDatabaseRows({
+		app, dbFile, manager, includeSubfolders: externalView.includeSubfolders, externalView,
+	})
 	const [activeView, setActiveView] = useState<ViewConfig>(externalView)
-	const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
 
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
@@ -168,8 +166,6 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 	const groupMenuRef  = useRef<HTMLDivElement>(null)
 	const scrollRef     = useRef<HTMLDivElement>(null)
 	const mobileActionBarRef = useRef<HTMLDivElement>(null)
-	const filtersInit   = useRef(false)
-	const loadVersion = useRef(0)
 	const justResized   = useRef(false)
 
 	useEffect(() => { setActiveView(externalView) }, [externalView.id])
@@ -177,51 +173,6 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 	const saveView = useCallback(async (v: ViewConfig) => {
 		setActiveView(v); await onViewChange(v)
 	}, [onViewChange])
-
-	// ── Data loading ──────────────────────────────────────────────────────────
-
-	const loadData = useCallback(async () => {
-		if (!dbFile) { setLoading(false); return }
-		setLoading(true)
-		const version = ++loadVersion.current
-		const cfg   = manager.readConfig(dbFile)
-		const notes = manager.getNotesInDatabase(dbFile, activeView.includeSubfolders)
-		if (cfg.schema.length === 0 && notes.length > 0) {
-			cfg.schema = manager.inferSchema(notes)
-			await manager.writeConfig(dbFile, cfg)
-		}
-		const noteRows = manager.resolveRollupsForRows(manager.resolveLookupsForRows(
-			evaluateFormulas(notes.map(f => manager.getNoteData(f, cfg.schema)), cfg.schema),
-			cfg.schema
-		), cfg.schema)
-		if (loadVersion.current !== version) return
-		if (!filtersInit.current) {
-			filtersInit.current = true
-			const pills = externalView.activePills ?? []
-			if (pills.length > 0) {
-				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: t('name_column'), columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
-					const col = cfg.schema.find(sc => sc.id === p.columnId)
-					if (!col) return []
-					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
-				})
-				setActiveFilters(restored as ActiveFilter[])
-			}
-		}
-		setConfig(prev => ({ schema: cfg.schema, views: prev.views })); setRows(noteRows); setLoading(false)
-	}, [dbFile, manager, activeView.includeSubfolders])
-
-	useEffect(() => { filtersInit.current = false }, [dbFile])
-	useEffect(() => { void loadData() }, [loadData])
-	useEffect(() => {
-		const cb = () => loadData()
-		app.vault.on('create', cb); app.vault.on('delete', cb); app.vault.on('rename', cb)
-		app.metadataCache.on('changed', cb)
-		return () => {
-			app.vault.off('create', cb); app.vault.off('delete', cb); app.vault.off('rename', cb)
-			app.metadataCache.off('changed', cb)
-		}
-	}, [app, loadData])
 
 	// ── Close menus on outside click ──────────────────────────────────────────
 

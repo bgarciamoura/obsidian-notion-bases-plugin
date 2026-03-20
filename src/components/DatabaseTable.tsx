@@ -31,7 +31,7 @@ import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import { ColumnSchema, ColumnType, DatabaseConfig, FilterOperator, NoteRow, SortConfig, ViewConfig, AggregationType, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW } from '../types'
-import { evaluateFormulas } from '../formula-engine'
+import { useDatabaseRows } from '../hooks/useDatabaseRows'
 import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
@@ -695,8 +695,42 @@ function AggDropdown({ colType, current, onSelect, anchorEl }: {
 
 export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: DatabaseTableProps) {
 	const app = useApp()
-	const [config, setConfig] = useState<DatabaseConfig>(DEFAULT_DATABASE_CONFIG)
+	const lastCreatedPath = useRef<string | null>(null)
+	const [relationOptions, setRelationOptions] = useState<Map<string, string[]>>(new Map())
+	const [pinnedColumnId, setPinnedColumnId] = useState<string | null>(null)
+
+	const onLoaded = useCallback((cfg: DatabaseConfig, noteRows: NoteRow[]) => {
+		// Reorder newly created row to end
+		if (lastCreatedPath.current) {
+			const idx = noteRows.findIndex(r => r._file.path === lastCreatedPath.current)
+			if (idx !== -1) noteRows.push(...noteRows.splice(idx, 1))
+			lastCreatedPath.current = null
+		}
+		// Load relation options
+		const relOpts = new Map<string, string[]>()
+		for (const col of cfg.schema.filter(c => c.type === 'relation' && c.refDatabasePath)) {
+			const refDbFile = app.vault.getFileByPath(col.refDatabasePath!)
+			if (!refDbFile) continue
+			const refNotes = manager.getNotesInDatabase(refDbFile)
+			const values = new Set<string>()
+			for (const note of refNotes) {
+				const s = note.basename.trim()
+				if (s) values.add(s)
+			}
+			relOpts.set(col.id, Array.from(values).sort())
+		}
+		setRelationOptions(relOpts)
+		setPinnedColumnId((externalView ?? cfg.views[0])?.pinnedColumnId ?? null)
+	}, [app, manager, externalView])
+
+	const { rows: hookRows, config: hookConfig, loading, activeFilters, setActiveFilters } = useDatabaseRows({
+		app, dbFile, manager, includeSubfolders: externalView?.includeSubfolders, externalView: externalView ?? DEFAULT_VIEW, onLoaded,
+	})
 	const [rows, setRows] = useState<NoteRow[]>([])
+	const [config, setConfig] = useState<DatabaseConfig>(DEFAULT_DATABASE_CONFIG)
+	useEffect(() => { setRows(hookRows) }, [hookRows])
+	useEffect(() => { setConfig(hookConfig) }, [hookConfig])
+
 	const [sorting, setSorting] = useState<SortingState>([])
 	const [sortPanelOpen, setSortPanelOpen] = useState(false)
 	const sortPanelRef = useRef<HTMLDivElement>(null)
@@ -704,8 +738,6 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const sortButtonRef = useRef<HTMLButtonElement>(null)
 	const [globalFilter, setGlobalFilter] = useState('')
 	const [editingCell, setEditingCell] = useState<{ rowIndex: number; columnId: string } | null>(null)
-	const [loading, setLoading] = useState(true)
-	const [relationOptions, setRelationOptions] = useState<Map<string, string[]>>(new Map())
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
@@ -719,20 +751,15 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const csvInputRef = useRef<HTMLInputElement>(null)
 	const mobileActionBarRef = useRef<HTMLDivElement>(null)
 	const tableRef = useRef<HTMLTableElement>(null)
-	const lastCreatedPath = useRef<string | null>(null)
 	const tableWrapperRef = useRef<HTMLDivElement>(null)
-	const [pinnedColumnId, setPinnedColumnId] = useState<string | null>(null)
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 	const filterMenuRef = useRef<HTMLDivElement>(null)
-	const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
 	const [openFilterPill, setOpenFilterPill] = useState<string | null>(null)
 	const filterPillRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 	const pillDropdownRef = useRef<HTMLDivElement | null>(null)
 	const [pillDropdownPos, setPillDropdownPos] = useState<{ top: number; left: number } | null>(null)
 	const [openOperatorPicker, setOpenOperatorPicker] = useState<string | null>(null)
 	const operatorPickerRefs = useRef<Record<string, HTMLDivElement | null>>({})
-	const filtersInitialized = useRef(false)
-	const loadVersion = useRef(0)
 	const [searchExpanded, setSearchExpanded] = useState(false)
 	const searchInputRef = useRef<HTMLInputElement>(null)
 	const searchInactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -778,98 +805,6 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			await manager.writeConfig(dbFile, newConfig)
 		}
 	}, [onViewChange, config, dbFile, manager])
-
-	// ── Carregar config e linhas ─────────────────────────────────────────────
-
-	const loadData = useCallback(async () => {
-		if (!dbFile) { setLoading(false); return }
-		const version = ++loadVersion.current
-		setLoading(true)
-
-		const cfg = manager.readConfig(dbFile)
-		const notes = manager.getNotesInDatabase(dbFile, activeView.includeSubfolders)
-
-		// Inferir schema se vazio
-		if (cfg.schema.length === 0 && notes.length > 0) {
-			cfg.schema = manager.inferSchema(notes)
-			await manager.writeConfig(dbFile, cfg)
-		}
-
-		const noteRows = manager.resolveRollupsForRows(manager.resolveLookupsForRows(
-			evaluateFormulas(
-				notes.map(f => manager.getNoteData(f, cfg.schema)),
-				cfg.schema
-			),
-			cfg.schema
-		), cfg.schema)
-
-		// Abort se uma versão mais recente já iniciou
-		if (loadVersion.current !== version) return
-
-		// Garantir que a linha recém-criada apareça no final
-		if (lastCreatedPath.current) {
-			const idx = noteRows.findIndex(r => r._file.path === lastCreatedPath.current)
-			if (idx !== -1) noteRows.push(...noteRows.splice(idx, 1))
-			lastCreatedPath.current = null
-		}
-
-		// Restaurar pills (apenas na primeira carga por arquivo)
-		if (!filtersInitialized.current) {
-			filtersInitialized.current = true
-			const sourceView = externalView ?? cfg.views[0]
-			const pills = sourceView?.activePills ?? []
-			if (pills.length > 0) {
-				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: t('name_column'), columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
-					const col = cfg.schema.find(sc => sc.id === p.columnId)
-					if (!col) return []
-					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
-				})
-				setActiveFilters(restored as ActiveFilter[])
-			}
-		}
-
-		// Load relation options — relations always use file names (_title)
-		const relOpts = new Map<string, string[]>()
-		for (const col of cfg.schema.filter(c => c.type === 'relation' && c.refDatabasePath)) {
-			const refDbFile = app.vault.getFileByPath(col.refDatabasePath!)
-			if (!refDbFile) continue
-			const refNotes = manager.getNotesInDatabase(refDbFile)
-			const values = new Set<string>()
-			for (const note of refNotes) {
-				const s = note.basename.trim()
-				if (s) values.add(s)
-			}
-			relOpts.set(col.id, Array.from(values).sort())
-		}
-		setRelationOptions(relOpts)
-
-		setPinnedColumnId((externalView ?? cfg.views[0])?.pinnedColumnId ?? null)
-		setConfig(prev => ({ schema: cfg.schema, views: prev.views }))
-		setRows(noteRows)
-		setLoading(false)
-	}, [dbFile, manager, app, activeView.includeSubfolders])
-
-	useEffect(() => { filtersInitialized.current = false }, [dbFile])
-
-	useEffect(() => {
-		void loadData()
-	}, [loadData])
-
-	// Reagir a mudanças no vault (novo arquivo, renomeação, etc.)
-	useEffect(() => {
-		const onVaultChange = () => { void loadData() }
-		app.vault.on('create', onVaultChange)
-		app.vault.on('delete', onVaultChange)
-		app.vault.on('rename', onVaultChange)
-		app.metadataCache.on('changed', onVaultChange)
-		return () => {
-			app.vault.off('create', onVaultChange)
-			app.vault.off('delete', onVaultChange)
-			app.vault.off('rename', onVaultChange)
-			app.metadataCache.off('changed', onVaultChange)
-		}
-	}, [app, loadData])
 
 	// ── Atualizar célula (salva no frontmatter) ──────────────────────────────
 

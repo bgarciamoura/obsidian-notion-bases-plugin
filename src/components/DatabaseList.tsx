@@ -4,10 +4,8 @@ import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import {
-	ColumnSchema, DatabaseConfig, DEFAULT_DATABASE_CONFIG,
-	FilterOperator, NoteRow, SortConfig, ViewConfig,
+	ColumnSchema, FilterOperator, SortConfig, ViewConfig,
 } from '../types'
-import { evaluateFormulas } from '../formula-engine'
 import {
 	ActiveFilter, applyFilters, applySorts,
 	getColumnIconStatic, getDefaultOperator,
@@ -15,6 +13,7 @@ import {
 } from './filter-utils'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { useDatabaseRows } from '../hooks/useDatabaseRows'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
 import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
@@ -144,10 +143,9 @@ function FilterPill({ filter, onUpdate, onRemove, onToggleConjunction, showConju
 
 export function DatabaseList({ dbFile, manager, externalView, onViewChange }: DatabaseListProps) {
 	const app = useApp()
-	const [rows, setRows] = useState<NoteRow[]>([])
-	const [config, setConfig] = useState<DatabaseConfig>(DEFAULT_DATABASE_CONFIG)
-	const [loading, setLoading] = useState(true)
-	const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
+	const { rows, config, loading, activeFilters, setActiveFilters } = useDatabaseRows({
+		app, dbFile, manager, includeSubfolders: externalView.includeSubfolders, externalView,
+	})
 	const [activeView, setActiveView] = useState<ViewConfig>(externalView)
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
@@ -158,8 +156,6 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 	const sortPanelRef = useRef<HTMLDivElement>(null)
 	const sortButtonRef = useRef<HTMLButtonElement>(null)
 	const mobileActionBarRef = useRef<HTMLDivElement>(null)
-	const filtersInitialized = useRef(false)
-	const loadVersion = useRef(0)
 
 	useEffect(() => { setActiveView(externalView) }, [externalView.id])
 
@@ -167,57 +163,6 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 		setActiveView(updated)
 		await onViewChange(updated)
 	}, [onViewChange])
-
-	// ── Data loading ────────────────────────────────────────────────────────
-
-	const loadData = useCallback(async () => {
-		if (!dbFile) { setLoading(false); return }
-		setLoading(true)
-		const version = ++loadVersion.current
-		const cfg = manager.readConfig(dbFile)
-		const notes = manager.getNotesInDatabase(dbFile, activeView.includeSubfolders)
-		if (cfg.schema.length === 0 && notes.length > 0) {
-			cfg.schema = manager.inferSchema(notes)
-			await manager.writeConfig(dbFile, cfg)
-		}
-		const noteRows = manager.resolveRollupsForRows(manager.resolveLookupsForRows(
-			evaluateFormulas(notes.map(f => manager.getNoteData(f, cfg.schema)), cfg.schema),
-			cfg.schema
-		), cfg.schema)
-		if (loadVersion.current !== version) return
-		if (!filtersInitialized.current) {
-			filtersInitialized.current = true
-			const pills = externalView.activePills ?? []
-			if (pills.length > 0) {
-				const restored = pills.flatMap(p => {
-					if (p.columnId === '_title') return [{ id: p.id ?? crypto.randomUUID(), columnId: '_title', columnName: t('name_column'), columnType: 'title', icon: '📄', operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
-					const col = cfg.schema.find(sc => sc.id === p.columnId)
-					if (!col) return []
-					return [{ id: p.id ?? crypto.randomUUID(), columnId: col.id, columnName: col.name, columnType: col.type, icon: getColumnIconStatic(col.type), operator: p.operator, value: p.value, conjunction: (p.conjunction ?? 'and') }]
-				})
-				setActiveFilters(restored as ActiveFilter[])
-			}
-		}
-		setConfig(prev => ({ schema: cfg.schema, views: prev.views }))
-		setRows(noteRows)
-		setLoading(false)
-	}, [dbFile, manager, activeView.includeSubfolders])
-
-	useEffect(() => { filtersInitialized.current = false }, [dbFile])
-	useEffect(() => { void loadData() }, [loadData])
-	useEffect(() => {
-		const onChange = () => loadData()
-		app.vault.on('create', onChange)
-		app.vault.on('delete', onChange)
-		app.vault.on('rename', onChange)
-		app.metadataCache.on('changed', onChange)
-		return () => {
-			app.vault.off('create', onChange)
-			app.vault.off('delete', onChange)
-			app.vault.off('rename', onChange)
-			app.metadataCache.off('changed', onChange)
-		}
-	}, [app, loadData])
 
 	// ── Close menus on outside click ─────────────────────────────────────────
 
@@ -509,7 +454,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 							return relPath ? <span className="nb-folder-path" style={{ marginLeft: 4 }}>{relPath}</span> : null
 						})()}
 						{visibleCols.length > 0 && (
-							<span className="nb-list-row-props">
+							<div className="nb-list-row-props">
 								{visibleCols.map(col => {
 									const val = row[col.id]
 									if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
@@ -521,7 +466,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 										</span>
 									)
 								})}
-							</span>
+							</div>
 						)}
 					</div>
 				) })}
