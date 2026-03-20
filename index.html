@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notion Bases — The database plugin Obsidian is missing</title>
-  <meta name="description" content="6 views. 17 column types. Formulas, relations and lookups. Turn any folder into a full-featured database inside Obsidian.">
+  <meta name="description" content="7 views. 18 column types. Charts, subtasks, formulas and relations. Turn any folder into a full-featured database inside Obsidian.">
   <meta name="theme-color" content="#7c3aed">
   <meta property="og:title" content="Notion Bases — Obsidian Plugin">
-  <meta property="og:description" content="6 views. 17 column types. Formulas, relations and lookups. Zero code required.">
+  <meta property="og:description" content="7 views. 18 column types. Charts, subtasks, formulas and relations. Zero code required.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://bgarciamoura.github.io/obsidian-notion-bases-plugin/">
   <style>
@@ -766,7 +766,7 @@
       <div class="hero-badge fade-in">v1.4.0 &mdash; Now with Audio, Video &amp; Calendar Time Slots</div>
       <h1 class="fade-in fade-in-delay-1">Notion Bases</h1>
       <p class="hero-subtitle fade-in fade-in-delay-2">The database plugin Obsidian is missing</p>
-      <p class="hero-description fade-in fade-in-delay-3">6 views. 17 column types. Formulas, relations and lookups. Turn any folder into a full-featured database &mdash; all powered by plain Markdown. Your data stays yours.</p>
+      <p class="hero-description fade-in fade-in-delay-3">7 views. 18 column types. Charts, subtasks, formulas and relations. Turn any folder into a full-featured database &mdash; all powered by plain Markdown. Your data stays yours.</p>
       <div class="hero-buttons fade-in fade-in-delay-4">
         <a href="#install" class="btn btn-primary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -779,11 +779,11 @@
       </div>
       <div class="hero-stats fade-in fade-in-delay-5">
         <div class="hero-stat">
-          <div class="hero-stat-value">6</div>
+          <div class="hero-stat-value">7</div>
           <div class="hero-stat-label">Views</div>
         </div>
         <div class="hero-stat">
-          <div class="hero-stat-value">17</div>
+          <div class="hero-stat-value">18</div>
           <div class="hero-stat-label">Column Types</div>
         </div>
         <div class="hero-stat">
@@ -802,7 +802,7 @@
   <section id="views">
     <div class="container">
       <div class="section-header fade-in">
-        <h2>6 powerful views</h2>
+        <h2>7 powerful views</h2>
         <p>See your data the way you need it. Switch between views instantly &mdash; each with its own filters, sorts, and field visibility.</p>
       </div>
       <div class="views-grid">
@@ -885,6 +885,19 @@
           </div>
         </div>
 
+        <div class="view-card fade-in">
+          <div class="view-card-image">
+            <img src="docs/images/view-chart.png" alt="Chart view" loading="lazy" onerror="this.style.display='none'">
+          </div>
+          <div class="view-card-body">
+            <div class="view-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="5" width="4" height="16"/><rect x="17" y="9" width="4" height="12"/></svg>
+            </div>
+            <h3>Chart</h3>
+            <p>Bar, line, and pie charts rendered as pure SVG. Pick a category column, choose an aggregation, and visualize your data instantly. Smart axis formatting with k/M suffixes.</p>
+          </div>
+        </div>
+
       </div>
     </div>
   </section>
@@ -902,8 +915,8 @@
           <div class="feature-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
           </div>
-          <h3>17 Column Types</h3>
-          <p>Title, Text, Number, Select, Multi-select, Checkbox, Date, URL, Email, Phone, Status, Formula, Relation, Lookup, Image, Audio, and Video.</p>
+          <h3>18 Column Types</h3>
+          <p>Title, Text, Number, Select, Multi-select, Checkbox, Date, URL, Email, Phone, Status, Formula, Relation, Lookup, Rollup, Image, Audio, and Video.</p>
         </div>
 
         <div class="feature-card fade-in fade-in-delay-1">
@@ -964,10 +977,26 @@
 
         <div class="feature-card fade-in fade-in-delay-2">
           <div class="feature-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>
+          </div>
+          <h3>Subtasks</h3>
+          <p>Hierarchical rows with expand/collapse up to 3 levels deep. Mark any self-relation as hierarchical and your table becomes a tree.</p>
+        </div>
+
+        <div class="feature-card fade-in">
+          <div class="feature-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="5" width="4" height="16"/><rect x="17" y="9" width="4" height="12"/></svg>
+          </div>
+          <h3>Rollup Columns</h3>
+          <p>Aggregate values across related databases with 7 functions: sum, count, avg, min, max, count unique, and list all.</p>
+        </div>
+
+        <div class="feature-card fade-in fade-in-delay-1">
+          <div class="feature-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
           </div>
           <h3>Mobile Optimized</h3>
-          <p>Touch-friendly across all 6 views. Scroll-snap on boards, long-press context menus, bottom sheets, and responsive layouts for phones and tablets.</p>
+          <p>Touch-friendly across all 7 views. Scroll-snap on boards, long-press context menus, bottom sheets, and responsive layouts for phones and tablets.</p>
         </div>
 
       </div>
@@ -997,10 +1026,13 @@
             <tr><td>List view</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td></tr>
             <tr><td>Calendar view</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
             <tr><td>Timeline / Gantt view</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Column types</td><td class="col-notion"><span class="highlight-cell">17</span></td><td>7</td></tr>
+            <tr><td>Chart view (bar, line, pie)</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
+            <tr><td>Column types</td><td class="col-notion"><span class="highlight-cell">18</span></td><td>7</td></tr>
             <tr><td>Formulas</td><td class="col-notion"><span class="highlight-cell">Spreadsheet-style</span></td><td>Expression-based</td></tr>
             <tr><td>Relation columns</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
             <tr><td>Lookup columns</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
+            <tr><td>Rollup columns</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
+            <tr><td>Subtasks / Sub-rows</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
             <tr><td>Image columns (rendered)</td><td class="col-notion"><span class="check">&#10003;</span></td><td>Text only</td></tr>
             <tr><td>Audio / Video columns</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
             <tr><td>Calendar time slots</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
