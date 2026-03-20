@@ -575,7 +575,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 
 		await updateCol({
 			refDatabasePath: lookupDbPath,
-			refColumnId: lookupRefColId,
+			refColumnId: col.type === 'relation' ? '_title' : lookupRefColId,
 			...(col.type === 'lookup' ? { refMatchColumnId: lookupMatchColId } : {}),
 			...(col.type === 'relation' ? { pairedColumnId, isHierarchical: isHierarchical || undefined } : {}),
 		})
@@ -940,14 +940,16 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						{availableDbs.map(db => <option key={db.path} value={db.path}>{db.name}</option>)}
 					</select>
 				</div>
+				{col.type !== 'relation' && (
 				<div className="nb-lookup-section">
-					<label className="nb-lookup-label">{col.type === 'relation' ? t('lookup_origin_col') : t('lookup_col_to_display')}</label>
+					<label className="nb-lookup-label">{t('lookup_col_to_display')}</label>
 					<select className="nb-lookup-select" value={lookupRefColId} onChange={e => setLookupRefColId(e.target.value)} disabled={!lookupDbPath}>
 						<option value="">{t('lookup_select_col')}</option>
 						<option value="_title">{'📄 ' + t('lookup_file_name')}</option>
 						{refDbSchema.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 					</select>
 				</div>
+			)}
 				{col.type === 'lookup' && (
 					<div className="nb-lookup-section">
 						<label className="nb-lookup-label">{t('lookup_join_col')}</label>
@@ -981,7 +983,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 					</div>
 				)}
 				<div className="nb-formula-actions">
-					<button className="nb-formula-save" disabled={!lookupDbPath || !lookupRefColId || (col.type === 'lookup' && !lookupMatchColId)} onClick={() => { void handleSaveLookup() }}>{t('formula_save')}</button>
+					<button className="nb-formula-save" disabled={!lookupDbPath || (col.type === 'lookup' && (!lookupRefColId || !lookupMatchColId))} onClick={() => { void handleSaveLookup() }}>{t('formula_save')}</button>
 					<button className="nb-formula-cancel" onClick={handleCloseLookup}>{t('formula_cancel')}</button>
 				</div>
 			</div>
