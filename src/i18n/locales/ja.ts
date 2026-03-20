@@ -310,6 +310,14 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	month_short_nov: '11月',
 	month_short_dec: '12月',
 
+	// Hierarchy / Sub-rows
+	hierarchy_toggle: '階層として使用',
+	hierarchy_toggle_hint: 'このデータベースの行間に親子関係を有効にします',
+	add_subrow: 'サブ行を追加',
+	collapse_all: 'すべて折りたたむ',
+	expand_all: 'すべて展開',
+	max_depth_reached: '最大の深さに達しました（3 レベル）',
+
 	// Chart view
 	chart_configure: '設定',
 	chart_type: 'グラフの種類',

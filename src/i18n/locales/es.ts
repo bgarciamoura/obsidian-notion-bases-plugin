@@ -310,6 +310,14 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	month_short_nov: 'Nov',
 	month_short_dec: 'Dic',
 
+	// Hierarchy / Sub-rows
+	hierarchy_toggle: 'Usar como jerarquía',
+	hierarchy_toggle_hint: 'Habilita relaciones padre-hijo entre filas de esta base de datos',
+	add_subrow: 'Añadir subfila',
+	collapse_all: 'Contraer todo',
+	expand_all: 'Expandir todo',
+	max_depth_reached: 'Profundidad máxima alcanzada (3 niveles)',
+
 	// Chart view
 	chart_configure: 'Configurar',
 	chart_type: 'Tipo de gráfico',

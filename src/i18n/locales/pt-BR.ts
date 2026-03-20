@@ -310,6 +310,14 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	month_short_nov: 'Nov',
 	month_short_dec: 'Dez',
 
+	// Hierarchy / Sub-rows
+	hierarchy_toggle: 'Usar como hierarquia',
+	hierarchy_toggle_hint: 'Habilita relacionamentos pai-filho entre linhas neste banco de dados',
+	add_subrow: 'Adicionar sublinha',
+	collapse_all: 'Recolher tudo',
+	expand_all: 'Expandir tudo',
+	max_depth_reached: 'Profundidade máxima atingida (3 níveis)',
+
 	// Chart view
 	chart_configure: 'Configurar',
 	chart_type: 'Tipo de gráfico',

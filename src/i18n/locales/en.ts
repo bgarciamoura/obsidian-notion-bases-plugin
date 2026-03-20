@@ -308,6 +308,14 @@ const en = {
 	month_short_nov: 'Nov',
 	month_short_dec: 'Dec',
 
+	// Hierarchy / Sub-rows
+	hierarchy_toggle: 'Use as hierarchy',
+	hierarchy_toggle_hint: 'Enables parent-child relationships between rows in this database',
+	add_subrow: 'Add sub-row',
+	collapse_all: 'Collapse all',
+	expand_all: 'Expand all',
+	max_depth_reached: 'Maximum depth reached (3 levels)',
+
 	// Chart view
 	chart_configure: 'Configure',
 	chart_type: 'Chart type',

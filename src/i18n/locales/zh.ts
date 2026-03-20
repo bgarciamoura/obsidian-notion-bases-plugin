@@ -310,6 +310,14 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	month_short_nov: '11月',
 	month_short_dec: '12月',
 
+	// Hierarchy / Sub-rows
+	hierarchy_toggle: '用作层级',
+	hierarchy_toggle_hint: '启用此数据库中行之间的父子关系',
+	add_subrow: '添加子行',
+	collapse_all: '全部折叠',
+	expand_all: '全部展开',
+	max_depth_reached: '已达到最大深度（3 层）',
+
 	// Chart view
 	chart_configure: '配置',
 	chart_type: '图表类型',

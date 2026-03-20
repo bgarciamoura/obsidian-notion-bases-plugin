@@ -54,6 +54,7 @@ export interface ColumnSchema {
 	rollupRelationColumnId?: string   // rollup: which relation column to aggregate from
 	rollupTargetColumnId?: string     // rollup: which column in the target database
 	rollupFunction?: RollupFunction   // rollup: aggregation function
+	isHierarchical?: boolean          // self-relation used as hierarchy parent column
 }
 
 // ── View / filter / sort ────────────────────────────────────────────────────

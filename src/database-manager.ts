@@ -171,7 +171,7 @@ export class DatabaseManager {
 		await this.app.fileManager.renameFile(file, newPath)
 	}
 
-	async createNote(dbFile: TFile): Promise<TFile> {
+	async createNote(dbFile: TFile, initialFrontmatter?: Record<string, unknown>): Promise<TFile> {
 		const folderPath = dbFile.parent?.path ?? ''
 		const base = normalizePath(`${folderPath}/${t('db_untitled_note')}`)
 		let path = `${base}.md`
@@ -179,7 +179,15 @@ export class DatabaseManager {
 		while (this.app.vault.getFileByPath(path)) {
 			path = `${base} ${i++}.md`
 		}
-		return this.app.vault.create(path, '---\n---\n')
+		const newFile = await this.app.vault.create(path, '---\n---\n')
+		if (initialFrontmatter && Object.keys(initialFrontmatter).length > 0) {
+			await this.app.fileManager.processFrontMatter(newFile, (fm: Record<string, unknown>) => {
+				for (const [key, value] of Object.entries(initialFrontmatter)) {
+					fm[key] = value
+				}
+			})
+		}
+		return newFile
 	}
 
 	// ── Lookup helpers ─────────────────────────────────────────────────────

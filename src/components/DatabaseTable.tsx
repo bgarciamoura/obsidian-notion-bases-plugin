@@ -40,6 +40,7 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import { isMultiValueFilter, parseMultiValue, toggleMultiValue } from './filter-utils'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconActions, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
+import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
 
 // ── Virtual row rendering (separate component to isolate hooks) ──────────
 function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHeight: number) {
@@ -74,7 +75,7 @@ function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHei
 interface VirtualTbodyProps {
 	scrollRef: React.RefObject<HTMLElement | null>
 	rowHeight: number
-	rows: { id: string; original: { _file: TFile }; getVisibleCells: () => { id: string; column: { id: string; getSize: () => number; columnDef: { cell: unknown } }; getContext: () => unknown }[] }[]
+	rows: { id: string; original: { _file: TFile; _title: string }; getVisibleCells: () => { id: string; column: { id: string; getSize: () => number; columnDef: { cell: unknown } }; getContext: () => unknown }[] }[]
 	stickyMap: Map<string, { left: number; isLast: boolean }>
 	isMobile: boolean
 	setEditingCell: (cell: { rowIndex: number; columnId: string } | null) => void
@@ -82,9 +83,14 @@ interface VirtualTbodyProps {
 	longPressRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>
 	columns: unknown[]
 	onAddRow: () => void
+	hierarchyMap?: Map<string, HierarchyRow> | null
+	onToggleExpand?: (filePath: string) => void
+	onAddSubRow?: (parentTitle: string) => void
+	expandedSet?: Set<string>
+	allExpanded?: boolean
 }
 
-function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEditingCell, setContextMenuFile, longPressRef, columns, onAddRow }: VirtualTbodyProps) {
+function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEditingCell, setContextMenuFile, longPressRef, columns, onAddRow, hierarchyMap, onToggleExpand, onAddSubRow, expandedSet, allExpanded }: VirtualTbodyProps) {
 	const { startIdx, endIdx, topPad } = useVirtualScroll(scrollRef, rowHeight)
 	const visibleRows = rows.slice(startIdx, Math.min(rows.length, endIdx))
 	const bottomPad = Math.max(0, (rows.length - Math.min(rows.length, endIdx)) * rowHeight)
@@ -108,6 +114,10 @@ function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEdit
 						>
 							{row.getVisibleCells().map(cell => {
 								const sticky = stickyMap.get(cell.column.id)
+								const hRow = hierarchyMap?.get(row.original._file.path)
+								const isTitle = cell.column.id === '_title' && hRow
+								const depth = hRow?.depth ?? 0
+								const isExp = allExpanded ? !expandedSet?.has(row.original._file.path) : !!expandedSet?.has(row.original._file.path)
 								return (
 									<td
 										key={cell.id}
@@ -116,7 +126,21 @@ function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEdit
 										style={{ width: cell.column.getSize(), ...(sticky ? { left: sticky.left, zIndex: 1 } : {}) }}
 										onClick={e => e.stopPropagation()}
 									>
-										<div className="nb-td-inner">{flexRender(cell.column.columnDef.cell as never, cell.getContext() as never)}</div>
+										{isTitle ? (
+											<div className="nb-td-inner nb-hierarchy-cell" style={{ paddingLeft: depth * 20 }}>
+												{hRow.hasChildren ? (
+													<button className="nb-hierarchy-toggle" onClick={e => { e.stopPropagation(); onToggleExpand?.(row.original._file.path) }}>
+														{isExp ? '▼' : '▶'}
+													</button>
+												) : <span className="nb-hierarchy-toggle-spacer" />}
+												<span style={{ flex: 1 }}>{flexRender(cell.column.columnDef.cell as never, cell.getContext() as never)}</span>
+												{!isMobile && depth < 3 && (
+													<button className="nb-add-subrow-btn" onClick={e => { e.stopPropagation(); onAddSubRow?.(row.original._title) }} title={t('add_subrow')}>+</button>
+												)}
+											</div>
+										) : (
+											<div className="nb-td-inner">{flexRender(cell.column.columnDef.cell as never, cell.getContext() as never)}</div>
+										)}
 									</td>
 								)
 							})}
@@ -712,6 +736,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const [searchExpanded, setSearchExpanded] = useState(false)
 	const searchInputRef = useRef<HTMLInputElement>(null)
 	const searchInactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const [hierarchyExpandedSet, setHierarchyExpandedSet] = useState<Set<string>>(new Set())
+	const [hierarchyAllExpanded] = useState(true)
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -1120,10 +1146,32 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		return rows.filter(row => groups.some(group => group.every(f => matchesFilter(row, f))))
 	}, [rows, activeFilters])
 
-	filteredRowsRef.current = filteredRows
+	const hierarchyCol = useMemo(
+		() => findHierarchyColumn(config.schema, dbFile?.path ?? ''),
+		[config.schema, dbFile?.path],
+	)
+
+	const hierarchicalRows = useMemo(() => {
+		if (!hierarchyCol) return null
+		return buildHierarchyTree(filteredRows, hierarchyCol.id, activeView.sorts, hierarchyExpandedSet, hierarchyAllExpanded)
+	}, [filteredRows, hierarchyCol, activeView.sorts, hierarchyExpandedSet, hierarchyAllExpanded])
+
+	const tableData = useMemo(() => {
+		if (hierarchicalRows) return hierarchicalRows.map(hr => hr.row)
+		return filteredRows
+	}, [hierarchicalRows, filteredRows])
+
+	const hierarchyMap = useMemo(() => {
+		if (!hierarchicalRows) return null
+		const map = new Map<string, HierarchyRow>()
+		for (const hr of hierarchicalRows) map.set(hr.row._file.path, hr)
+		return map
+	}, [hierarchicalRows])
+
+	filteredRowsRef.current = tableData
 
 	const table = useReactTable({
-		data: filteredRows,
+		data: tableData,
 		columns,
 		state: { sorting, globalFilter, rowSelection },
 		onSortingChange: setSorting,
@@ -1131,8 +1179,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		onRowSelectionChange: setRowSelection,
 		enableRowSelection: true,
 		getCoreRowModel: getCoreRowModel(),
-		getSortedRowModel: getSortedRowModel(),
+		getSortedRowModel: hierarchyCol ? undefined : getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
+		manualSorting: !!hierarchyCol,
 		meta: {
 			updateCell,
 			editingCell,
@@ -1149,6 +1198,21 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		lastCreatedPath.current = newFile.path
 		// loadData será chamado pelo evento vault.on('create')
 	}
+
+	const handleAddSubRow = useCallback(async (parentTitle: string) => {
+		if (!dbFile || !hierarchyCol) return
+		const newFile = await manager.createNote(dbFile, { [hierarchyCol.id]: [parentTitle] })
+		lastCreatedPath.current = newFile.path
+	}, [dbFile, hierarchyCol, manager])
+
+	const toggleHierarchyExpand = useCallback((filePath: string) => {
+		setHierarchyExpandedSet(prev => {
+			const next = new Set(prev)
+			if (next.has(filePath)) next.delete(filePath)
+			else next.add(filePath)
+			return next
+		})
+	}, [])
 
 	// ── Fechar menu de campos ao clicar fora ─────────────────────────────────
 
@@ -2190,6 +2254,11 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						longPressRef={longPressRef}
 						columns={columns}
 						onAddRow={() => { void handleAddRow() }}
+						hierarchyMap={hierarchyMap}
+						onToggleExpand={toggleHierarchyExpand}
+						onAddSubRow={parentTitle => { void handleAddSubRow(parentTitle) }}
+						expandedSet={hierarchyExpandedSet}
+						allExpanded={hierarchyAllExpanded}
 					/>
 					<tfoot className="nb-tfoot">
 					<tr>
@@ -2258,6 +2327,11 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				<button className="nb-menu-item" onClick={() => { if (contextMenuFile) { void manager.duplicateNotes([contextMenuFile]) } setContextMenuFile(null) }}>
 					<span className="nb-menu-item-icon">📋</span><span>{t('duplicate_note')}</span>
 				</button>
+				{hierarchyCol && contextMenuFile && (hierarchyMap?.get(contextMenuFile.path)?.depth ?? 0) < 3 && (
+					<button className="nb-menu-item" onClick={() => { void handleAddSubRow(contextMenuFile.basename); setContextMenuFile(null) }}>
+						<span className="nb-menu-item-icon">↳</span><span>{t('add_subrow')}</span>
+					</button>
+				)}
 				<div className="nb-menu-separator" />
 				<button className="nb-menu-item nb-menu-item--danger" onClick={() => { if (contextMenuFile) { void manager.deleteNotes([contextMenuFile]) } setContextMenuFile(null) }}>
 					<span className="nb-menu-item-icon">🗑</span><span>{t('delete_note')}</span>

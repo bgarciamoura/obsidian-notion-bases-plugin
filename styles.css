@@ -2439,13 +2439,13 @@
 
 .nb-list-row {
 	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 6px 12px;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 4px 8px;
+	padding: 10px 12px;
 	border-bottom: 1px solid var(--background-modifier-border);
 	cursor: pointer;
 	transition: background 0.1s;
-	min-height: 36px;
 }
 
 .nb-list-row:hover {
@@ -2465,23 +2465,27 @@
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	min-width: 120px;
-	max-width: 300px;
 }
 
 .nb-list-row-props {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 3px 5px;
 	flex-wrap: wrap;
-	flex: 1;
+	flex-basis: 100%;
+	padding-left: 26px;
+	margin-top: 2px;
 }
 
 .nb-list-prop {
 	display: flex;
 	align-items: center;
-	gap: 4px;
-	padding: 2px 7px;
+	gap: 3px;
+	padding: 1px 6px;
+	font-size: 11px;
+	white-space: nowrap;
+	flex-shrink: 0;
+	border-radius: 4px;
 	background: var(--background-secondary);
 	border-radius: 10px;
 	font-size: var(--font-ui-smaller);
@@ -2499,6 +2503,8 @@
 	color: var(--text-normal);
 	overflow: hidden;
 	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 120px;
 }
 
 .nb-list-add-row {
@@ -4773,6 +4779,77 @@ body.nb-tl-resizing * {
 	max-height: 60vh;
 	overflow-y: auto;
 	z-index: 200;
+}
+
+/* ── #89 Hierarchy / Sub-rows ─────────────────────────────────────────────── */
+
+.nb-hierarchy-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	border: none;
+	background: none;
+	cursor: pointer;
+	color: var(--text-muted);
+	font-size: 10px;
+	padding: 0;
+	margin-right: 2px;
+	border-radius: 3px;
+	flex-shrink: 0;
+}
+
+.nb-hierarchy-toggle:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.nb-hierarchy-toggle-spacer {
+	display: inline-block;
+	width: 18px;
+	flex-shrink: 0;
+	margin-right: 2px;
+}
+
+.nb-hierarchy-cell {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	width: 100%;
+}
+
+.nb-add-subrow-btn {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	border: none;
+	background: none;
+	cursor: pointer;
+	color: var(--text-faint);
+	font-size: 14px;
+	padding: 0;
+	margin-left: auto;
+	border-radius: 3px;
+	flex-shrink: 0;
+}
+
+.nb-row:hover .nb-add-subrow-btn,
+.nb-list-row:hover .nb-add-subrow-btn {
+	display: inline-flex;
+}
+
+.nb-add-subrow-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--interactive-accent);
+}
+
+.is-mobile .nb-hierarchy-toggle {
+	width: 30px;
+	height: 30px;
+	font-size: 12px;
 }
 
 /* ── #91 Chart view ──────────────────────────────────────────────────────── */

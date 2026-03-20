@@ -17,6 +17,7 @@ import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
+import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
 
 interface DatabaseListProps {
 	dbFile: TFile | null
@@ -276,10 +277,35 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 
 	const handleAddRow = async () => { if (dbFile) await manager.createNote(dbFile) }
 
+	// ── Hierarchy state ───────────────────────────────────────────────────────
+
+	const [hExpandedSet, setHExpandedSet] = useState<Set<string>>(new Set())
+	const [hAllExpanded] = useState(true)
+
+	const hierarchyCol = useMemo(
+		() => findHierarchyColumn(config.schema, dbFile?.path ?? ''),
+		[config.schema, dbFile?.path],
+	)
+
+	const toggleHExpand = useCallback((filePath: string) => {
+		setHExpandedSet(prev => {
+			const next = new Set(prev)
+			if (next.has(filePath)) next.delete(filePath)
+			else next.add(filePath)
+			return next
+		})
+	}, [])
+
 	// ── Derived data ─────────────────────────────────────────────────────────
 
 	const filteredRows = useMemo(() => applyFilters(rows, activeFilters), [rows, activeFilters])
 	const displayRows = useMemo(() => applySorts(filteredRows, activeView.sorts), [filteredRows, activeView.sorts])
+
+	const hierarchicalRows: HierarchyRow[] | null = useMemo(() => {
+		if (!hierarchyCol) return null
+		return buildHierarchyTree(displayRows, hierarchyCol.id, activeView.sorts, hExpandedSet, hAllExpanded)
+	}, [displayRows, hierarchyCol, activeView.sorts, hExpandedSet, hAllExpanded])
+
 	const visibleCols = useMemo(() =>
 		config.schema.filter(col => col.visible && !activeView.hiddenColumns.includes(col.id)),
 		[config.schema, activeView.hiddenColumns]
@@ -459,12 +485,20 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 
 			{/* List */}
 			<div className="nb-list">
-				{displayRows.map(row => (
+				{(hierarchicalRows ?? displayRows.map(r => ({ row: r, depth: 0, hasChildren: false, parentTitle: null }))).map(({ row, depth, hasChildren }) => {
+					const isExp = hAllExpanded ? !hExpandedSet.has(row._file.path) : hExpandedSet.has(row._file.path)
+					return (
 					<div
 						key={row._file.path}
 						className="nb-list-row"
+						style={hierarchicalRows ? { paddingLeft: `${depth * 20 + 12}px` } : undefined}
 						onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
 					>
+						{hasChildren && (
+							<button className="nb-hierarchy-toggle" onClick={e => { e.stopPropagation(); toggleHExpand(row._file.path) }}>
+								{isExp ? '▼' : '▶'}
+							</button>
+						)}
 						<span className="nb-list-row-icon">📄</span>
 						<span className="nb-list-row-title">{row._title}</span>
 						{(() => {
@@ -490,7 +524,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 							</span>
 						)}
 					</div>
-				))}
+				) })}
 				<button className="nb-add-row nb-list-add-row" onClick={() => { void handleAddRow() }}>
 					{'+ ' + t('add_entry')}
 				</button>

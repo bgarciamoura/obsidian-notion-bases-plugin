@@ -81,6 +81,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const [lookupRefColId, setLookupRefColId] = useState(col.refColumnId ?? '')
 	const [lookupMatchColId, setLookupMatchColId] = useState(col.refMatchColumnId ?? '')
 	const [twoWay, setTwoWay] = useState(!!col.pairedColumnId)
+	const [isHierarchical, setIsHierarchical] = useState(!!col.isHierarchical)
 	const [availableDbs, setAvailableDbs] = useState<Array<{ path: string; name: string }>>([])
 	const [refDbSchema, setRefDbSchema] = useState<ColumnSchema[]>([])
 	const lookupPanelRef = useRef<HTMLDivElement>(null)
@@ -576,7 +577,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			refDatabasePath: lookupDbPath,
 			refColumnId: lookupRefColId,
 			...(col.type === 'lookup' ? { refMatchColumnId: lookupMatchColId } : {}),
-			...(col.type === 'relation' ? { pairedColumnId } : {}),
+			...(col.type === 'relation' ? { pairedColumnId, isHierarchical: isHierarchical || undefined } : {}),
 		})
 		setEditingLookup(false)
 		setMenuOpen(false)
@@ -965,6 +966,18 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 							{t('relation_two_way')}
 						</label>
 						<p className="nb-lookup-hint">{t('relation_two_way_hint')}</p>
+					</div>
+				)}
+				{col.type === 'relation' && lookupDbPath && lookupDbPath === dbFile?.path && (
+					<div className="nb-lookup-section">
+						<label className="nb-lookup-checkbox">
+							<input type="checkbox" checked={isHierarchical} onChange={e => {
+								if (e.target.checked && schema.some(c => c.id !== col.id && c.isHierarchical)) return
+								setIsHierarchical(e.target.checked)
+							}} />
+							{t('hierarchy_toggle')}
+						</label>
+						<p className="nb-lookup-hint">{t('hierarchy_toggle_hint')}</p>
 					</div>
 				)}
 				<div className="nb-formula-actions">
