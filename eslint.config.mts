@@ -2,7 +2,6 @@ import tseslint from 'typescript-eslint';
 import obsidianmd from "eslint-plugin-obsidianmd";
 import globals from "globals";
 import { globalIgnores } from "eslint/config";
-import sentenceCase from "@bgarciamoura/eslint-plugin-sentence-case";
 
 export default tseslint.config(
 	{
@@ -32,26 +31,8 @@ export default tseslint.config(
 	},
 	{
 		files: ["src/i18n/locales/en.ts"],
-		plugins: {
-			"sentence-case": sentenceCase,
-		},
 		rules: {
-			"sentence-case/enforce": ["error", {
-				titleCaseDetection: true,
-				allowedWords: ["Obsidian", "Notion", "GitHub"],
-			}],
-		},
-	},
-	{
-		files: ["src/i18n/locales/*.ts"],
-		ignores: ["src/i18n/locales/en.ts"],
-		plugins: {
-			"sentence-case": sentenceCase,
-		},
-		rules: {
-			"sentence-case/enforce": ["error", {
-				titleCaseDetection: false,
-			}],
+			"obsidianmd/ui/sentence-case-locale-module": "error",
 		},
 	},
 	globalIgnores([

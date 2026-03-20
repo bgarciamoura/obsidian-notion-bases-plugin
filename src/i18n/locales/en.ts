@@ -323,7 +323,7 @@ const en = {
 	chart_type_line: 'Line',
 	chart_type_pie: 'Pie',
 	chart_x_axis: 'Categories (X axis)',
-	chart_y_axis: 'Values (Y Axis)',
+	chart_y_axis: 'Values (y axis)',
 	chart_aggregation: 'Aggregation',
 	chart_select_column: 'Select column...',
 	chart_count_records: 'Count',
