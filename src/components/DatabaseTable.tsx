@@ -769,13 +769,13 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			await manager.writeConfig(dbFile, cfg)
 		}
 
-		const noteRows = manager.resolveLookupsForRows(
+		const noteRows = manager.resolveRollupsForRows(manager.resolveLookupsForRows(
 			evaluateFormulas(
 				notes.map(f => manager.getNoteData(f, cfg.schema)),
 				cfg.schema
 			),
 			cfg.schema
-		)
+		), cfg.schema)
 
 		// Abort se uma versão mais recente já iniciou
 		if (loadVersion.current !== version) return

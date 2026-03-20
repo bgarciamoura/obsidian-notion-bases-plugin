@@ -18,6 +18,7 @@ export type ColumnType =
 	| 'formula'
 	| 'relation'
 	| 'lookup'
+	| 'rollup'
 	| 'image'
 	| 'audio'
 	| 'video'
@@ -50,6 +51,9 @@ export interface ColumnSchema {
 	imageSourceFolder?: string
 	audioSourceFolder?: string
 	videoSourceFolder?: string
+	rollupRelationColumnId?: string   // rollup: which relation column to aggregate from
+	rollupTargetColumnId?: string     // rollup: which column in the target database
+	rollupFunction?: RollupFunction   // rollup: aggregation function
 }
 
 // ── View / filter / sort ────────────────────────────────────────────────────
@@ -81,6 +85,8 @@ export interface SortConfig {
 	columnId: string
 	direction: 'asc' | 'desc'
 }
+
+export type RollupFunction = 'sum' | 'count' | 'avg' | 'min' | 'max' | 'count_values' | 'list'
 
 export type AggregationType = 'none' | 'count' | 'count_values' | 'sum' | 'avg' | 'min' | 'max'
 

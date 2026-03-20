@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { TFile } from 'obsidian'
-import { ColumnSchema, ColumnType, NumberFormat } from '../types'
+import { ColumnSchema, ColumnType, NumberFormat, RollupFunction } from '../types'
 import { validateFormulaSyntax } from '../formula-engine'
 import { useApp } from '../context'
 import { t } from '../i18n'
@@ -22,6 +22,7 @@ const TYPE_ICONS: Record<ColumnType, string> = {
 	formula:     'ƒ',
 	relation:    '🔗',
 	lookup:      '↗',
+	rollup:      'Σ',
 	image:       '🖼',
 	audio:       '🎵',
 	video:       '🎬',
@@ -42,6 +43,7 @@ const TYPE_LABELS = (): Record<ColumnType, string> => ({
 	formula:     t('type_formula'),
 	relation:    t('type_relation'),
 	lookup:      t('type_lookup'),
+	rollup:      t('type_rollup'),
 	image:       t('type_image'),
 	audio:       t('type_audio'),
 	video:       t('type_video'),
@@ -84,6 +86,16 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const lookupPanelRef = useRef<HTMLDivElement>(null)
 	const lookupDragOffset = useRef<{ x: number; y: number } | null>(null)
 
+	// Rollup state
+	const [editingRollup, setEditingRollup] = useState(false)
+	const [rollupPanelPos, setRollupPanelPos] = useState<{ x: number; y: number } | null>(null)
+	const [rollupRelColId, setRollupRelColId] = useState(col.rollupRelationColumnId ?? '')
+	const [rollupTargetColId, setRollupTargetColId] = useState(col.rollupTargetColumnId ?? '')
+	const [rollupFn, setRollupFn] = useState<string>(col.rollupFunction ?? 'count')
+	const [rollupTargetSchema, setRollupTargetSchema] = useState<ColumnSchema[]>([])
+	const rollupPanelRef = useRef<HTMLDivElement>(null)
+	const rollupDragOffset = useRef<{ x: number; y: number } | null>(null)
+
 	// Number format state
 	const [editingNumberFmt, setEditingNumberFmt] = useState(false)
 	const [fmtPanelPos, setFmtPanelPos] = useState<{ x: number; y: number } | null>(null)
@@ -121,7 +133,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		const handler = (e: MouseEvent) => {
 			const target = e.target as Node
 			const inMenu = menuRef.current?.contains(target)
-			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target) || fmtPanelRef.current?.contains(target) || imgPanelRef.current?.contains(target) || audioPanelRef.current?.contains(target) || videoPanelRef.current?.contains(target)
+			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target) || rollupPanelRef.current?.contains(target) || fmtPanelRef.current?.contains(target) || imgPanelRef.current?.contains(target) || audioPanelRef.current?.contains(target) || videoPanelRef.current?.contains(target)
 			if (!inMenu && !inPanel) {
 				setMenuOpen(false)
 				setEditingFormula(false)
@@ -239,6 +251,46 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		document.addEventListener('mouseup', onUp)
 		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
 	}, [editingLookup])
+
+	// Rollup: load target schema when relation column changes
+	useEffect(() => {
+		if (!editingRollup || !rollupRelColId) { setRollupTargetSchema([]); return }
+		const relCol = schema.find(c => c.id === rollupRelColId)
+		if (!relCol?.refDatabasePath) { setRollupTargetSchema([]); return }
+		const refDbFile = app.vault.getFileByPath(relCol.refDatabasePath)
+		if (!refDbFile) { setRollupTargetSchema([]); return }
+		const refConfig = manager.readConfig(refDbFile)
+		setRollupTargetSchema(refConfig.schema)
+	}, [editingRollup, rollupRelColId, schema, app, manager])
+
+	// Sync rollup state with col when not editing
+	useEffect(() => {
+		if (!editingRollup) {
+			setRollupRelColId(col.rollupRelationColumnId ?? '')
+			setRollupTargetColId(col.rollupTargetColumnId ?? '')
+			setRollupFn(col.rollupFunction ?? 'count')
+		}
+	}, [col.rollupRelationColumnId, col.rollupTargetColumnId, col.rollupFunction, editingRollup])
+
+	// Position + drag for rollup panel
+	useEffect(() => {
+		if (!editingRollup) return
+		if (menuRef.current) {
+			const rect = menuRef.current.getBoundingClientRect()
+			let x = rect.left; let y = rect.bottom + 4
+			if (x + 340 > window.innerWidth) x = window.innerWidth - 348
+			if (y + 300 > window.innerHeight) y = rect.top - 304
+			setRollupPanelPos({ x, y })
+		}
+		const onMove = (e: MouseEvent) => {
+			if (!rollupDragOffset.current) return
+			setRollupPanelPos({ x: e.clientX - rollupDragOffset.current.x, y: e.clientY - rollupDragOffset.current.y })
+		}
+		const onUp = () => { rollupDragOffset.current = null }
+		document.addEventListener('mousemove', onMove)
+		document.addEventListener('mouseup', onUp)
+		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+	}, [editingRollup])
 
 	// Position panel when number format opens
 	useEffect(() => {
@@ -456,6 +508,8 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			setEditingFormula(true)
 		} else if (type === 'lookup' || type === 'relation') {
 			setEditingLookup(true)
+		} else if (type === 'rollup') {
+			setEditingRollup(true)
 		} else if (type === 'image') {
 			setEditingImageConfig(true)
 		} else {
@@ -538,6 +592,34 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		lookupDragOffset.current = { x: e.clientX - lookupPanelPos.x, y: e.clientY - lookupPanelPos.y }
 		e.preventDefault()
 	}
+
+	const handleSaveRollup = async () => {
+		await updateCol({
+			rollupRelationColumnId: rollupRelColId,
+			rollupTargetColumnId: rollupTargetColId,
+			rollupFunction: rollupFn as RollupFunction,
+		})
+		setEditingRollup(false)
+		setMenuOpen(false)
+	}
+
+	const handleRollupTitleBarMouseDown = (e: React.MouseEvent) => {
+		if (!rollupPanelPos) return
+		rollupDragOffset.current = { x: e.clientX - rollupPanelPos.x, y: e.clientY - rollupPanelPos.y }
+		e.preventDefault()
+	}
+
+	const ROLLUP_FUNCTIONS: { value: RollupFunction; label: string }[] = [
+		{ value: 'count', label: t('rollup_fn_count') },
+		{ value: 'sum', label: t('rollup_fn_sum') },
+		{ value: 'avg', label: t('rollup_fn_avg') },
+		{ value: 'min', label: t('rollup_fn_min') },
+		{ value: 'max', label: t('rollup_fn_max') },
+		{ value: 'count_values', label: t('rollup_fn_count_values') },
+		{ value: 'list', label: t('rollup_fn_list') },
+	]
+
+	const relationColumns = schema.filter(c => c.type === 'relation')
 
 	const handleSaveNumberFmt = async () => {
 		const fmt: NumberFormat = {
@@ -797,6 +879,51 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		document.body
 	) : null
 
+	const rollupPanel = editingRollup && rollupPanelPos ? createPortal(
+		<div ref={rollupPanelRef} className="nb-formula-floating-panel" style={{ top: rollupPanelPos.y, left: rollupPanelPos.x }}>
+			<div className="nb-formula-titlebar" onMouseDown={handleRollupTitleBarMouseDown}>
+				<span className="nb-formula-titlebar-icon">Σ</span>
+				<span className="nb-formula-titlebar-title">{t('rollup_panel_title')}: {col.name}</span>
+				<button className="nb-formula-close" onClick={() => { setEditingRollup(false); setMenuOpen(false) }} title={t('tooltip_close')}>×</button>
+			</div>
+			<div className="nb-formula-body" style={{ padding: '12px' }}>
+				{relationColumns.length === 0 ? (
+					<div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{t('rollup_no_relations')}</div>
+				) : (
+					<>
+						<div className="nb-lookup-section">
+							<label className="nb-lookup-label">{t('rollup_select_relation')}</label>
+							<select className="nb-lookup-select" value={rollupRelColId} onChange={e => { setRollupRelColId(e.target.value); setRollupTargetColId('') }}>
+								<option value="">{t('rollup_select_relation_placeholder')}</option>
+								{relationColumns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+							</select>
+						</div>
+						{rollupRelColId && (
+							<div className="nb-lookup-section">
+								<label className="nb-lookup-label">{t('rollup_select_target')}</label>
+								<select className="nb-lookup-select" value={rollupTargetColId} onChange={e => setRollupTargetColId(e.target.value)}>
+									<option value="">{t('rollup_select_target_placeholder')}</option>
+									<option value="_title">{t('lookup_file_name')}</option>
+									{rollupTargetSchema.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+								</select>
+							</div>
+						)}
+						{rollupTargetColId && (
+							<div className="nb-lookup-section">
+								<label className="nb-lookup-label">{t('rollup_select_function')}</label>
+								<select className="nb-lookup-select" value={rollupFn} onChange={e => setRollupFn(e.target.value)}>
+									{ROLLUP_FUNCTIONS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+								</select>
+							</div>
+						)}
+						<button className="nb-formula-save" disabled={!rollupRelColId || !rollupTargetColId} onClick={() => { void handleSaveRollup() }}>{t('formula_save')}</button>
+					</>
+				)}
+			</div>
+		</div>,
+		document.body
+	) : null
+
 	const lookupPanel = editingLookup && lookupPanelPos ? createPortal(
 		<div ref={lookupPanelRef} className="nb-formula-floating-panel" style={{ top: lookupPanelPos.y, left: lookupPanelPos.x }}>
 			<div className="nb-formula-titlebar" onMouseDown={handleLookupTitleBarMouseDown}>
@@ -958,7 +1085,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			)}
 
 			{/* Menu dropdown */}
-			{menuOpen && !editingFormula && !editingLookup && !editingNumberFmt && !editingImageConfig && (
+			{menuOpen && !editingFormula && !editingLookup && !editingRollup && !editingNumberFmt && !editingImageConfig && (
 				<div className="nb-column-menu">
 					<button className="nb-menu-item" onClick={() => { setMenuOpen(false); setRenaming(true) }}>
 						<span className="nb-menu-item-icon">✏️</span>
@@ -983,6 +1110,13 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						<button className="nb-menu-item" onClick={() => setEditingLookup(true)}>
 							<span className="nb-menu-item-icon">🔗</span>
 							<span>{t('configure_relation')}</span>
+						</button>
+					)}
+
+					{col.type === 'rollup' && (
+						<button className="nb-menu-item" onClick={() => setEditingRollup(true)}>
+							<span className="nb-menu-item-icon">Σ</span>
+							<span>{t('configure_rollup')}</span>
 						</button>
 					)}
 
@@ -1016,7 +1150,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 
 					<div className="nb-menu-separator" />
 					<div className="nb-menu-label">{t('field_type_label')}</div>
-					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'url', 'email', 'phone', 'status', 'formula', 'relation', 'lookup', 'image', 'audio', 'video'] as ColumnType[]).map(type => (
+					{(['text', 'number', 'select', 'multiselect', 'date', 'checkbox', 'url', 'email', 'phone', 'status', 'formula', 'relation', 'lookup', 'rollup', 'image', 'audio', 'video'] as ColumnType[]).map(type => (
 						<button
 							key={type}
 							className={`nb-menu-item nb-menu-type-item ${col.type === type ? 'nb-menu-item--active' : ''}`}
@@ -1042,6 +1176,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			{/* Painel de fórmula flutuante via portal */}
 			{formulaPanel}
 			{lookupPanel}
+			{rollupPanel}
 			{numberFmtPanel}
 			{imageCfgPanel}
 			{audioCfgPanel}

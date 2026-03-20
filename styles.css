@@ -2230,6 +2230,11 @@
 	color: var(--text-accent);
 }
 
+.nb-cell-rollup {
+	font-style: italic;
+	color: var(--text-muted);
+}
+
 /* ── Relation cell ─────────────────────────────────────────────────────────── */
 
 .nb-relation-badge {

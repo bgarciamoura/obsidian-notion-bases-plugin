@@ -132,7 +132,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 	const isEditing = editingCell?.rowIndex === rowIndex && editingCell?.columnId === columnId
 
 	const startEditing = () => {
-		if (col.type === 'formula' || col.type === 'lookup' || col.type === 'checkbox') return
+		if (col.type === 'formula' || col.type === 'lookup' || col.type === 'rollup' || col.type === 'checkbox') return
 		setEditingCell({ rowIndex, columnId })
 	}
 
@@ -287,6 +287,9 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 
 		case 'lookup':
 			return <LookupCell value={value} col={col} />
+
+		case 'rollup':
+			return <RollupCell value={value} col={col} />
 
 		case 'image':
 			return (
@@ -1343,6 +1346,15 @@ function LookupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 	const display = value === null || value === undefined ? '—' : String(value as string | number | boolean)
 	return (
 		<div className="nb-cell-formula nb-cell-lookup" title={t('lookup_panel_title') + ' de ' + (col.refDatabasePath ?? '')}>
+			{display}
+		</div>
+	)
+}
+
+function RollupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
+	const display = value === null || value === undefined ? '—' : String(value as string | number | boolean)
+	return (
+		<div className="nb-cell-formula nb-cell-rollup" title={t('rollup_panel_title') + ': ' + (col.rollupFunction ?? '')}>
 			{display}
 		</div>
 	)

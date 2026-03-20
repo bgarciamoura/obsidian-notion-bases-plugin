@@ -74,10 +74,10 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			cfg.schema = manager.inferSchema(notes)
 			await manager.writeConfig(dbFile, cfg)
 		}
-		const noteRows = manager.resolveLookupsForRows(
+		const noteRows = manager.resolveRollupsForRows(manager.resolveLookupsForRows(
 			evaluateFormulas(notes.map(f => manager.getNoteData(f, cfg.schema)), cfg.schema),
 			cfg.schema
-		)
+		), cfg.schema)
 		if (loadVersion.current !== version) return
 		if (!filtersInitialized.current) {
 			filtersInitialized.current = true

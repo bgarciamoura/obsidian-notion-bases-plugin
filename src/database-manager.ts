@@ -7,6 +7,7 @@ import {
 	DEFAULT_DATABASE_CONFIG,
 	DEFAULT_VIEW,
 	NoteRow,
+	RollupFunction,
 	ViewConfig,
 } from './types'
 
@@ -100,7 +101,7 @@ export class DatabaseManager {
 		}
 
 		for (const col of schema) {
-			if (col.type === 'formula' || col.type === 'lookup') continue
+			if (col.type === 'formula' || col.type === 'lookup' || col.type === 'rollup') continue
 			row[col.id] = fm[col.id] ?? null
 		}
 
@@ -218,6 +219,60 @@ export class DatabaseManager {
 			}
 			return result
 		})
+	}
+
+	resolveRollupsForRows(rows: NoteRow[], schema: ColumnSchema[]): NoteRow[] {
+		const rollupCols = schema.filter(c =>
+			c.type === 'rollup' && c.rollupRelationColumnId && c.rollupTargetColumnId && c.rollupFunction
+		)
+		if (rollupCols.length === 0) return rows
+
+		const refDataCache = new Map<string, NoteRow[]>()
+		for (const col of rollupCols) {
+			const relationCol = schema.find(c => c.id === col.rollupRelationColumnId)
+			if (!relationCol || relationCol.type !== 'relation' || !relationCol.refDatabasePath) continue
+			const path = relationCol.refDatabasePath
+			if (!refDataCache.has(path)) {
+				const refDbFile = this.app.vault.getFileByPath(path)
+				if (!refDbFile) { refDataCache.set(path, []); continue }
+				const refConfig = this.readConfig(refDbFile)
+				const refNotes = this.getNotesInDatabase(refDbFile)
+				refDataCache.set(path, refNotes.map(f => this.getNoteData(f, refConfig.schema)))
+			}
+		}
+
+		return rows.map(row => {
+			const result = { ...row }
+			for (const col of rollupCols) {
+				const relationCol = schema.find(c => c.id === col.rollupRelationColumnId)
+				if (!relationCol || !relationCol.refDatabasePath) { result[col.id] = null; continue }
+				const refRows = refDataCache.get(relationCol.refDatabasePath) ?? []
+				const rawRelation = row[relationCol.id]
+				const relatedTitles: string[] = Array.isArray(rawRelation)
+					? rawRelation.filter((v): v is string => typeof v === 'string')
+					: (typeof rawRelation === 'string' && rawRelation ? [rawRelation] : [])
+				if (relatedTitles.length === 0) { result[col.id] = null; continue }
+				const matchingRows = refRows.filter(r => relatedTitles.includes(r._title))
+				const targetId = col.rollupTargetColumnId!
+				const values = matchingRows.map(r => targetId === '_title' ? r._title : r[targetId]).filter(v => v !== null && v !== undefined)
+				result[col.id] = this.applyRollupFunction(values, col.rollupFunction!)
+			}
+			return result
+		})
+	}
+
+	private applyRollupFunction(values: unknown[], fn: RollupFunction): unknown {
+		if (values.length === 0) return null
+		switch (fn) {
+			case 'count': return values.length
+			case 'count_values': return new Set(values.map(v => String(v as string | number | boolean))).size
+			case 'list': return values.map(v => String(v as string | number | boolean)).join(', ')
+			case 'sum': { const nums = values.map(Number).filter(n => !isNaN(n)); return nums.length > 0 ? nums.reduce((a, b) => a + b, 0) : null }
+			case 'avg': { const nums = values.map(Number).filter(n => !isNaN(n)); return nums.length > 0 ? Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 100) / 100 : null }
+			case 'min': { const nums = values.map(Number).filter(n => !isNaN(n)); return nums.length > 0 ? Math.min(...nums) : null }
+			case 'max': { const nums = values.map(Number).filter(n => !isNaN(n)); return nums.length > 0 ? Math.max(...nums) : null }
+			default: return null
+		}
 	}
 
 	// ── Operações em lote ──────────────────────────────────────────────────
