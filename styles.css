@@ -566,6 +566,36 @@
 	background: var(--background-modifier-hover);
 }
 
+/* Row drag-and-drop */
+.nb-row--drag-over {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: -2px;
+}
+
+.nb-row-drag-handle {
+	cursor: grab;
+	opacity: 0.4;
+	padding: 0 4px;
+	user-select: none;
+	font-size: 12px;
+	line-height: 1;
+}
+
+.nb-row-drag-handle:hover {
+	opacity: 0.8;
+}
+
+.nb-row-drag-handle:active {
+	cursor: grabbing;
+}
+
+.nb-td-inner--drag {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 0 4px;
+}
+
 .nb-td {
 	padding: 0;
 	border-right: 1px solid var(--background-modifier-border);

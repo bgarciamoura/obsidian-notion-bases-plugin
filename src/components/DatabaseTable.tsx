@@ -38,7 +38,7 @@ import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
-import { isMultiValueFilter, parseMultiValue, toggleMultiValue } from './filter-utils'
+import { applyManualOrder, isMultiValueFilter, parseMultiValue, toggleMultiValue } from './filter-utils'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconActions, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
 import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
@@ -89,9 +89,15 @@ interface VirtualTbodyProps {
 	onAddSubRow?: (parentTitle: string) => void
 	expandedSet?: Set<string>
 	allExpanded?: boolean
+	rowDragEnabled?: boolean
+	dragOverPath?: string | null
+	onRowDragStart?: (filePath: string) => void
+	onRowDragOver?: (filePath: string) => void
+	onRowDragEnd?: () => void
+	onRowDrop?: (filePath: string) => void
 }
 
-function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEditingCell, setContextMenuFile, longPressRef, columns, onAddRow, hierarchyMap, onToggleExpand, onAddSubRow, expandedSet, allExpanded }: VirtualTbodyProps) {
+function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEditingCell, setContextMenuFile, longPressRef, columns, onAddRow, hierarchyMap, onToggleExpand, onAddSubRow, expandedSet, allExpanded, rowDragEnabled, dragOverPath, onRowDragStart, onRowDragOver, onRowDragEnd, onRowDrop }: VirtualTbodyProps) {
 	const { startIdx, endIdx, topPad } = useVirtualScroll(scrollRef, rowHeight)
 	const visibleRows = rows.slice(startIdx, Math.min(rows.length, endIdx))
 	const bottomPad = Math.max(0, (rows.length - Math.min(rows.length, endIdx)) * rowHeight)
@@ -103,15 +109,20 @@ function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEdit
 			) : (
 				<>
 					{topPad > 0 && <tr style={{ height: topPad }} />}
-					{visibleRows.map(row => (
+					{visibleRows.map(row => {
+						const filePath = row.original._file.path
+						const isDragOver = dragOverPath === filePath
+						return (
 						<tr
 							key={row.id}
-							className="nb-row"
+							className={`nb-row${isDragOver ? ' nb-row--drag-over' : ''}`}
 							onClick={() => setEditingCell(null)}
 							onContextMenu={e => { e.preventDefault(); setContextMenuFile(row.original._file) }}
 							onTouchStart={isMobile ? () => { longPressRef.current = setTimeout(() => setContextMenuFile(row.original._file), 500) } : undefined}
 							onTouchMove={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
 							onTouchEnd={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+							onDragOver={rowDragEnabled ? e => { e.preventDefault(); onRowDragOver?.(filePath) } : undefined}
+							onDrop={rowDragEnabled ? e => { e.preventDefault(); onRowDrop?.(filePath) } : undefined}
 						>
 							{row.getVisibleCells().map(cell => {
 								const sticky = stickyMap.get(cell.column.id)
@@ -119,6 +130,7 @@ function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEdit
 								const isTitle = cell.column.id === '_title' && hRow
 								const depth = hRow?.depth ?? 0
 								const isExp = allExpanded ? !expandedSet?.has(row.original._file.path) : !!expandedSet?.has(row.original._file.path)
+								const isSelectCol = cell.column.id === '_select'
 								return (
 									<td
 										key={cell.id}
@@ -127,7 +139,21 @@ function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEdit
 										style={{ width: cell.column.getSize(), ...(sticky ? { left: sticky.left, zIndex: 1 } : {}) }}
 										onClick={e => e.stopPropagation()}
 									>
-										{isTitle ? (
+										{isSelectCol && rowDragEnabled ? (
+											<div className="nb-td-inner nb-td-inner--drag">
+												<span
+													className="nb-row-drag-handle"
+													draggable
+													onDragStart={e => {
+														e.dataTransfer.effectAllowed = 'move'
+														e.dataTransfer.setData('text/plain', filePath)
+														onRowDragStart?.(filePath)
+													}}
+													onDragEnd={() => onRowDragEnd?.()}
+												>⠿</span>
+												{flexRender(cell.column.columnDef.cell as never, cell.getContext() as never)}
+											</div>
+										) : isTitle ? (
 											<div className="nb-td-inner nb-hierarchy-cell" style={{ paddingLeft: depth * 20 }}>
 												{hRow.hasChildren ? (
 													<button className="nb-hierarchy-toggle" onClick={e => { e.stopPropagation(); onToggleExpand?.(row.original._file.path) }}>
@@ -147,7 +173,7 @@ function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEdit
 							})}
 							<td className="nb-td nb-td-empty" />
 						</tr>
-					))}
+					) })}
 					{bottomPad > 0 && <tr style={{ height: bottomPad }} />}
 				</>
 			)}
@@ -767,6 +793,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const searchInactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const [hierarchyExpandedSet, setHierarchyExpandedSet] = useState<Set<string>>(new Set())
 	const [hierarchyAllExpanded] = useState(true)
+	const [draggedRowPath, setDraggedRowPath] = useState<string | null>(null)
+	const [dragOverRowPath, setDragOverRowPath] = useState<string | null>(null)
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -1088,10 +1116,13 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		return buildHierarchyTree(filteredRows, hierarchyCol.id, activeView.sorts, hierarchyExpandedSet, hierarchyAllExpanded)
 	}, [filteredRows, hierarchyCol, activeView.sorts, hierarchyExpandedSet, hierarchyAllExpanded])
 
+	const hasManualOrder = !hierarchyCol && sorting.length === 0 && (activeView.rowOrder?.length ?? 0) > 0
+
 	const tableData = useMemo(() => {
 		if (hierarchicalRows) return hierarchicalRows.map(hr => hr.row)
+		if (hasManualOrder) return applyManualOrder(filteredRows, activeView.rowOrder)
 		return filteredRows
-	}, [hierarchicalRows, filteredRows])
+	}, [hierarchicalRows, filteredRows, hasManualOrder, activeView.rowOrder])
 
 	const hierarchyMap = useMemo(() => {
 		if (!hierarchicalRows) return null
@@ -1111,9 +1142,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		onRowSelectionChange: setRowSelection,
 		enableRowSelection: true,
 		getCoreRowModel: getCoreRowModel(),
-		getSortedRowModel: hierarchyCol ? undefined : getSortedRowModel(),
+		getSortedRowModel: (hierarchyCol || hasManualOrder) ? undefined : getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
-		manualSorting: !!hierarchyCol,
+		manualSorting: !!hierarchyCol || hasManualOrder,
 		meta: {
 			updateCell,
 			editingCell,
@@ -1121,6 +1152,41 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			schema: config.schema,
 		},
 	})
+
+	// ── Row drag-and-drop ───────────────────────────────────────────────────
+
+	const rowDragEnabled = !hierarchyCol && sorting.length === 0
+
+	const handleRowDragStart = useCallback((filePath: string) => {
+		setDraggedRowPath(filePath)
+	}, [])
+
+	const handleRowDragOver = useCallback((filePath: string) => {
+		setDragOverRowPath(filePath)
+	}, [])
+
+	const handleRowDragEnd = useCallback(() => {
+		setDraggedRowPath(null)
+		setDragOverRowPath(null)
+	}, [])
+
+	const handleRowDrop = useCallback((targetPath: string) => {
+		if (!draggedRowPath || draggedRowPath === targetPath) {
+			setDraggedRowPath(null)
+			setDragOverRowPath(null)
+			return
+		}
+		const currentOrder = tableData.map(r => r._file.path)
+		const fromIdx = currentOrder.indexOf(draggedRowPath)
+		const toIdx = currentOrder.indexOf(targetPath)
+		if (fromIdx === -1 || toIdx === -1) return
+		const newOrder = [...currentOrder]
+		const [moved] = newOrder.splice(fromIdx, 1)
+		newOrder.splice(toIdx, 0, moved)
+		void saveView({ ...activeView, rowOrder: newOrder })
+		setDraggedRowPath(null)
+		setDragOverRowPath(null)
+	}, [draggedRowPath, tableData, activeView, saveView])
 
 	// ── Adicionar linha ──────────────────────────────────────────────────────
 
@@ -2191,6 +2257,12 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						onAddSubRow={parentTitle => { void handleAddSubRow(parentTitle) }}
 						expandedSet={hierarchyExpandedSet}
 						allExpanded={hierarchyAllExpanded}
+						rowDragEnabled={rowDragEnabled}
+						dragOverPath={dragOverRowPath}
+						onRowDragStart={handleRowDragStart}
+						onRowDragOver={handleRowDragOver}
+						onRowDragEnd={handleRowDragEnd}
+						onRowDrop={handleRowDrop}
 					/>
 					<tfoot className="nb-tfoot">
 					<tr>

@@ -153,11 +153,16 @@ interface ListRowProps {
 	includeSubfolders: boolean
 	onOpen: (file: TFile) => void
 	onToggleExpand: (filePath: string) => void
+	isMobile: boolean
+	onLongPress: (file: TFile) => void
+	onContextMenu: (file: TFile) => void
+	longPressRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>
 }
 
 const ListRow = React.memo(function ListRow({
 	row, depth, hasChildren, isExpanded, isHierarchical, visibleCols,
 	dbFolderPath, includeSubfolders, onOpen, onToggleExpand,
+	isMobile, onLongPress, onContextMenu, longPressRef,
 }: ListRowProps) {
 	const fileFolder = row._file.parent?.path ?? ''
 	const relPath = includeSubfolders && fileFolder.length > dbFolderPath.length
@@ -168,6 +173,10 @@ const ListRow = React.memo(function ListRow({
 			className="nb-list-row"
 			style={isHierarchical ? { paddingLeft: `${depth * 20 + 12}px` } : undefined}
 			onClick={() => onOpen(row._file)}
+			onContextMenu={!isMobile ? e => { e.preventDefault(); onContextMenu(row._file) } : undefined}
+			onTouchStart={isMobile ? () => { longPressRef.current = setTimeout(() => onLongPress(row._file), 500) } : undefined}
+			onTouchMove={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+			onTouchEnd={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
 		>
 			{hasChildren && (
 				<button className="nb-hierarchy-toggle" onClick={e => { e.stopPropagation(); onToggleExpand(row._file.path) }}>
@@ -317,6 +326,10 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 	const isMobile = useIsMobile()
 	const dbFolderPath = dbFile?.parent?.path ?? ''
 	const openFile = useCallback((file: TFile) => { void app.workspace.getLeaf().openFile(file) }, [app])
+	const [contextMenuFile, setContextMenuFile] = useState<TFile | null>(null)
+	const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const handleLongPress = useCallback((file: TFile) => { setContextMenuFile(file) }, [])
+	const handleContextMenu = useCallback((file: TFile) => { setContextMenuFile(file) }, [])
 
 	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
 	if (loading) return <div className="nb-loading">{t('loading')}</div>
@@ -503,6 +516,10 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 							includeSubfolders={activeView.includeSubfolders ?? false}
 							onOpen={openFile}
 							onToggleExpand={toggleHExpand}
+							isMobile={isMobile}
+							onLongPress={handleLongPress}
+							onContextMenu={handleContextMenu}
+							longPressRef={longPressRef}
 						/>
 					)
 				})}
@@ -510,6 +527,20 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 					{'+ ' + t('add_entry')}
 				</button>
 			</div>
+
+			{/* Context menu (long-press mobile / right-click desktop) */}
+			<BottomSheet open={contextMenuFile !== null} onClose={() => setContextMenuFile(null)} title={contextMenuFile?.basename ?? ''}>
+				<button className="nb-menu-item" onClick={() => { if (contextMenuFile) { void app.workspace.getLeaf().openFile(contextMenuFile) } setContextMenuFile(null) }}>
+					<span className="nb-menu-item-icon">📄</span><span>{t('open_note')}</span>
+				</button>
+				<button className="nb-menu-item" onClick={() => { if (contextMenuFile) { void manager.duplicateNotes([contextMenuFile]) } setContextMenuFile(null) }}>
+					<span className="nb-menu-item-icon">📋</span><span>{t('duplicate_note')}</span>
+				</button>
+				<div className="nb-menu-separator" />
+				<button className="nb-menu-item nb-menu-item--danger" onClick={() => { if (contextMenuFile) { void manager.deleteNotes([contextMenuFile]) } setContextMenuFile(null) }}>
+					<span className="nb-menu-item-icon">🗑</span><span>{t('delete_note')}</span>
+				</button>
+			</BottomSheet>
 		</div>
 	)
 }

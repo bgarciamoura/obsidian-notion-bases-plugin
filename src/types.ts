@@ -121,6 +121,7 @@ export interface ViewConfig {
 	chartXAxis?: string
 	chartYAxis?: string
 	chartAggregation?: 'count' | 'sum' | 'avg' | 'min' | 'max'
+	rowOrder?: string[]
 }
 
 // ── Embed multi-view state (stored in hosting note frontmatter) ─────────────

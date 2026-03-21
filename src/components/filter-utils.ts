@@ -162,6 +162,16 @@ export function applyFilters(rows: NoteRow[], filters: ActiveFilter[]): NoteRow[
 	return rows.filter(row => groups.some(group => group.every(f => matchesFilter(row, f))))
 }
 
+export function applyManualOrder(rows: NoteRow[], order: string[] | undefined): NoteRow[] {
+	if (!order || order.length === 0) return rows
+	const pathToIdx = new Map(order.map((p, i) => [p, i]))
+	return [...rows].sort((a, b) => {
+		const ai = pathToIdx.get(a._file.path) ?? Infinity
+		const bi = pathToIdx.get(b._file.path) ?? Infinity
+		return ai - bi
+	})
+}
+
 export function applySorts(rows: NoteRow[], sorts: SortConfig[]): NoteRow[] {
 	if (sorts.length === 0) return rows
 	return [...rows].sort((a, b) => {
