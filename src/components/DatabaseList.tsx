@@ -14,6 +14,7 @@ import {
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
 import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
@@ -243,7 +244,8 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 
 	// ── Derived data ─────────────────────────────────────────────────────────
 
-	const filteredRows = useMemo(() => applyFilters(rows, activeFilters), [rows, activeFilters])
+	const debouncedFilters = useDebouncedValue(activeFilters, 200)
+	const filteredRows = useMemo(() => applyFilters(rows, debouncedFilters), [rows, debouncedFilters])
 	const displayRows = useMemo(() => applySorts(filteredRows, activeView.sorts), [filteredRows, activeView.sorts])
 
 	const hierarchicalRows: HierarchyRow[] | null = useMemo(() => {

@@ -13,6 +13,7 @@ import {
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { MobileToolbar, IconFields, IconFilter, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
 
@@ -173,7 +174,8 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 
 	// ── Derived data ─────────────────────────────────────────────────────────
 
-	const filteredRows = useMemo(() => applyFilters(rows, activeFilters), [rows, activeFilters])
+	const debouncedFilters = useDebouncedValue(activeFilters, 200)
+	const filteredRows = useMemo(() => applyFilters(rows, debouncedFilters), [rows, debouncedFilters])
 
 	const dateField = useMemo(
 		() => config.schema.find(c => c.id === activeView.calendarDateField) ?? null,

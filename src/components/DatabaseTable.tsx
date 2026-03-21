@@ -32,6 +32,7 @@ import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import { ColumnSchema, ColumnType, DatabaseConfig, FilterOperator, NoteRow, SortConfig, ViewConfig, AggregationType, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW } from '../types'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
@@ -737,6 +738,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const [sortAnchorRect, setSortAnchorRect] = useState<DOMRect | null>(null)
 	const sortButtonRef = useRef<HTMLButtonElement>(null)
 	const [globalFilter, setGlobalFilter] = useState('')
+	const debouncedGlobalFilter = useDebouncedValue(globalFilter, 200)
 	const [editingCell, setEditingCell] = useState<{ rowIndex: number; columnId: string } | null>(null)
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
@@ -1103,7 +1105,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const table = useReactTable({
 		data: tableData,
 		columns,
-		state: { sorting, globalFilter, rowSelection },
+		state: { sorting, globalFilter: debouncedGlobalFilter, rowSelection },
 		onSortingChange: setSorting,
 		onGlobalFilterChange: setGlobalFilter,
 		onRowSelectionChange: setRowSelection,
