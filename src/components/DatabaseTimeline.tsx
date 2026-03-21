@@ -3,7 +3,7 @@ import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } fr
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import {
-	FilterOperator, NoteRow, ViewConfig,
+	ColumnSchema, FilterOperator, NoteRow, ViewConfig,
 } from '../types'
 import {
 	ActiveFilter, applyFilters, applySorts,
@@ -126,6 +126,62 @@ function computeHeader(zoom: ZoomLevel, origin: Date, unitW: number, total: numb
 type TLItem =
 	| { kind: 'group'; label: string; color: string | undefined }
 	| { kind: 'row'; row: NoteRow; barLeft: number | null; barWidth: number | null }
+
+// ── TimelineBar (memoized) ───────────────────────────────────────────────────
+
+interface TimelineBarProps {
+	row: NoteRow
+	barLeft: number
+	barWidth: number
+	origBarLeft: number
+	origBarWidth: number
+	isMobile: boolean
+	visibleCols: ColumnSchema[]
+	dbFolderPath: string
+	includeSubfolders: boolean
+	startFieldId: string | null
+	endFieldId: string | null
+	onOpen: (file: TFile) => void
+	onContextMenu: (file: TFile) => void
+	onResizeStart: (filePath: string, handle: 'left' | 'right', startX: number, origBarLeft: number, origBarWidth: number, startFieldId: string | null, endFieldId: string | null) => void
+}
+
+const TimelineBar = React.memo(function TimelineBar({
+	row, barLeft, barWidth, isMobile, visibleCols, dbFolderPath, includeSubfolders,
+	origBarLeft, origBarWidth, startFieldId, endFieldId,
+	onOpen, onContextMenu, onResizeStart,
+}: TimelineBarProps) {
+	const fileFolder = row._file.parent?.path ?? ''
+	const relPath = includeSubfolders && fileFolder.length > dbFolderPath.length
+		? fileFolder.slice(dbFolderPath.length + 1) : ''
+
+	return (
+		<div className="nb-tl-bar"
+			style={{ left: barLeft, width: barWidth, top: (ROW_H - 22) / 2, height: 22 }}
+			onClick={() => { if (isMobile) { onContextMenu(row._file) } else { onOpen(row._file) } }}
+			onContextMenu={!isMobile ? e => { e.preventDefault(); onContextMenu(row._file) } : undefined}
+			title={!isMobile ? row._title : undefined}>
+			<div className="nb-tl-bar-handle nb-tl-bar-handle--left"
+				onMouseDown={e => {
+					e.stopPropagation(); e.preventDefault()
+					onResizeStart(row._file.path, 'left', e.clientX, origBarLeft, origBarWidth, startFieldId, endFieldId)
+				}} />
+			<span className="nb-tl-bar-title">{row._title}</span>
+			{relPath ? <span className="nb-folder-path" style={{ marginLeft: 4 }}>{relPath}</span> : null}
+			{visibleCols.map(col => {
+				const val = row[col.id]
+				if (!val || String(val as string | number | boolean).trim() === '') return null
+				const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+				return <span key={col.id} className="nb-tl-bar-field"> · {display}</span>
+			})}
+			<div className="nb-tl-bar-handle nb-tl-bar-handle--right"
+				onMouseDown={e => {
+					e.stopPropagation(); e.preventDefault()
+					onResizeStart(row._file.path, 'right', e.clientX, origBarLeft, origBarWidth, startFieldId, endFieldId)
+				}} />
+		</div>
+	)
+})
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -339,6 +395,13 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 	// ── Render ────────────────────────────────────────────────────────────────
 
 	const isMobile = useIsMobile()
+	const dbFolderPath = dbFile?.parent?.path ?? ''
+	const openFile = useCallback((file: TFile) => { void app.workspace.getLeaf().openFile(file) }, [app])
+	const handleBarContextMenu = useCallback((file: TFile) => { setContextMenuFile(file) }, [])
+	const handleResizeStart = useCallback((filePath: string, handle: 'left' | 'right', startX: number, origBarLeft: number, origBarWidth: number, sFieldId: string | null, eFieldId: string | null) => {
+		setResizing({ filePath, handle, startX, origBarLeft, origBarWidth, startFieldId: sFieldId, endFieldId: eFieldId })
+		setResizeDelta(0)
+	}, [])
 
 	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
 	if (loading)  return <div className="nb-loading">{t('loading')}</div>
@@ -674,45 +737,24 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 											}
 											bWidth = Math.max(8, bWidth)
 											return (
-												<div className="nb-tl-bar"
-													style={{ left: bLeft, width: bWidth, top: (ROW_H - 22) / 2, height: 22 }}
-													onClick={() => { if (justResized.current) return; if (isMobile) { setContextMenuFile(item.row._file) } else { void app.workspace.getLeaf().openFile(item.row._file) } }}
-													onContextMenu={!isMobile ? e => { e.preventDefault(); setContextMenuFile(item.row._file) } : undefined}
-													title={!isMobile ? item.row._title : undefined}>
-													<div className="nb-tl-bar-handle nb-tl-bar-handle--left"
-														onMouseDown={e => {
-															e.stopPropagation(); e.preventDefault()
-															setResizing({ filePath: item.row._file.path, handle: 'left', startX: e.clientX,
-																origBarLeft: item.barLeft!, origBarWidth: item.barWidth!,
-																startFieldId: startField?.id ?? null, endFieldId: endField?.id ?? null })
-															setResizeDelta(0)
-														}} />
-													<span className="nb-tl-bar-title">{item.row._title}</span>
-													{(() => {
-														const dbFolder = dbFile?.parent?.path ?? ''
-														const fileFolder = item.row._file.parent?.path ?? ''
-														const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
-															? fileFolder.slice(dbFolder.length + 1) : ''
-														return relPath ? <span className="nb-folder-path" style={{ marginLeft: 4 }}>{relPath}</span> : null
-													})()}
-													{visibleCols.map(col => {
-														const val = item.row[col.id]
-														if (!val || String(val as string | number | boolean).trim() === '') return null
-														const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
-														return <span key={col.id} className="nb-tl-bar-field"> · {display}</span>
-													})}
-													<div className="nb-tl-bar-handle nb-tl-bar-handle--right"
-														onMouseDown={e => {
-															e.stopPropagation(); e.preventDefault()
-															setResizing({ filePath: item.row._file.path, handle: 'right', startX: e.clientX,
-																origBarLeft: item.barLeft!, origBarWidth: item.barWidth!,
-																startFieldId: startField?.id ?? null, endFieldId: endField?.id ?? null })
-															setResizeDelta(0)
-														}} />
-												</div>
+												<TimelineBar
+													row={item.row}
+													barLeft={bLeft}
+													barWidth={bWidth}
+													origBarLeft={item.barLeft}
+													origBarWidth={item.barWidth}
+													isMobile={isMobile}
+													visibleCols={visibleCols}
+													dbFolderPath={dbFolderPath}
+													includeSubfolders={activeView.includeSubfolders ?? false}
+													startFieldId={startField?.id ?? null}
+													endFieldId={endField?.id ?? null}
+													onOpen={openFile}
+													onContextMenu={handleBarContextMenu}
+													onResizeStart={handleResizeStart}
+												/>
 											)
-										})()
-										}
+										})()}
 									</div>
 								))}
 							</div>

@@ -126,7 +126,7 @@ function LinkCell({ value, href, isEditing, inputType, onStartEdit, onCommit, on
 	)
 }
 
-export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps) {
+export const CellRenderer = React.memo(function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps) {
 	const { editingCell, setEditingCell, updateCell, relationOptions } = useCellContext()
 	const app = useApp()
 	const isEditing = editingCell?.rowIndex === rowIndex && editingCell?.columnId === columnId
@@ -330,7 +330,7 @@ export function CellRenderer({ col, value, rowIndex, columnId, file }: CellProps
 		default:
 			return <span className="nb-cell-text">{String((value as string | number | boolean | null | undefined) ?? '')}</span>
 	}
-}
+})
 
 // ── TextCell ─────────────────────────────────────────────────────────────────
 

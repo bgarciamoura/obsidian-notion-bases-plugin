@@ -3,7 +3,7 @@ import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } fr
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import {
-	FilterOperator, SelectOption, ViewConfig,
+	ColumnSchema, FilterOperator, NoteRow, SelectOption, ViewConfig,
 } from '../types'
 import {
 	ActiveFilter, applyFilters, applySorts,
@@ -62,6 +62,59 @@ function LazyCard({ children }: { children: React.ReactNode }) {
 
 	return <div ref={ref}>{children}</div>
 }
+
+interface BoardCardProps {
+	row: NoteRow
+	isMobile: boolean
+	visibleCols: ColumnSchema[]
+	dbFolderPath: string
+	includeSubfolders: boolean
+	onOpen: (file: TFile) => void
+	onDragStart?: (e: React.DragEvent, filePath: string) => void
+	onTouchStart?: (e: React.TouchEvent, file: TFile) => void
+	onContextMenu?: (e: React.MouseEvent, file: TFile) => void
+}
+
+const BoardCard = React.memo(function BoardCard({
+	row, isMobile, visibleCols, dbFolderPath, includeSubfolders,
+	onOpen, onDragStart, onTouchStart, onContextMenu,
+}: BoardCardProps) {
+	const fileFolder = row._file.parent?.path ?? ''
+	const relPath = includeSubfolders && fileFolder.length > dbFolderPath.length
+		? fileFolder.slice(dbFolderPath.length + 1) : ''
+
+	return (
+		<div
+			className="nb-board-card"
+			draggable={!isMobile}
+			onDragStart={!isMobile ? e => {
+				e.stopPropagation()
+				onDragStart?.(e, row._file.path)
+			} : undefined}
+			onTouchStart={isMobile ? e => onTouchStart?.(e, row._file) : undefined}
+			onContextMenu={!isMobile ? e => { e.preventDefault(); onContextMenu?.(e, row._file) } : undefined}
+			onClick={() => onOpen(row._file)}
+		>
+			<div className="nb-board-card-title">{row._title}</div>
+			{relPath ? <div className="nb-folder-path">{relPath}</div> : null}
+			{visibleCols.length > 0 && (
+				<div className="nb-board-card-props">
+					{visibleCols.map(c => {
+						const val = row[c.id]
+						if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
+						const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+						return (
+							<span key={c.id} className="nb-board-card-prop">
+								<span className="nb-board-card-prop-name">{c.name}:</span>
+								<span className="nb-board-card-prop-value">{display}</span>
+							</span>
+						)
+					})}
+				</div>
+			)}
+		</div>
+	)
+})
 
 export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: DatabaseBoardProps) {
 	const app = useApp()
@@ -435,6 +488,16 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 
 	const isMobile = useIsMobile()
 
+	const dbFolderPath = dbFile?.parent?.path ?? ''
+	const openFile = useCallback((file: TFile) => { void app.workspace.getLeaf().openFile(file) }, [app])
+	const handleCardDragStart = useCallback((e: React.DragEvent, filePath: string) => {
+		e.dataTransfer.effectAllowed = 'move'
+		e.dataTransfer.setData('nb-drag-type', DRAG_TYPE_CARD)
+		e.dataTransfer.setData('nb-row-path', filePath)
+		e.dataTransfer.setData(DRAG_TYPE_CARD, '')
+	}, [])
+	const handleCardContextMenu = useCallback((_e: React.MouseEvent, file: TFile) => { setContextMenuFile(file) }, [])
+
 	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
 	if (loading) return <div className="nb-loading">{t('loading')}</div>
 
@@ -762,52 +825,25 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 										: col.rows
 									const hiddenCount = col.rows.length - visibleRows.length
 									return <>
-										{visibleRows.map((row, idx) => {
+										{visibleRows.map((row) => {
 											const shouldVirtualize = visibleRows.length >= VIRTUALIZATION_THRESHOLD
-											const cardContent = (
-												<div
+											const card = (
+												<BoardCard
 													key={row._file.path}
-													className="nb-board-card"
-													draggable={!isMobile}
-													onDragStart={!isMobile ? e => {
-														e.stopPropagation()
-														e.dataTransfer.effectAllowed = 'move'
-														e.dataTransfer.setData('nb-drag-type', DRAG_TYPE_CARD)
-														e.dataTransfer.setData('nb-row-path', row._file.path)
-														e.dataTransfer.setData(DRAG_TYPE_CARD, '')
-													} : undefined}
-													onTouchStart={isMobile ? e => handleCardTouchStart(e, row._file) : undefined}
-													onContextMenu={!isMobile ? e => { e.preventDefault(); setContextMenuFile(row._file) } : undefined}
-													onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
-												>
-													<div className="nb-board-card-title">{row._title}</div>
-													{(() => {
-														const dbFolder = dbFile?.parent?.path ?? ''
-														const fileFolder = row._file.parent?.path ?? ''
-														const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
-															? fileFolder.slice(dbFolder.length + 1) : ''
-														return relPath ? <div className="nb-folder-path">{relPath}</div> : null
-													})()}
-													{visibleCols.length > 0 && (
-														<div className="nb-board-card-props">
-															{visibleCols.map(c => {
-																const val = row[c.id]
-																if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
-																const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
-																return (
-																	<span key={c.id} className="nb-board-card-prop">
-																		<span className="nb-board-card-prop-name">{c.name}:</span>
-																		<span className="nb-board-card-prop-value">{display}</span>
-																	</span>
-																)
-															})}
-														</div>
-													)}
-												</div>
+													row={row}
+													isMobile={isMobile}
+													visibleCols={visibleCols}
+													dbFolderPath={dbFolderPath}
+													includeSubfolders={activeView.includeSubfolders ?? false}
+													onOpen={openFile}
+													onDragStart={handleCardDragStart}
+													onTouchStart={handleCardTouchStart}
+													onContextMenu={handleCardContextMenu}
+												/>
 											)
 											return shouldVirtualize
-												? <LazyCard key={row._file.path}>{cardContent}</LazyCard>
-												: <Fragment key={row._file.path}>{cardContent}</Fragment>
+												? <LazyCard key={row._file.path}>{card}</LazyCard>
+												: <Fragment key={row._file.path}>{card}</Fragment>
 										})}
 										{hiddenCount > 0 && (
 											<button

@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import {
-	ColumnSchema, FilterOperator, SortConfig, ViewConfig,
+	ColumnSchema, FilterOperator, NoteRow, SortConfig, ViewConfig,
 } from '../types'
 import {
 	ActiveFilter, applyFilters, applySorts,
@@ -99,6 +99,73 @@ function GallerySortPanel({ sorts, schema, onSortChange, onClose, anchorRect, pa
 }
 
 // ── Main component ──────────────────────────────────────────────────────────
+
+interface GalleryCardProps {
+	row: NoteRow
+	cardSize: string
+	coverField: ColumnSchema | null
+	visibleCols: ColumnSchema[]
+	dbFolderPath: string
+	includeSubfolders: boolean
+	onOpen: (file: TFile) => void
+}
+
+const GalleryCard = React.memo(function GalleryCard({
+	row, cardSize, coverField, visibleCols, dbFolderPath, includeSubfolders, onOpen,
+}: GalleryCardProps) {
+	const app = useApp()
+
+	const coverImagePath = coverField?.type === 'image' ? ((row as Record<string, unknown>)[coverField.id] as string | null) ?? null : null
+	const coverImageFile = coverImagePath ? app.vault.getFileByPath(coverImagePath) : null
+	const coverImageUrl = coverImageFile ? app.vault.getResourcePath(coverImageFile) : null
+	const coverTextValue = coverField && coverField.type !== 'image'
+		? (coverField.type === 'title' ? row._title : String(((row as Record<string, unknown>)[coverField.id] as string | number | boolean | null | undefined) ?? ''))
+		: null
+
+	const fileFolder = row._file.parent?.path ?? ''
+	const relPath = includeSubfolders && fileFolder.length > dbFolderPath.length
+		? fileFolder.slice(dbFolderPath.length + 1) : ''
+
+	return (
+		<div
+			className={`nb-gallery-card nb-gallery-card--${cardSize}`}
+			onClick={() => onOpen(row._file)}
+		>
+			{coverImageUrl ? (
+				<div className="nb-gallery-cover nb-gallery-cover--image">
+					<img src={coverImageUrl} alt="" />
+				</div>
+			) : coverTextValue ? (
+				<div className="nb-gallery-cover nb-gallery-cover--text">
+					<span>{coverTextValue}</span>
+				</div>
+			) : (
+				<div className="nb-gallery-cover nb-gallery-cover--empty">
+					<span className="nb-gallery-cover-icon">📄</span>
+				</div>
+			)}
+			<div className="nb-gallery-body">
+				<div className="nb-gallery-title">{row._title}</div>
+				{relPath ? <div className="nb-folder-path">{relPath}</div> : null}
+				{visibleCols.length > 0 && (
+					<div className="nb-gallery-props">
+						{visibleCols.map(col => {
+							const val = row[col.id]
+							if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
+							const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+							return (
+								<span key={col.id} className="nb-gallery-prop">
+									<span className="nb-gallery-prop-name">{col.name}:</span>
+									<span className="nb-gallery-prop-value">{display}</span>
+								</span>
+							)
+						})}
+					</div>
+				)}
+			</div>
+		</div>
+	)
+})
 
 export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }: DatabaseGalleryProps) {
 	const app = useApp()
@@ -226,6 +293,8 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 	// ── Render ───────────────────────────────────────────────────────────────
 
 	const isMobile = useIsMobile()
+	const dbFolderPath = dbFile?.parent?.path ?? ''
+	const openFile = useCallback((file: TFile) => { void app.workspace.getLeaf().openFile(file) }, [app])
 
 	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
 	if (loading) return <div className="nb-loading">{t('loading')}</div>
@@ -511,64 +580,18 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 
 			{/* Gallery grid */}
 			<div className="nb-gallery" style={{ gridTemplateColumns: gridTemplate }}>
-				{displayRows.map(row => {
-					const coverImagePath = coverField?.type === 'image' ? ((row as Record<string, unknown>)[coverField.id] as string | null) ?? null : null
-					const coverImageFile = coverImagePath ? app.vault.getFileByPath(coverImagePath) : null
-					const coverImageUrl = coverImageFile ? app.vault.getResourcePath(coverImageFile) : null
-					const coverTextValue = coverField && coverField.type !== 'image'
-						? (coverField.type === 'title' ? row._title : String(((row as Record<string, unknown>)[coverField.id] as string | number | boolean | null | undefined) ?? ''))
-						: null
-
-					return (
-						<div
-							key={row._file.path}
-							className={`nb-gallery-card nb-gallery-card--${cardSize}`}
-							onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
-						>
-							{/* Cover */}
-							{coverImageUrl ? (
-								<div className="nb-gallery-cover nb-gallery-cover--image">
-									<img src={coverImageUrl} alt="" />
-								</div>
-							) : coverTextValue ? (
-								<div className="nb-gallery-cover nb-gallery-cover--text">
-									<span>{coverTextValue}</span>
-								</div>
-							) : (
-								<div className="nb-gallery-cover nb-gallery-cover--empty">
-									<span className="nb-gallery-cover-icon">📄</span>
-								</div>
-							)}
-
-							{/* Body */}
-							<div className="nb-gallery-body">
-								<div className="nb-gallery-title">{row._title}</div>
-								{(() => {
-									const dbFolder = dbFile?.parent?.path ?? ''
-									const fileFolder = row._file.parent?.path ?? ''
-									const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
-										? fileFolder.slice(dbFolder.length + 1) : ''
-									return relPath ? <div className="nb-folder-path">{relPath}</div> : null
-								})()}
-								{visibleCols.length > 0 && (
-									<div className="nb-gallery-props">
-										{visibleCols.map(col => {
-											const val = row[col.id]
-											if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
-											const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
-											return (
-												<span key={col.id} className="nb-gallery-prop">
-													<span className="nb-gallery-prop-name">{col.name}:</span>
-													<span className="nb-gallery-prop-value">{display}</span>
-												</span>
-											)
-										})}
-									</div>
-								)}
-							</div>
-						</div>
-					)
-				})}
+				{displayRows.map(row => (
+					<GalleryCard
+						key={row._file.path}
+						row={row}
+						cardSize={cardSize}
+						coverField={coverField}
+						visibleCols={visibleCols}
+						dbFolderPath={dbFolderPath}
+						includeSubfolders={activeView.includeSubfolders ?? false}
+						onOpen={openFile}
+					/>
+				))}
 
 				{/* Add card */}
 				<div className="nb-gallery-card nb-gallery-card--add" onClick={() => { void handleAddRow() }}>

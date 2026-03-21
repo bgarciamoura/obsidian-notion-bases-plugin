@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import {
-	ColumnSchema, FilterOperator, SortConfig, ViewConfig,
+	ColumnSchema, FilterOperator, NoteRow, SortConfig, ViewConfig,
 } from '../types'
 import {
 	ActiveFilter, applyFilters, applySorts,
@@ -142,6 +142,60 @@ function FilterPill({ filter, onUpdate, onRemove, onToggleConjunction, showConju
 
 // ── Main component ──────────────────────────────────────────────────────────
 
+interface ListRowProps {
+	row: NoteRow
+	depth: number
+	hasChildren: boolean
+	isExpanded: boolean
+	isHierarchical: boolean
+	visibleCols: ColumnSchema[]
+	dbFolderPath: string
+	includeSubfolders: boolean
+	onOpen: (file: TFile) => void
+	onToggleExpand: (filePath: string) => void
+}
+
+const ListRow = React.memo(function ListRow({
+	row, depth, hasChildren, isExpanded, isHierarchical, visibleCols,
+	dbFolderPath, includeSubfolders, onOpen, onToggleExpand,
+}: ListRowProps) {
+	const fileFolder = row._file.parent?.path ?? ''
+	const relPath = includeSubfolders && fileFolder.length > dbFolderPath.length
+		? fileFolder.slice(dbFolderPath.length + 1) : ''
+
+	return (
+		<div
+			className="nb-list-row"
+			style={isHierarchical ? { paddingLeft: `${depth * 20 + 12}px` } : undefined}
+			onClick={() => onOpen(row._file)}
+		>
+			{hasChildren && (
+				<button className="nb-hierarchy-toggle" onClick={e => { e.stopPropagation(); onToggleExpand(row._file.path) }}>
+					{isExpanded ? '▼' : '▶'}
+				</button>
+			)}
+			<span className="nb-list-row-icon">📄</span>
+			<span className="nb-list-row-title">{row._title}</span>
+			{relPath ? <span className="nb-folder-path" style={{ marginLeft: 4 }}>{relPath}</span> : null}
+			{visibleCols.length > 0 && (
+				<div className="nb-list-row-props">
+					{visibleCols.map(col => {
+						const val = row[col.id]
+						if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
+						const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+						return (
+							<span key={col.id} className="nb-list-prop">
+								<span className="nb-list-prop-name">{col.name}:</span>
+								<span className="nb-list-prop-value">{display}</span>
+							</span>
+						)
+					})}
+				</div>
+			)}
+		</div>
+	)
+})
+
 export function DatabaseList({ dbFile, manager, externalView, onViewChange }: DatabaseListProps) {
 	const app = useApp()
 	const { rows, config, loading, activeFilters, setActiveFilters } = useDatabaseRows({
@@ -261,6 +315,8 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 	// ── Render ───────────────────────────────────────────────────────────────
 
 	const isMobile = useIsMobile()
+	const dbFolderPath = dbFile?.parent?.path ?? ''
+	const openFile = useCallback((file: TFile) => { void app.workspace.getLeaf().openFile(file) }, [app])
 
 	if (!dbFile) return <div className="nb-empty-state"><p>{t('no_database_open')}</p></div>
 	if (loading) return <div className="nb-loading">{t('loading')}</div>
@@ -435,43 +491,21 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 				{(hierarchicalRows ?? displayRows.map(r => ({ row: r, depth: 0, hasChildren: false, parentTitle: null }))).map(({ row, depth, hasChildren }) => {
 					const isExp = hAllExpanded ? !hExpandedSet.has(row._file.path) : hExpandedSet.has(row._file.path)
 					return (
-					<div
-						key={row._file.path}
-						className="nb-list-row"
-						style={hierarchicalRows ? { paddingLeft: `${depth * 20 + 12}px` } : undefined}
-						onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
-					>
-						{hasChildren && (
-							<button className="nb-hierarchy-toggle" onClick={e => { e.stopPropagation(); toggleHExpand(row._file.path) }}>
-								{isExp ? '▼' : '▶'}
-							</button>
-						)}
-						<span className="nb-list-row-icon">📄</span>
-						<span className="nb-list-row-title">{row._title}</span>
-						{(() => {
-							const dbFolder = dbFile?.parent?.path ?? ''
-							const fileFolder = row._file.parent?.path ?? ''
-							const relPath = activeView.includeSubfolders && fileFolder.length > dbFolder.length
-								? fileFolder.slice(dbFolder.length + 1) : ''
-							return relPath ? <span className="nb-folder-path" style={{ marginLeft: 4 }}>{relPath}</span> : null
-						})()}
-						{visibleCols.length > 0 && (
-							<div className="nb-list-row-props">
-								{visibleCols.map(col => {
-									const val = row[col.id]
-									if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
-									const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
-									return (
-										<span key={col.id} className="nb-list-prop">
-											<span className="nb-list-prop-name">{col.name}:</span>
-											<span className="nb-list-prop-value">{display}</span>
-										</span>
-									)
-								})}
-							</div>
-						)}
-					</div>
-				) })}
+						<ListRow
+							key={row._file.path}
+							row={row}
+							depth={depth}
+							hasChildren={hasChildren}
+							isExpanded={isExp}
+							isHierarchical={hierarchicalRows !== null}
+							visibleCols={visibleCols}
+							dbFolderPath={dbFolderPath}
+							includeSubfolders={activeView.includeSubfolders ?? false}
+							onOpen={openFile}
+							onToggleExpand={toggleHExpand}
+						/>
+					)
+				})}
 				<button className="nb-add-row nb-list-add-row" onClick={() => { void handleAddRow() }}>
 					{'+ ' + t('add_entry')}
 				</button>
