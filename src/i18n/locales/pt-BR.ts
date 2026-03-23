@@ -454,6 +454,9 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	picker_placeholder: 'Selecionar banco de dados...',
 	picker_root: '/ (Raiz)',
 	view_fallback_name: 'Banco de dados',
+	saving: 'Salvando',
+	saved: 'Salvo',
+	save_error: 'Erro ao salvar',
 }
 
 export default ptBR

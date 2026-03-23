@@ -16,6 +16,8 @@ import { useDatabaseRows } from '../hooks/useDatabaseRows'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
+import { SaveIndicator } from './SaveIndicator'
+import { useSaveTracker } from '../hooks/useSaveTracker'
 
 interface DatabaseBoardProps {
 	dbFile: TFile | null
@@ -118,6 +120,7 @@ const BoardCard = React.memo(function BoardCard({
 
 export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: DatabaseBoardProps) {
 	const app = useApp()
+	const { status: saveStatus, trackSave } = useSaveTracker()
 	const { rows, config, loading, activeFilters, setActiveFilters } = useDatabaseRows({
 		app, dbFile, manager, includeSubfolders: externalView.includeSubfolders, externalView,
 	})
@@ -253,14 +256,14 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		if (!dbFile || !groupByCol) return
 		const file = app.vault.getFileByPath(rowPath)
 		if (!file) return
-		await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+		await trackSave(app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
 			if (targetValue === '') {
 				delete fm[groupByCol.id]
 			} else {
 				fm[groupByCol.id] = targetValue
 			}
-		})
-	}, [app, dbFile, groupByCol])
+		}))
+	}, [app, dbFile, groupByCol, trackSave])
 
 	const moveColumn = useCallback(async (fromValue: string, toValue: string) => {
 		if (fromValue === toValue) return
@@ -458,11 +461,11 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		if (!dbFile || !groupByCol) return
 		const newFile = await manager.createNote(dbFile)
 		if (columnValue !== '') {
-			await app.fileManager.processFrontMatter(newFile, (fm: Record<string, unknown>) => {
+			await trackSave(app.fileManager.processFrontMatter(newFile, (fm: Record<string, unknown>) => {
 				fm[groupByCol.id] = columnValue
-			})
+			}))
 		}
-	}, [app, dbFile, manager, groupByCol])
+	}, [app, dbFile, manager, groupByCol, trackSave])
 
 	const saveActivePills = useCallback(async (filters: ActiveFilter[]) => {
 		const pills = filters.map(f => ({ id: f.id, columnId: f.columnId, operator: f.operator, value: f.value, conjunction: f.conjunction }))
@@ -646,6 +649,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 
 				{/* Row count */}
 				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}</span>
+				<SaveIndicator status={saveStatus} />
 
 				{/* Filtros */}
 				<div className="nb-fields-menu-wrapper" ref={filterMenuRef} style={{ marginLeft: 'auto' }}>

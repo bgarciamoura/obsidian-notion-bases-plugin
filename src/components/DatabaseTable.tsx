@@ -41,6 +41,8 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import { applyManualOrder, isMultiValueFilter, parseMultiValue, toggleMultiValue } from './filter-utils'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconActions, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
+import { SaveIndicator } from './SaveIndicator'
+import { useSaveTracker } from '../hooks/useSaveTracker'
 import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
 
 // ── Virtual row rendering (separate component to isolate hooks) ──────────
@@ -722,6 +724,7 @@ function AggDropdown({ colType, current, onSelect, anchorEl }: {
 
 export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: DatabaseTableProps) {
 	const app = useApp()
+	const { status: saveStatus, trackSave } = useSaveTracker()
 	const lastCreatedPath = useRef<string | null>(null)
 	const [relationOptions, setRelationOptions] = useState<Map<string, string[]>>(new Map())
 	const [pinnedColumnId, setPinnedColumnId] = useState<string | null>(null)
@@ -851,21 +854,24 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			r._file.path === row._file.path ? { ...r, [columnId]: value } : r
 		))
 
-		if (columnId === '_title') {
-			await manager.renameNote(row._file, String(value))
-		} else {
-			await manager.updateNoteField(row._file, columnId, value, row._inlineFields)
+		const saveOp = async () => {
+			if (columnId === '_title') {
+				await manager.renameNote(row._file, String(value))
+			} else {
+				await manager.updateNoteField(row._file, columnId, value, row._inlineFields)
 
-			// Two-way relation sync
-			const col = config.schema.find(c => c.id === columnId)
-			if (col?.type === 'relation' && col.pairedColumnId) {
-				const oldRaw: unknown = row[columnId]
-				const oldValues: string[] = Array.isArray(oldRaw) ? oldRaw.map((v: unknown) => `${v as string}`) : (typeof oldRaw === 'string' && oldRaw !== '' ? [oldRaw] : [])
-				const newValues: string[] = Array.isArray(value) ? (value as unknown[]).map((v: unknown) => `${v as string}`) : (typeof value === 'string' && value !== '' ? [value] : [])
-				await manager.syncTwoWayRelation(row._file, col, oldValues, newValues)
+				// Two-way relation sync
+				const col = config.schema.find(c => c.id === columnId)
+				if (col?.type === 'relation' && col.pairedColumnId) {
+					const oldRaw: unknown = row[columnId]
+					const oldValues: string[] = Array.isArray(oldRaw) ? oldRaw.map((v: unknown) => `${v as string}`) : (typeof oldRaw === 'string' && oldRaw !== '' ? [oldRaw] : [])
+					const newValues: string[] = Array.isArray(value) ? (value as unknown[]).map((v: unknown) => `${v as string}`) : (typeof value === 'string' && value !== '' ? [value] : [])
+					await manager.syncTwoWayRelation(row._file, col, oldValues, newValues)
+				}
 			}
 		}
-	}, [manager, config.schema])
+		await trackSave(saveOp())
+	}, [manager, config.schema, trackSave])
 
 	// ── Atualizar schema (salva no _database.md) ─────────────────────────────
 
@@ -1938,6 +1944,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 <span className="nb-row-count">
 					{tableRows.length} {tableRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}
 				</span>
+				<SaveIndicator status={saveStatus} />
 
 				{/* Botão Filtros */}
 				<div className="nb-fields-menu-wrapper" ref={filterMenuRef} style={{ marginLeft: 'auto' }}>

@@ -16,6 +16,8 @@ import { useDatabaseRows } from '../hooks/useDatabaseRows'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
+import { SaveIndicator } from './SaveIndicator'
+import { useSaveTracker } from '../hooks/useSaveTracker'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -194,6 +196,7 @@ interface DatabaseTimelineProps {
 
 export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }: DatabaseTimelineProps) {
 	const app   = useApp()
+	const { status: saveStatus, trackSave } = useSaveTracker()
 	const today = useMemo(() => new Date(), [])
 
 	const { rows, config, loading, activeFilters, setActiveFilters } = useDatabaseRows({
@@ -277,10 +280,10 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 			const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 			const file = app.vault.getAbstractFileByPath(filePath) as TFile | null
 			if (!file) return
-			await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+			await trackSave(app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
 				if (handle === 'left'  && startFieldId) fm[startFieldId] = fmt(px2date(newLeft,                    zoom, origin, unitW))
 				if (handle === 'right' && endFieldId)   fm[endFieldId]   = fmt(px2date(newLeft + newWidth - unitW, zoom, origin, unitW))
-			})
+			}))
 		}
 		document.body.classList.add('nb-tl-resizing')
 		const voidOnUp = (e: MouseEvent) => { void onUp(e) }
@@ -611,6 +614,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 				</button>
 
 				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}</span>
+				<SaveIndicator status={saveStatus} />
 
 				{/* Filtros */}
 				<div className="nb-fields-menu-wrapper" ref={filterMenuRef} style={{ marginLeft: 'auto' }}>

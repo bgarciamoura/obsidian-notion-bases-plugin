@@ -16,6 +16,8 @@ import { useDatabaseRows } from '../hooks/useDatabaseRows'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { MobileToolbar, IconFields, IconFilter, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
+import { SaveIndicator } from './SaveIndicator'
+import { useSaveTracker } from '../hooks/useSaveTracker'
 
 interface DatabaseCalendarProps {
 	dbFile: TFile | null
@@ -104,6 +106,7 @@ function parseDateValue(val: unknown): { year: number; month: number; day: numbe
 
 export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }: DatabaseCalendarProps) {
 	const app = useApp()
+	const { status: saveStatus, trackSave } = useSaveTracker()
 	const today = new Date()
 	const { rows, config, loading, activeFilters, setActiveFilters } = useDatabaseRows({
 		app, dbFile, manager, includeSubfolders: externalView.includeSubfolders, externalView,
@@ -323,7 +326,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		if (!dbFile || !dateField) return
 		const newFile = await manager.createNote(dbFile)
 		const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-		await app.fileManager.processFrontMatter(newFile, (fm: Record<string, unknown>) => { fm[dateField.id] = dateStr })
+		await trackSave(app.fileManager.processFrontMatter(newFile, (fm: Record<string, unknown>) => { fm[dateField.id] = dateStr }))
 	}
 
 	const handleCardDragStart = (e: React.DragEvent, row: NoteRow) => {
@@ -352,14 +355,14 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		const file = app.vault.getFileByPath(path)
 		if (!file) return
 		const datePart = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-		await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+		await trackSave(app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
 			const existing = fm[dateField.id]
 			if (typeof existing === 'string' && existing.includes('T')) {
 				fm[dateField.id] = `${datePart}T${existing.split('T')[1]}`
 			} else {
 				fm[dateField.id] = datePart
 			}
-		})
+		}))
 	}
 
 	// ── Render ────────────────────────────────────────────────────────────────
@@ -535,6 +538,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 				</button>
 
 				<span className="nb-row-count">{filteredRows.length} {filteredRows.length === 1 ? t('item_singular').toLowerCase() : t('item_plural').toLowerCase()}</span>
+				<SaveIndicator status={saveStatus} />
 
 				{/* Filtros */}
 				<div className="nb-fields-menu-wrapper" ref={filterMenuRef} style={{ marginLeft: 'auto' }}>

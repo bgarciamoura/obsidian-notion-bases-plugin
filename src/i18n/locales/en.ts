@@ -452,6 +452,9 @@ const en = {
 	picker_placeholder: 'Select database...',
 	picker_root: '/ (root)',
 	view_fallback_name: 'Database',
+	saving: 'Saving',
+	saved: 'Saved',
+	save_error: 'Save error',
 } as const
 
 export default en

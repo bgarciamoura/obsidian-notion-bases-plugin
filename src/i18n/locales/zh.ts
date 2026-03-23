@@ -454,6 +454,9 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	picker_placeholder: '选择数据库...',
 	picker_root: '/（根目录）',
 	view_fallback_name: '数据库',
+	saving: '保存中',
+	saved: '已保存',
+	save_error: '保存失败',
 }
 
 export default zh

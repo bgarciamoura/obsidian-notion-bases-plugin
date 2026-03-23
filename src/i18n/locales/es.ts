@@ -454,6 +454,9 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	picker_placeholder: 'Seleccionar base de datos...',
 	picker_root: '/ (Raíz)',
 	view_fallback_name: 'Base de datos',
+	saving: 'Guardando',
+	saved: 'Guardado',
+	save_error: 'Error al guardar',
 }
 
 export default es

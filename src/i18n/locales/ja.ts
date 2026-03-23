@@ -454,6 +454,9 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	picker_placeholder: 'データベースを選択...',
 	picker_root: '/（ルート）',
 	view_fallback_name: 'データベース',
+	saving: '保存中',
+	saved: '保存済み',
+	save_error: '保存エラー',
 }
 
 export default ja

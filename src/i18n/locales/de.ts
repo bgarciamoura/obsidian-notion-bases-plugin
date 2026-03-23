@@ -454,6 +454,9 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	picker_placeholder: 'Datenbank auswählen...',
 	picker_root: '/ (Stammverzeichnis)',
 	view_fallback_name: 'Datenbank',
+	saving: 'Speichern',
+	saved: 'Gespeichert',
+	save_error: 'Speicherfehler',
 }
 
 export default de
