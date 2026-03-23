@@ -465,6 +465,16 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	last_page: 'Letzte Seite',
 	prev_page: 'Vorherige Seite',
 	next_page: 'Nächste Seite',
+	conditional_formatting: 'Bedingte formatierung',
+	no_conditional_formats: 'Noch keine regeln',
+	add_rule: 'Regel hinzufügen',
+	select_value: 'Wert auswählen',
+	style: 'Stil',
+	background: 'Hintergrund',
+	text_color: 'Textfarbe',
+	save: 'Speichern',
+	cancel: 'Abbrechen',
+	value: 'Wert',
 }
 
 export default de

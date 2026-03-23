@@ -465,6 +465,16 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	last_page: 'Última página',
 	prev_page: 'Página anterior',
 	next_page: 'Próxima página',
+	conditional_formatting: 'Formatação condicional',
+	no_conditional_formats: 'Nenhuma regra ainda',
+	add_rule: 'Adicionar regra',
+	select_value: 'Selecione um valor',
+	style: 'Estilo',
+	background: 'Plano de fundo',
+	text_color: 'Cor do texto',
+	save: 'Salvar',
+	cancel: 'Cancelar',
+	value: 'Valor',
 }
 
 export default ptBR

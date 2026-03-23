@@ -5202,3 +5202,221 @@ body.nb-tl-resizing * {
 .nb-row-count-bar .nb-pagination {
 	margin-left: auto;
 }
+
+/* ── Conditional formatting panel ───────────────────────────────────────── */
+
+.nb-cf-panel {
+	left: auto;
+	right: 0;
+	min-width: 300px;
+	max-width: 360px;
+	padding: 8px;
+}
+
+.nb-cf-panel-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 8px;
+}
+
+.nb-cf-panel-title {
+	font-weight: 600;
+	font-size: 12px;
+}
+
+.nb-cf-panel-close {
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 16px;
+	color: var(--text-muted);
+	padding: 0 4px;
+}
+
+.nb-cf-panel-empty {
+	color: var(--text-muted);
+	font-size: 12px;
+	padding: 8px 0;
+	text-align: center;
+}
+
+.nb-cf-rule {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 8px;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 12px;
+}
+
+.nb-cf-rule:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nb-cf-rule-preview {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 20px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 600;
+	border: 1px solid var(--background-modifier-border);
+	flex-shrink: 0;
+}
+
+.nb-cf-rule-desc {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-muted);
+}
+
+.nb-cf-rule-remove {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--text-muted);
+	font-size: 14px;
+	padding: 0 2px;
+	opacity: 0;
+}
+
+.nb-cf-rule:hover .nb-cf-rule-remove {
+	opacity: 1;
+}
+
+.nb-cf-add-btn {
+	background: none;
+	border: none;
+	color: var(--text-accent);
+	cursor: pointer;
+	font-size: 12px;
+	padding: 6px 8px;
+	width: 100%;
+	text-align: left;
+}
+
+.nb-cf-add-btn:hover {
+	background: var(--background-modifier-hover);
+	border-radius: 4px;
+}
+
+/* Rule editor */
+
+.nb-cf-editor {
+	border-top: 1px solid var(--background-modifier-border);
+	padding-top: 8px;
+	margin-top: 4px;
+}
+
+.nb-cf-editor-row {
+	display: flex;
+	gap: 6px;
+	margin-bottom: 6px;
+	align-items: center;
+}
+
+.nb-cf-select,
+.nb-cf-input {
+	flex: 1;
+	padding: 4px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 12px;
+	min-width: 0;
+}
+
+.nb-cf-color-label {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--text-muted);
+}
+
+.nb-cf-presets {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-bottom: 8px;
+}
+
+.nb-cf-preset {
+	width: 28px;
+	height: 24px;
+	border: 2px solid transparent;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 11px;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.nb-cf-preset:hover {
+	border-color: var(--text-muted);
+}
+
+.nb-cf-preset--active {
+	border-color: var(--interactive-accent);
+}
+
+.nb-cf-custom-colors {
+	gap: 12px;
+}
+
+.nb-cf-color-field {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 11px;
+	color: var(--text-muted);
+}
+
+.nb-cf-color-field input[type="color"] {
+	width: 24px;
+	height: 24px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	padding: 1px;
+	cursor: pointer;
+	background: none;
+}
+
+.nb-cf-editor-actions {
+	display: flex;
+	gap: 6px;
+	margin-top: 8px;
+}
+
+.nb-cf-btn {
+	padding: 4px 12px;
+	border-radius: 4px;
+	border: none;
+	cursor: pointer;
+	font-size: 12px;
+}
+
+.nb-cf-btn--save {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.nb-cf-btn--save:hover {
+	opacity: 0.9;
+}
+
+.nb-cf-btn--cancel {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.nb-cf-btn--cancel:hover {
+	background: var(--background-modifier-border);
+}

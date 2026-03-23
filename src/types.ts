@@ -122,6 +122,16 @@ export interface ViewConfig {
 	chartYAxis?: string
 	chartAggregation?: 'count' | 'sum' | 'avg' | 'min' | 'max'
 	rowOrder?: string[]
+	conditionalFormats?: ConditionalFormatRule[]
+}
+
+export interface ConditionalFormatRule {
+	id: string
+	columnId: string
+	operator: FilterOperator
+	value: string
+	bgColor: string
+	textColor: string
 }
 
 // ── Embed multi-view state (stored in hosting note frontmatter) ─────────────

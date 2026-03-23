@@ -463,6 +463,16 @@ const en = {
 	last_page: 'Last page',
 	prev_page: 'Previous page',
 	next_page: 'Next page',
+	conditional_formatting: 'Conditional formatting',
+	no_conditional_formats: 'No rules yet',
+	add_rule: 'Add rule',
+	select_value: 'Select a value',
+	style: 'Style',
+	background: 'Background',
+	text_color: 'Text color',
+	save: 'Save',
+	cancel: 'Cancel',
+	value: 'Value',
 } as const
 
 export default en

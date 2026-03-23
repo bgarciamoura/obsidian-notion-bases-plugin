@@ -465,6 +465,16 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	last_page: '最後のページ',
 	prev_page: '前のページ',
 	next_page: '次のページ',
+	conditional_formatting: '条件付き書式',
+	no_conditional_formats: 'ルールはまだありません',
+	add_rule: 'ルールを追加',
+	select_value: '値を選択',
+	style: 'スタイル',
+	background: '背景',
+	text_color: 'テキストの色',
+	save: '保存',
+	cancel: 'キャンセル',
+	value: '値',
 }
 
 export default ja

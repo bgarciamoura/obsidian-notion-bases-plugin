@@ -1,4 +1,5 @@
-import { FilterOperator, NoteRow, SortConfig } from '../types'
+import type React from 'react'
+import { ColumnSchema, ConditionalFormatRule, FilterOperator, NoteRow, SortConfig } from '../types'
 import { t } from '../i18n'
 
 export interface ActiveFilter {
@@ -194,4 +195,36 @@ export function applySorts(rows: NoteRow[], sorts: SortConfig[]): NoteRow[] {
 		}
 		return 0
 	})
+}
+
+// ── Conditional formatting ────────────────────────────────────────────────
+
+export function getConditionalStyle(
+	row: NoteRow,
+	columnId: string,
+	rules: ConditionalFormatRule[],
+	schema: ColumnSchema[],
+): React.CSSProperties | undefined {
+	for (const rule of rules) {
+		if (rule.columnId !== columnId) continue
+		const col = schema.find(c => c.id === rule.columnId)
+		const colType = col?.type ?? 'text'
+		const filter: ActiveFilter = {
+			id: rule.id,
+			columnId: rule.columnId,
+			columnName: col?.name ?? rule.columnId,
+			columnType: colType,
+			icon: '',
+			operator: rule.operator,
+			value: rule.value,
+			conjunction: 'and',
+		}
+		if (matchesFilter(row, filter)) {
+			const style: React.CSSProperties = {}
+			if (rule.bgColor) style.backgroundColor = rule.bgColor
+			if (rule.textColor) style.color = rule.textColor
+			return style
+		}
+	}
+	return undefined
 }

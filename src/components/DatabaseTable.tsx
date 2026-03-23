@@ -30,7 +30,7 @@ import React, { Fragment, ReactNode, useState, useMemo, useEffect, useCallback, 
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
-import { ColumnSchema, ColumnType, DatabaseConfig, FilterOperator, NoteRow, SortConfig, ViewConfig, AggregationType, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW } from '../types'
+import { ColumnSchema, ColumnType, ConditionalFormatRule, DatabaseConfig, FilterOperator, NoteRow, SortConfig, ViewConfig, AggregationType, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW } from '../types'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { ColumnHeader } from './ColumnHeader'
@@ -38,10 +38,11 @@ import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
-import { applyManualOrder, isMultiValueFilter, parseMultiValue, toggleMultiValue } from './filter-utils'
+import { applyManualOrder, isMultiValueFilter, parseMultiValue, toggleMultiValue, getConditionalStyle } from './filter-utils'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconActions, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
 import { SaveIndicator } from './SaveIndicator'
+import { ConditionalFormatPanel } from './ConditionalFormatPanel'
 import { Pagination } from './Pagination'
 import { useSaveTracker } from '../hooks/useSaveTracker'
 import { usePagination } from '../hooks/usePagination'
@@ -99,9 +100,11 @@ interface VirtualTbodyProps {
 	onRowDragOver?: (filePath: string) => void
 	onRowDragEnd?: () => void
 	onRowDrop?: (filePath: string) => void
+	conditionalFormats?: ConditionalFormatRule[]
+	schema?: ColumnSchema[]
 }
 
-function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEditingCell, setContextMenuFile, longPressRef, columns, onAddRow, hierarchyMap, onToggleExpand, onAddSubRow, expandedSet, allExpanded, rowDragEnabled, dragOverPath, onRowDragStart, onRowDragOver, onRowDragEnd, onRowDrop }: VirtualTbodyProps) {
+function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEditingCell, setContextMenuFile, longPressRef, columns, onAddRow, hierarchyMap, onToggleExpand, onAddSubRow, expandedSet, allExpanded, rowDragEnabled, dragOverPath, onRowDragStart, onRowDragOver, onRowDragEnd, onRowDrop, conditionalFormats, schema }: VirtualTbodyProps) {
 	const { startIdx, endIdx, topPad } = useVirtualScroll(scrollRef, rowHeight)
 	const visibleRows = rows.slice(startIdx, Math.min(rows.length, endIdx))
 	const bottomPad = Math.max(0, (rows.length - Math.min(rows.length, endIdx)) * rowHeight)
@@ -135,12 +138,15 @@ function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEdit
 								const depth = hRow?.depth ?? 0
 								const isExp = allExpanded ? !expandedSet?.has(row.original._file.path) : !!expandedSet?.has(row.original._file.path)
 								const isSelectCol = cell.column.id === '_select'
+								const cfStyle = conditionalFormats?.length && schema
+									? getConditionalStyle(row.original as NoteRow, cell.column.id, conditionalFormats, schema)
+									: undefined
 								return (
 									<td
 										key={cell.id}
 										data-col-id={cell.column.id}
 										className={['nb-td', sticky ? 'nb-td--sticky' : '', sticky?.isLast ? 'nb-td--sticky-last' : ''].filter(Boolean).join(' ')}
-										style={{ width: cell.column.getSize(), ...(sticky ? { left: sticky.left, zIndex: 1 } : {}) }}
+										style={{ width: cell.column.getSize(), ...(sticky ? { left: sticky.left, zIndex: 1 } : {}), ...cfStyle }}
 										onClick={e => e.stopPropagation()}
 									>
 										{isSelectCol && rowDragEnabled ? (
@@ -782,6 +788,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const actionsMenuRef = useRef<HTMLDivElement>(null)
 	const rowHeightMenuRef = useRef<HTMLDivElement>(null)
 	const csvInputRef = useRef<HTMLInputElement>(null)
+	const [cfPanelOpen, setCfPanelOpen] = useState(false)
+	const cfPanelRef = useRef<HTMLDivElement>(null)
 	const mobileActionBarRef = useRef<HTMLDivElement>(null)
 	const tableRef = useRef<HTMLTableElement>(null)
 	const tableWrapperRef = useRef<HTMLDivElement>(null)
@@ -1438,6 +1446,15 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		return () => document.removeEventListener('mousedown', handler)
 	}, [filterMenuOpen])
 
+	useEffect(() => {
+		if (!cfPanelOpen) return
+		const handler = (e: MouseEvent) => {
+			if (cfPanelRef.current && !cfPanelRef.current.contains(e.target as Node)) setCfPanelOpen(false)
+		}
+		document.addEventListener('mousedown', handler)
+		return () => document.removeEventListener('mousedown', handler)
+	}, [cfPanelOpen])
+
 	// ── Posição do dropdown de pill (portal) ──────────────────────────────────
 
 	useEffect(() => {
@@ -2037,9 +2054,29 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						/>
 					)}
 				</>
-			</div>
 
-	
+				{/* Conditional formatting */}
+				<div className="nb-fields-menu-wrapper" ref={cfPanelRef}>
+					<button
+						className={`nb-toolbar-btn nb-toolbar-btn--icon${(activeView.conditionalFormats?.length ?? 0) > 0 ? ' nb-toolbar-btn--active' : ''}`}
+						onClick={() => setCfPanelOpen(v => !v)}
+						title={t('conditional_formatting')}
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+							<rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M3 15h18" /><path d="M9 3v18" />
+						</svg>
+						{(activeView.conditionalFormats?.length ?? 0) > 0 && <span className="nb-hidden-badge">{activeView.conditionalFormats!.length}</span>}
+					</button>
+					{cfPanelOpen && (
+						<ConditionalFormatPanel
+							rules={activeView.conditionalFormats ?? []}
+							schema={config.schema}
+							onChange={rules => { void saveView({ ...activeView, conditionalFormats: rules }) }}
+							onClose={() => setCfPanelOpen(false)}
+						/>
+					)}
+				</div>
+			</div>
 
 		{/* Linha de pills de filtros ativos */}
 		{activeFilters.length > 0 && !(shouldCollapse && searchExpanded) && (
@@ -2290,6 +2327,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						onRowDragOver={handleRowDragOver}
 						onRowDragEnd={handleRowDragEnd}
 						onRowDrop={handleRowDrop}
+						conditionalFormats={activeView.conditionalFormats}
+						schema={config.schema}
 					/>
 					<tfoot className="nb-tfoot">
 					<tr>

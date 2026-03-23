@@ -465,6 +465,16 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	last_page: '最后一页',
 	prev_page: '上一页',
 	next_page: '下一页',
+	conditional_formatting: '条件格式',
+	no_conditional_formats: '暂无规则',
+	add_rule: '添加规则',
+	select_value: '选择一个值',
+	style: '样式',
+	background: '背景',
+	text_color: '文字颜色',
+	save: '保存',
+	cancel: '取消',
+	value: '值',
 }
 
 export default zh
