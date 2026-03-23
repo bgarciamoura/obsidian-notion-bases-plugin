@@ -457,6 +457,14 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	saving: 'Guardando',
 	saved: 'Guardado',
 	save_error: 'Error al guardar',
+	settings_page_size_name: 'Filas por página',
+	settings_page_size_desc: 'Número de filas a mostrar por página. Establece "Todas" para desplazamiento continuo',
+	settings_page_size_all: 'Todas (desplazamiento continuo)',
+	page_of: 'Página {current} de {total}',
+	first_page: 'Primera página',
+	last_page: 'Última página',
+	prev_page: 'Página anterior',
+	next_page: 'Página siguiente',
 }
 
 export default es

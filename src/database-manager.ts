@@ -17,6 +17,7 @@ export const DATABASE_MARKER = 'notion-bases'
 
 export class DatabaseManager {
 	readInlineFields = false
+	pageSize = 0
 
 	constructor(private app: App, private databaseFileName: string) {}
 

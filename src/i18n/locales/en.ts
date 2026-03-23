@@ -455,6 +455,14 @@ const en = {
 	saving: 'Saving',
 	saved: 'Saved',
 	save_error: 'Save error',
+	settings_page_size_name: 'Rows per page',
+	settings_page_size_desc: 'Number of rows to display per page. Set to "all" for continuous scrolling',
+	settings_page_size_all: 'All (continuous scroll)',
+	page_of: 'Page {current} of {total}',
+	first_page: 'First page',
+	last_page: 'Last page',
+	prev_page: 'Previous page',
+	next_page: 'Next page',
 } as const
 
 export default en

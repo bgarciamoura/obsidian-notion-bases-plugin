@@ -457,6 +457,14 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	saving: 'Enregistrement',
 	saved: 'Enregistré',
 	save_error: 'Erreur de sauvegarde',
+	settings_page_size_name: 'Lignes par page',
+	settings_page_size_desc: 'Nombre de lignes à afficher par page. Définissez "Toutes" pour le défilement continu',
+	settings_page_size_all: 'Toutes (défilement continu)',
+	page_of: 'Page {current} sur {total}',
+	first_page: 'Première page',
+	last_page: 'Dernière page',
+	prev_page: 'Page précédente',
+	next_page: 'Page suivante',
 }
 
 export default fr

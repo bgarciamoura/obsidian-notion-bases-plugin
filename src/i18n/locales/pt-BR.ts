@@ -457,6 +457,14 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	saving: 'Salvando',
 	saved: 'Salvo',
 	save_error: 'Erro ao salvar',
+	settings_page_size_name: 'Linhas por página',
+	settings_page_size_desc: 'Número de linhas a exibir por página. Defina como "Todas" para rolagem contínua',
+	settings_page_size_all: 'Todas (rolagem contínua)',
+	page_of: 'Página {current} de {total}',
+	first_page: 'Primeira página',
+	last_page: 'Última página',
+	prev_page: 'Página anterior',
+	next_page: 'Próxima página',
 }
 
 export default ptBR

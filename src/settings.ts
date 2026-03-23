@@ -8,6 +8,7 @@ export interface NotionBasesSettings {
 	defaultRowHeight: number
 	embedViews: Record<string, ViewConfig>
 	readInlineFields: boolean
+	pageSize: number
 }
 
 export const DEFAULT_SETTINGS: NotionBasesSettings = {
@@ -15,6 +16,7 @@ export const DEFAULT_SETTINGS: NotionBasesSettings = {
 	defaultRowHeight: 36,
 	embedViews: {},
 	readInlineFields: false,
+	pageSize: 0,
 }
 
 export class NotionBasesSettingTab extends PluginSettingTab {
@@ -65,6 +67,25 @@ export class NotionBasesSettingTab extends PluginSettingTab {
 					.setDynamicTooltip()
 					.onChange(async value => {
 						this.plugin.settings.defaultRowHeight = value
+						await this.plugin.saveSettings()
+					})
+			)
+
+		new Setting(containerEl)
+			.setName(t('settings_page_size_name'))
+			.setDesc(t('settings_page_size_desc'))
+			.addDropdown(dropdown =>
+				dropdown
+					.addOptions({
+						'0': t('settings_page_size_all'),
+						'50': '50',
+						'100': '100',
+						'200': '200',
+					})
+					.setValue(String(this.plugin.settings.pageSize))
+					.onChange(async value => {
+						this.plugin.settings.pageSize = Number(value)
+						this.plugin.manager.pageSize = Number(value)
 						await this.plugin.saveSettings()
 					})
 			)

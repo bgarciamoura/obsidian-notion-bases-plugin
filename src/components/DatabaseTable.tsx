@@ -42,7 +42,9 @@ import { applyManualOrder, isMultiValueFilter, parseMultiValue, toggleMultiValue
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconActions, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
 import { SaveIndicator } from './SaveIndicator'
+import { Pagination } from './Pagination'
 import { useSaveTracker } from '../hooks/useSaveTracker'
+import { usePagination } from '../hooks/usePagination'
 import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
 
 // ── Virtual row rendering (separate component to isolate hooks) ──────────
@@ -1137,19 +1139,37 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		return map
 	}, [hierarchicalRows])
 
-	filteredRowsRef.current = tableData
+	// When paginated, apply globalFilter before slicing so pagination knows the real count
+	const isPaginated = manager.pageSize > 0
+	const searchFilteredData = useMemo(() => {
+		if (!isPaginated || !debouncedGlobalFilter) return tableData
+		const q = debouncedGlobalFilter.toLowerCase()
+		return tableData.filter(row =>
+			Object.entries(row).some(([k, v]) => {
+				if (k === '_file' || k === '_inlineFields' || v == null) return false
+				if (typeof v === 'string') return v.toLowerCase().includes(q)
+				if (typeof v === 'number' || typeof v === 'boolean') return String(v).toLowerCase().includes(q)
+				if (Array.isArray(v)) return v.some(item => typeof item === 'string' && item.toLowerCase().includes(q))
+				return false
+			})
+		)
+	}, [tableData, debouncedGlobalFilter, isPaginated])
+
+	const { pageItems: pagedData, currentPage, totalPages, setPage } = usePagination(searchFilteredData, manager.pageSize)
+
+	filteredRowsRef.current = pagedData
 
 	const table = useReactTable({
-		data: tableData,
+		data: pagedData,
 		columns,
-		state: { sorting, globalFilter: debouncedGlobalFilter, rowSelection },
+		state: { sorting, globalFilter: isPaginated ? '' : debouncedGlobalFilter, rowSelection },
 		onSortingChange: setSorting,
 		onGlobalFilterChange: setGlobalFilter,
 		onRowSelectionChange: setRowSelection,
 		enableRowSelection: true,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: (hierarchyCol || hasManualOrder) ? undefined : getSortedRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
+		getFilteredRowModel: isPaginated ? undefined : getFilteredRowModel(),
 		manualSorting: !!hierarchyCol || hasManualOrder,
 		meta: {
 			updateCell,
@@ -2320,12 +2340,13 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			<div className="nb-row-count-bar">
 				{(() => {
 					const total = rows.length
-					const filtered = table.getFilteredRowModel().rows.length
+					const filtered = searchFilteredData.length
 					const isFiltered = filtered !== total
 					return isFiltered
 						? <span className="nb-row-count">{filtered} de {total} {total !== 1 ? t('record_plural').toLowerCase() : t('record_singular').toLowerCase()}</span>
 						: <span className="nb-row-count">{total} {total !== 1 ? t('record_plural').toLowerCase() : t('record_singular').toLowerCase()}</span>
 				})()}
+				<Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setPage} />
 			</div>
 
 			</CellContext.Provider>

@@ -16,6 +16,8 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
+import { Pagination } from './Pagination'
+import { usePagination } from '../hooks/usePagination'
 import { BottomSheet } from './BottomSheet'
 
 interface DatabaseGalleryProps {
@@ -248,6 +250,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 	const debouncedFilters = useDebouncedValue(activeFilters, 200)
 	const filteredRows = useMemo(() => applyFilters(rows, debouncedFilters), [rows, debouncedFilters])
 	const displayRows = useMemo(() => applySorts(filteredRows, activeView.sorts), [filteredRows, activeView.sorts])
+	const { pageItems: pagedRows, currentPage, totalPages, setPage } = usePagination(displayRows, manager.pageSize)
 
 	const visibleCols = useMemo(
 		() => config.schema.filter(col => col.visible && !activeView.hiddenColumns.includes(col.id)),
@@ -580,7 +583,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 
 			{/* Gallery grid */}
 			<div className="nb-gallery" style={{ gridTemplateColumns: gridTemplate }}>
-				{displayRows.map(row => (
+				{pagedRows.map(row => (
 					<GalleryCard
 						key={row._file.path}
 						row={row}
@@ -598,6 +601,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 					<div className="nb-gallery-add-inner">{'+ ' + t('add_entry')}</div>
 				</div>
 			</div>
+			<Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setPage} />
 		</div>
 	)
 }

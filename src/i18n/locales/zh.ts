@@ -457,6 +457,14 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	saving: '保存中',
 	saved: '已保存',
 	save_error: '保存失败',
+	settings_page_size_name: '每页行数',
+	settings_page_size_desc: '每页显示的行数。设置为"全部"以启用连续滚动',
+	settings_page_size_all: '全部（连续滚动）',
+	page_of: '第 {current} 页，共 {total} 页',
+	first_page: '第一页',
+	last_page: '最后一页',
+	prev_page: '上一页',
+	next_page: '下一页',
 }
 
 export default zh

@@ -457,6 +457,14 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	saving: '保存中',
 	saved: '保存済み',
 	save_error: '保存エラー',
+	settings_page_size_name: '1ページあたりの行数',
+	settings_page_size_desc: '1ページに表示する行数。「すべて」に設定すると連続スクロールになります',
+	settings_page_size_all: 'すべて（連続スクロール）',
+	page_of: '{current} / {total} ページ',
+	first_page: '最初のページ',
+	last_page: '最後のページ',
+	prev_page: '前のページ',
+	next_page: '次のページ',
 }
 
 export default ja

@@ -5128,3 +5128,77 @@ body.nb-tl-resizing * {
 	0%, 70% { opacity: 1; }
 	100% { opacity: 0; }
 }
+
+/* ── Row drag handle ────────────────────────────────────────────────────── */
+
+.nb-td-inner--drag {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	height: 100%;
+}
+
+.nb-row-drag-handle {
+	cursor: grab;
+	color: var(--text-faint);
+	font-size: 14px;
+	line-height: 1;
+	user-select: none;
+	flex-shrink: 0;
+}
+
+.nb-row-drag-handle:hover {
+	color: var(--text-muted);
+}
+
+.nb-row-drag-handle:active {
+	cursor: grabbing;
+}
+
+.nb-row--drag-over {
+	border-top: 2px solid var(--interactive-accent) !important;
+}
+
+/* ── Pagination ─────────────────────────────────────────────────────────── */
+
+.nb-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	padding: 6px 0;
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.nb-pagination-btn {
+	background: none;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 2px 8px;
+	font-size: 13px;
+	line-height: 1.4;
+	min-width: 28px;
+	min-height: 28px;
+}
+
+.nb-pagination-btn:hover:not(:disabled) {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.nb-pagination-btn:disabled {
+	opacity: 0.3;
+	cursor: default;
+}
+
+.nb-pagination-info {
+	padding: 0 8px;
+	white-space: nowrap;
+}
+
+.nb-row-count-bar .nb-pagination {
+	margin-left: auto;
+}

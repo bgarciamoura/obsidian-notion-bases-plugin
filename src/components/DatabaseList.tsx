@@ -16,6 +16,8 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
+import { Pagination } from './Pagination'
+import { usePagination } from '../hooks/usePagination'
 import { BottomSheet } from './BottomSheet'
 import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
 
@@ -316,6 +318,8 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 		return buildHierarchyTree(displayRows, hierarchyCol.id, activeView.sorts, hExpandedSet, hAllExpanded)
 	}, [displayRows, hierarchyCol, activeView.sorts, hExpandedSet, hAllExpanded])
 
+	const { pageItems: pagedRows, currentPage, totalPages, setPage } = usePagination(displayRows, hierarchyCol ? 0 : manager.pageSize)
+
 	const visibleCols = useMemo(() =>
 		config.schema.filter(col => col.visible && !activeView.hiddenColumns.includes(col.id)),
 		[config.schema, activeView.hiddenColumns]
@@ -501,7 +505,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 
 			{/* List */}
 			<div className="nb-list">
-				{(hierarchicalRows ?? displayRows.map(r => ({ row: r, depth: 0, hasChildren: false, parentTitle: null }))).map(({ row, depth, hasChildren }) => {
+				{(hierarchicalRows ?? pagedRows.map(r => ({ row: r, depth: 0, hasChildren: false, parentTitle: null }))).map(({ row, depth, hasChildren }) => {
 					const isExp = hAllExpanded ? !hExpandedSet.has(row._file.path) : hExpandedSet.has(row._file.path)
 					return (
 						<ListRow
@@ -527,6 +531,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 					{'+ ' + t('add_entry')}
 				</button>
 			</div>
+			<Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setPage} />
 
 			{/* Context menu (long-press mobile / right-click desktop) */}
 			<BottomSheet open={contextMenuFile !== null} onClose={() => setContextMenuFile(null)} title={contextMenuFile?.basename ?? ''}>

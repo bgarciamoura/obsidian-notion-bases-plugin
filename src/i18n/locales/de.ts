@@ -457,6 +457,14 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	saving: 'Speichern',
 	saved: 'Gespeichert',
 	save_error: 'Speicherfehler',
+	settings_page_size_name: 'Zeilen pro Seite',
+	settings_page_size_desc: 'Anzahl der Zeilen pro Seite. Auf "Alle" setzen für kontinuierliches Scrollen',
+	settings_page_size_all: 'Alle (kontinuierliches Scrollen)',
+	page_of: 'Seite {current} von {total}',
+	first_page: 'Erste Seite',
+	last_page: 'Letzte Seite',
+	prev_page: 'Vorherige Seite',
+	next_page: 'Nächste Seite',
 }
 
 export default de

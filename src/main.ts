@@ -18,6 +18,7 @@ export default class NotionBasesPlugin extends Plugin {
 		await this.loadSettings()
 		this.manager = new DatabaseManager(this.app, this.settings.databaseFileName)
 		this.manager.readInlineFields = this.settings.readInlineFields
+		this.manager.pageSize = this.settings.pageSize
 
 		// Registrar o tipo de view customizado
 		this.registerView(
