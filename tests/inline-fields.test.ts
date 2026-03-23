@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseInlineFields, inferInlineFieldValue, sanitizeKey } from '../src/inline-fields'
+import { parseInlineFields, inferInlineFieldValue, sanitizeKey, frontmatterLineCount } from '../src/inline-fields'
 
 // ── sanitizeKey ─────────────────────────────────────────────────────────────
 
@@ -68,43 +68,70 @@ describe('inferInlineFieldValue', () => {
 	})
 })
 
+// ── frontmatterLineCount ────────────────────────────────────────────────────
+
+describe('frontmatterLineCount', () => {
+	it('returns 0 for no frontmatter', () => {
+		expect(frontmatterLineCount('Just text')).toBe(0)
+	})
+
+	it('counts frontmatter lines', () => {
+		expect(frontmatterLineCount('---\ntitle: Test\n---\nBody')).toBe(3)
+	})
+
+	it('counts minimal frontmatter', () => {
+		expect(frontmatterLineCount('---\n\n---\nBody')).toBe(3)
+	})
+})
+
 // ── parseInlineFields ───────────────────────────────────────────────────────
 
 describe('parseInlineFields', () => {
-	it('parses standalone field', () => {
+	it('parses standalone field with metadata', () => {
 		const result = parseInlineFields('Rating:: 9')
-		expect(result).toEqual([
-			{ key: 'rating', rawKey: 'Rating', value: 9 },
-		])
+		expect(result).toHaveLength(1)
+		expect(result[0]).toMatchObject({
+			key: 'rating', rawKey: 'Rating', value: 9,
+			format: 'standalone', rawValue: '9', lineNumber: 0,
+			fullMatch: 'Rating:: 9',
+		})
 	})
 
 	it('parses standalone field with no value', () => {
 		const result = parseInlineFields('Status::')
-		expect(result).toEqual([
-			{ key: 'status', rawKey: 'Status', value: null },
-		])
+		expect(result).toHaveLength(1)
+		expect(result[0]).toMatchObject({
+			key: 'status', rawKey: 'Status', value: null,
+			format: 'standalone', rawValue: '',
+			fullMatch: 'Status:: ',
+		})
 	})
 
-	it('parses bracketed field', () => {
+	it('parses bracketed field with metadata', () => {
 		const result = parseInlineFields('I rate this [mood:: happy] today')
-		expect(result).toEqual([
-			{ key: 'mood', rawKey: 'mood', value: 'happy' },
-		])
+		expect(result).toHaveLength(1)
+		expect(result[0]).toMatchObject({
+			key: 'mood', rawKey: 'mood', value: 'happy',
+			format: 'bracketed', rawValue: 'happy', lineNumber: 0,
+			fullMatch: '[mood:: happy]',
+		})
 	})
 
-	it('parses parenthesized field', () => {
+	it('parses parenthesized field with metadata', () => {
 		const result = parseInlineFields('Some text (secret:: hidden) here')
-		expect(result).toEqual([
-			{ key: 'secret', rawKey: 'secret', value: 'hidden' },
-		])
+		expect(result).toHaveLength(1)
+		expect(result[0]).toMatchObject({
+			key: 'secret', rawKey: 'secret', value: 'hidden',
+			format: 'parenthesized', rawValue: 'hidden', lineNumber: 0,
+			fullMatch: '(secret:: hidden)',
+		})
 	})
 
 	it('parses multiple bracketed fields on one line', () => {
 		const result = parseInlineFields('I give [rating:: 9] and [mood:: great]')
-		expect(result).toEqual([
-			{ key: 'rating', rawKey: 'rating', value: 9 },
-			{ key: 'mood', rawKey: 'mood', value: 'great' },
-		])
+		expect(result).toHaveLength(2)
+		expect(result[0]).toMatchObject({ key: 'rating', format: 'bracketed', fullMatch: '[rating:: 9]' })
+		expect(result[1]).toMatchObject({ key: 'mood', format: 'bracketed', fullMatch: '[mood:: great]' })
 	})
 
 	it('strips frontmatter before parsing', () => {
@@ -114,9 +141,35 @@ rating: 5
 ---
 Inline Rating:: 8`
 		const result = parseInlineFields(content)
-		expect(result).toEqual([
-			{ key: 'inline-rating', rawKey: 'Inline Rating', value: 8 },
-		])
+		expect(result).toHaveLength(1)
+		expect(result[0]).toMatchObject({
+			key: 'inline-rating', rawKey: 'Inline Rating', value: 8,
+			format: 'standalone', lineNumber: 0,
+		})
+	})
+
+	it('tracks correct line numbers', () => {
+		const content = `First line
+Rating:: 9
+Some text
+[mood:: happy]`
+		const result = parseInlineFields(content)
+		expect(result).toHaveLength(2)
+		expect(result[0]).toMatchObject({ key: 'rating', lineNumber: 1 })
+		expect(result[1]).toMatchObject({ key: 'mood', lineNumber: 3 })
+	})
+
+	it('tracks line numbers after frontmatter', () => {
+		const content = `---
+title: Test
+---
+Rating:: 9
+Text
+Status:: done`
+		const result = parseInlineFields(content)
+		expect(result).toHaveLength(2)
+		expect(result[0]).toMatchObject({ key: 'rating', lineNumber: 0 })
+		expect(result[1]).toMatchObject({ key: 'status', lineNumber: 2 })
 	})
 
 	it('ignores fields inside fenced code blocks', () => {
@@ -146,37 +199,36 @@ After:: yes`
 	it('ignores fields inside inline code', () => {
 		const content = 'This `Rating:: 5` is code, not [real:: field]'
 		const result = parseInlineFields(content)
-		expect(result).toEqual([
-			{ key: 'real', rawKey: 'real', value: 'field' },
-		])
+		expect(result).toHaveLength(1)
+		expect(result[0]).toMatchObject({ key: 'real', format: 'bracketed' })
 	})
 
 	it('handles wiki-link values', () => {
 		const result = parseInlineFields('Author:: [[John Doe]]')
-		expect(result).toEqual([
-			{ key: 'author', rawKey: 'Author', value: '[[John Doe]]' },
-		])
+		expect(result[0]).toMatchObject({
+			key: 'author', value: '[[John Doe]]', format: 'standalone',
+			fullMatch: 'Author:: [[John Doe]]',
+		})
 	})
 
 	it('handles date values', () => {
 		const result = parseInlineFields('Due:: 2024-03-15')
-		expect(result).toEqual([
-			{ key: 'due', rawKey: 'Due', value: '2024-03-15' },
-		])
+		expect(result[0]).toMatchObject({
+			key: 'due', value: '2024-03-15', rawValue: '2024-03-15',
+		})
 	})
 
 	it('handles boolean values', () => {
 		const result = parseInlineFields('Completed:: true')
-		expect(result).toEqual([
-			{ key: 'completed', rawKey: 'Completed', value: true },
-		])
+		expect(result[0]).toMatchObject({ key: 'completed', value: true, rawValue: 'true' })
 	})
 
 	it('sanitizes keys with spaces', () => {
 		const result = parseInlineFields('My Custom Field:: value')
-		expect(result).toEqual([
-			{ key: 'my-custom-field', rawKey: 'My Custom Field', value: 'value' },
-		])
+		expect(result[0]).toMatchObject({
+			key: 'my-custom-field', rawKey: 'My Custom Field',
+			fullMatch: 'My Custom Field:: value',
+		})
 	})
 
 	it('handles multiple fields across lines', () => {
@@ -185,9 +237,9 @@ Status:: done
 [priority:: high]`
 		const result = parseInlineFields(content)
 		expect(result).toHaveLength(3)
-		expect(result[0]).toEqual({ key: 'rating', rawKey: 'Rating', value: 9 })
-		expect(result[1]).toEqual({ key: 'status', rawKey: 'Status', value: 'done' })
-		expect(result[2]).toEqual({ key: 'priority', rawKey: 'priority', value: 'high' })
+		expect(result[0]).toMatchObject({ key: 'rating', lineNumber: 0, format: 'standalone' })
+		expect(result[1]).toMatchObject({ key: 'status', lineNumber: 1, format: 'standalone' })
+		expect(result[2]).toMatchObject({ key: 'priority', lineNumber: 2, format: 'bracketed' })
 	})
 
 	it('returns empty array for content with no fields', () => {
@@ -200,8 +252,6 @@ Status:: done
 
 	it('handles accented keys', () => {
 		const result = parseInlineFields('Prioridade:: alta')
-		expect(result).toEqual([
-			{ key: 'prioridade', rawKey: 'Prioridade', value: 'alta' },
-		])
+		expect(result[0]).toMatchObject({ key: 'prioridade', rawKey: 'Prioridade' })
 	})
 })

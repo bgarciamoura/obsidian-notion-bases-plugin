@@ -153,11 +153,22 @@ export const DEFAULT_DATABASE_CONFIG: DatabaseConfig = {
 	views: [DEFAULT_VIEW],
 }
 
+// ── Inline field metadata ───────────────────────────────────────────────────
+
+export interface InlineFieldMeta {
+	format: 'standalone' | 'bracketed' | 'parenthesized'
+	rawKey: string
+	rawValue: string
+	lineNumber: number
+	fullMatch: string
+}
+
 // ── Row data ────────────────────────────────────────────────────────────────
 
 export interface NoteRow {
 	_file: TFile
 	_title: string
+	_inlineFields?: Record<string, InlineFieldMeta>
 	[key: string]: unknown
 }
 

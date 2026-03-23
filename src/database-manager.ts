@@ -6,11 +6,12 @@ import {
 	DatabaseConfig,
 	DEFAULT_DATABASE_CONFIG,
 	DEFAULT_VIEW,
+	InlineFieldMeta,
 	NoteRow,
 	RollupFunction,
 	ViewConfig,
 } from './types'
-import { parseInlineFields } from './inline-fields'
+import { parseInlineFields, frontmatterLineCount } from './inline-fields'
 
 export const DATABASE_MARKER = 'notion-bases'
 
@@ -119,6 +120,9 @@ export class DatabaseManager {
 		if (this.readInlineFields) {
 			const content = await this.app.vault.cachedRead(file)
 			const inlineFields = parseInlineFields(content)
+			const fmLines = frontmatterLineCount(content)
+			const inlineMeta: Record<string, InlineFieldMeta> = {}
+
 			for (const field of inlineFields) {
 				const col = schema.find(c => c.id === field.key)
 				if (col && row[col.id] == null) {
@@ -128,14 +132,44 @@ export class DatabaseManager {
 					} else {
 						row[col.id] = field.value
 					}
+					inlineMeta[col.id] = {
+						format: field.format,
+						rawKey: field.rawKey,
+						rawValue: field.rawValue,
+						lineNumber: fmLines + field.lineNumber,
+						fullMatch: field.fullMatch,
+					}
 				}
+			}
+
+			if (Object.keys(inlineMeta).length > 0) {
+				row._inlineFields = inlineMeta
 			}
 		}
 
 		return row
 	}
 
-	async updateNoteField(file: TFile, fieldId: string, value: unknown): Promise<void> {
+	async updateNoteField(
+		file: TFile,
+		fieldId: string,
+		value: unknown,
+		inlineFields?: Record<string, InlineFieldMeta>,
+	): Promise<void> {
+		const meta = inlineFields?.[fieldId]
+
+		if (meta && this.readInlineFields) {
+			if (value === null || value === undefined || value === '') {
+				await this.removeInlineField(file, meta)
+			} else {
+				await this.updateInlineField(file, value, meta)
+			}
+		} else {
+			await this.updateFrontmatterField(file, fieldId, value)
+		}
+	}
+
+	private async updateFrontmatterField(file: TFile, fieldId: string, value: unknown): Promise<void> {
 		await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
 			if (value === null || value === undefined || value === '') {
 				delete fm[fieldId]
@@ -143,6 +177,65 @@ export class DatabaseManager {
 				fm[fieldId] = value
 			}
 		})
+	}
+
+	private async updateInlineField(file: TFile, value: unknown, meta: InlineFieldMeta): Promise<void> {
+		const content = await this.app.vault.read(file)
+		const idx = content.indexOf(meta.fullMatch)
+
+		if (idx === -1) {
+			// Fallback: field was moved/deleted externally, write to frontmatter
+			await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+				fm[meta.rawKey] = value
+			})
+			return
+		}
+
+		const serialized = this.serializeInlineValue(value)
+		let newMatch: string
+		switch (meta.format) {
+		case 'standalone':
+			newMatch = `${meta.rawKey}:: ${serialized}`
+			break
+		case 'bracketed':
+			newMatch = `[${meta.rawKey}:: ${serialized}]`
+			break
+		case 'parenthesized':
+			newMatch = `(${meta.rawKey}:: ${serialized})`
+			break
+		}
+
+		const newContent = content.slice(0, idx) + newMatch + content.slice(idx + meta.fullMatch.length)
+		await this.app.vault.modify(file, newContent)
+	}
+
+	private async removeInlineField(file: TFile, meta: InlineFieldMeta): Promise<void> {
+		const content = await this.app.vault.read(file)
+		const idx = content.indexOf(meta.fullMatch)
+		if (idx === -1) return
+
+		let newContent: string
+		if (meta.format === 'standalone') {
+			// Remove the entire line including the newline
+			const lineStart = content.lastIndexOf('\n', idx - 1) + 1
+			let lineEnd = content.indexOf('\n', idx + meta.fullMatch.length)
+			if (lineEnd === -1) lineEnd = content.length
+			else lineEnd += 1 // include the newline
+			newContent = content.slice(0, lineStart) + content.slice(lineEnd)
+		} else {
+			// Bracketed/parenthesized: remove just the match
+			newContent = content.slice(0, idx) + content.slice(idx + meta.fullMatch.length)
+		}
+
+		await this.app.vault.modify(file, newContent)
+	}
+
+	private serializeInlineValue(value: unknown): string {
+		if (value === null || value === undefined) return ''
+		if (Array.isArray(value)) return (value as string[]).join(', ')
+		if (typeof value === 'string') return value
+		if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+		return JSON.stringify(value)
 	}
 
 	async syncTwoWayRelation(

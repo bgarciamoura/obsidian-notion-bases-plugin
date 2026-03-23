@@ -854,7 +854,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		if (columnId === '_title') {
 			await manager.renameNote(row._file, String(value))
 		} else {
-			await manager.updateNoteField(row._file, columnId, value)
+			await manager.updateNoteField(row._file, columnId, value, row._inlineFields)
 
 			// Two-way relation sync
 			const col = config.schema.find(c => c.id === columnId)

@@ -1,9 +1,15 @@
 // ── Dataview inline field parser (pure, no Obsidian deps) ───────────────────
 
+export type InlineFieldFormat = 'standalone' | 'bracketed' | 'parenthesized'
+
 export interface InlineField {
-	key: string    // sanitized: lowercase, spaces→dashes, no markdown formatting
-	rawKey: string // original key as written
-	value: unknown // type-inferred value
+	key: string              // sanitized: lowercase, spaces→dashes, no markdown formatting
+	rawKey: string           // original key as written
+	value: unknown           // type-inferred value
+	format: InlineFieldFormat
+	rawValue: string         // original value string before type inference
+	lineNumber: number       // 0-based line index within body (after frontmatter)
+	fullMatch: string        // complete matched text for replacement
 }
 
 const FENCED_CODE_OPEN = /^(`{3,}|~{3,})/
@@ -15,6 +21,12 @@ const PARENTHESIZED_RE = /\(([A-Za-z0-9\u00C0-\u024F_ -]+)::\s*([^)]*)\)/g
 function stripFrontmatter(content: string): string {
 	const match = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/)
 	return match ? content.slice(match[0].length) : content
+}
+
+export function frontmatterLineCount(content: string): number {
+	const match = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/)
+	if (!match) return 0
+	return match[0].split(/\r?\n/).length - 1
 }
 
 export function sanitizeKey(raw: string): string {
@@ -48,7 +60,9 @@ export function parseInlineFields(content: string): InlineField[] {
 	let inCodeBlock = false
 	let codeFence = ''
 
-	for (const line of lines) {
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i]
+
 		// Track fenced code blocks
 		const fenceMatch = line.match(FENCED_CODE_OPEN)
 		if (fenceMatch) {
@@ -75,8 +89,11 @@ export function parseInlineFields(content: string): InlineField[] {
 				key: sanitizeKey(rawKey),
 				rawKey,
 				value: inferInlineFieldValue(rawValue),
+				format: 'standalone',
+				rawValue,
+				lineNumber: i,
+				fullMatch: `${rawKey}:: ${rawValue}`,
 			})
-			// Don't continue — line may also have bracketed fields after standalone
 		}
 
 		// Bracketed: [key:: value]
@@ -84,10 +101,15 @@ export function parseInlineFields(content: string): InlineField[] {
 		BRACKETED_RE.lastIndex = 0
 		while ((match = BRACKETED_RE.exec(cleaned)) !== null) {
 			const rawKey = match[1].trim()
+			const rawValue = match[2]
 			fields.push({
 				key: sanitizeKey(rawKey),
 				rawKey,
-				value: inferInlineFieldValue(match[2]),
+				value: inferInlineFieldValue(rawValue),
+				format: 'bracketed',
+				rawValue,
+				lineNumber: i,
+				fullMatch: `[${match[1]}:: ${rawValue}]`,
 			})
 		}
 
@@ -95,10 +117,15 @@ export function parseInlineFields(content: string): InlineField[] {
 		PARENTHESIZED_RE.lastIndex = 0
 		while ((match = PARENTHESIZED_RE.exec(cleaned)) !== null) {
 			const rawKey = match[1].trim()
+			const rawValue = match[2]
 			fields.push({
 				key: sanitizeKey(rawKey),
 				rawKey,
-				value: inferInlineFieldValue(match[2]),
+				value: inferInlineFieldValue(rawValue),
+				format: 'parenthesized',
+				rawValue,
+				lineNumber: i,
+				fullMatch: `(${match[1]}:: ${rawValue})`,
 			})
 		}
 	}
