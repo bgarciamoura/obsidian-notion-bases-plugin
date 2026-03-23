@@ -403,6 +403,10 @@ const en = {
 	settings_row_height_name: 'Default row height',
 	settings_row_height_desc: 'Height in pixels of each table row.',
 
+	// Inline fields
+	settings_inline_fields_name: 'Read dataview inline fields',
+	settings_inline_fields_desc: 'Parse key:: value fields from note body and display as column values (read-only)',
+
 	// Database manager
 	db_untitled_note: 'Untitled',
 	db_copy_suffix: '(copy)',

@@ -7,12 +7,14 @@ export interface NotionBasesSettings {
 	databaseFileName: string
 	defaultRowHeight: number
 	embedViews: Record<string, ViewConfig>
+	readInlineFields: boolean
 }
 
 export const DEFAULT_SETTINGS: NotionBasesSettings = {
 	databaseFileName: '_database.md',
 	defaultRowHeight: 36,
 	embedViews: {},
+	readInlineFields: false,
 }
 
 export class NotionBasesSettingTab extends PluginSettingTab {
@@ -36,6 +38,19 @@ export class NotionBasesSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.databaseFileName)
 					.onChange(async value => {
 						this.plugin.settings.databaseFileName = value || '_database.md'
+						await this.plugin.saveSettings()
+					})
+			)
+
+		new Setting(containerEl)
+			.setName(t('settings_inline_fields_name'))
+			.setDesc(t('settings_inline_fields_desc'))
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.readInlineFields)
+					.onChange(async value => {
+						this.plugin.settings.readInlineFields = value
+						this.plugin.manager.readInlineFields = value
 						await this.plugin.saveSettings()
 					})
 			)

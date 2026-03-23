@@ -2,7 +2,6 @@ import { MarkdownRenderChild } from 'obsidian'
 import { createElement } from 'react'
 import { createRoot, Root } from 'react-dom/client'
 import { AppContext } from './context'
-import { DatabaseManager } from './database-manager'
 import { DatabaseRoot } from './components/DatabaseRoot'
 import { DEFAULT_VIEW, EmbedState, ViewConfig } from './types'
 import type NotionBasesPlugin from './main'
@@ -24,7 +23,7 @@ class DatabaseEmbedChild extends MarkdownRenderChild {
 	}
 
 	onload() {
-		const manager = new DatabaseManager(this.plugin.app, this.plugin.settings.databaseFileName)
+		const manager = this.plugin.manager
 		const dbFile = manager.getDatabaseFileInFolder(this.folderPath)
 
 		if (!dbFile) {

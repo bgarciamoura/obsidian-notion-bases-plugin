@@ -10,10 +10,13 @@ import {
 	RollupFunction,
 	ViewConfig,
 } from './types'
+import { parseInlineFields } from './inline-fields'
 
 export const DATABASE_MARKER = 'notion-bases'
 
 export class DatabaseManager {
+	readInlineFields = false
+
 	constructor(private app: App, private databaseFileName: string) {}
 
 	// ── Identificação ──────────────────────────────────────────────────────
@@ -91,7 +94,8 @@ export class DatabaseManager {
 			.sort((a, b) => a.basename.localeCompare(b.basename))
 	}
 
-	getNoteData(file: TFile, schema: ColumnSchema[]): NoteRow {
+	/** Sync read from frontmatter only — used by lookup/rollup resolvers */
+	getNoteDataSync(file: TFile, schema: ColumnSchema[]): NoteRow {
 		const cache = this.app.metadataCache.getFileCache(file)
 		const fm = cache?.frontmatter ?? {}
 
@@ -103,6 +107,29 @@ export class DatabaseManager {
 		for (const col of schema) {
 			if (col.type === 'formula' || col.type === 'lookup' || col.type === 'rollup') continue
 			row[col.id] = fm[col.id] ?? null
+		}
+
+		return row
+	}
+
+	async getNoteData(file: TFile, schema: ColumnSchema[]): Promise<NoteRow> {
+		const row = this.getNoteDataSync(file, schema)
+
+		// Merge inline fields (frontmatter wins on conflicts)
+		if (this.readInlineFields) {
+			const content = await this.app.vault.cachedRead(file)
+			const inlineFields = parseInlineFields(content)
+			for (const field of inlineFields) {
+				const col = schema.find(c => c.id === field.key)
+				if (col && row[col.id] == null) {
+					// Convert comma-separated strings to arrays for multiselect columns
+					if (col.type === 'multiselect' && typeof field.value === 'string') {
+						row[col.id] = field.value.split(',').map(s => s.trim()).filter(Boolean)
+					} else {
+						row[col.id] = field.value
+					}
+				}
+			}
 		}
 
 		return row
@@ -210,7 +237,7 @@ export class DatabaseManager {
 				if (!refDbFile) { refDataCache.set(path, []); continue }
 				const refConfig = this.readConfig(refDbFile)
 				const refNotes = this.getNotesInDatabase(refDbFile)
-				const refRows = refNotes.map(f => this.getNoteData(f, refConfig.schema))
+				const refRows = refNotes.map(f => this.getNoteDataSync(f, refConfig.schema))
 				refDataCache.set(path, refRows)
 			}
 		}
@@ -245,7 +272,7 @@ export class DatabaseManager {
 				if (!refDbFile) { refDataCache.set(path, []); continue }
 				const refConfig = this.readConfig(refDbFile)
 				const refNotes = this.getNotesInDatabase(refDbFile)
-				refDataCache.set(path, refNotes.map(f => this.getNoteData(f, refConfig.schema)))
+				refDataCache.set(path, refNotes.map(f => this.getNoteDataSync(f, refConfig.schema)))
 			}
 		}
 
@@ -347,7 +374,7 @@ export class DatabaseManager {
 
 	// ── Inferir schema ─────────────────────────────────────────────────────
 
-	inferSchema(notes: TFile[]): ColumnSchema[] {
+	async inferSchema(notes: TFile[]): Promise<ColumnSchema[]> {
 		const fieldMap = new Map<string, unknown[]>()
 
 		for (const note of notes) {
@@ -360,6 +387,20 @@ export class DatabaseManager {
 				if (!fieldMap.has(key)) fieldMap.set(key, [])
 				if (value !== null && value !== undefined) {
 					fieldMap.get(key)!.push(value)
+				}
+			}
+		}
+
+		// Also scan inline fields when enabled
+		if (this.readInlineFields) {
+			for (const note of notes) {
+				const content = await this.app.vault.cachedRead(note)
+				const inlineFields = parseInlineFields(content)
+				for (const field of inlineFields) {
+					if (!fieldMap.has(field.key)) fieldMap.set(field.key, [])
+					if (field.value !== null && field.value !== undefined) {
+						fieldMap.get(field.key)!.push(field.value)
+					}
 				}
 			}
 		}

@@ -405,6 +405,10 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	settings_row_height_name: '默认行高',
 	settings_row_height_desc: '每个表格行的像素高度。',
 
+	// Inline fields
+	settings_inline_fields_name: '读取 dataview 内联字段',
+	settings_inline_fields_desc: '解析笔记正文中的 key:: value 字段并将其显示为列值（只读）',
+
 	// Database manager
 	db_untitled_note: '未命名',
 	db_copy_suffix: '(副本)',

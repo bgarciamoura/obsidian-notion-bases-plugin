@@ -405,6 +405,10 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	settings_row_height_name: 'Altura padrão das linhas',
 	settings_row_height_desc: 'Altura em pixels de cada linha da tabela.',
 
+	// Inline fields
+	settings_inline_fields_name: 'Ler campos inline do dataview',
+	settings_inline_fields_desc: 'Interpreta campos key:: value no corpo da nota e os exibe como valores de coluna (somente leitura)',
+
 	// Database manager
 	db_untitled_note: 'Sem título',
 	db_copy_suffix: '(cópia)',

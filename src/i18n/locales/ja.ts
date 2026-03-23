@@ -405,6 +405,10 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	settings_row_height_name: 'デフォルトの行の高さ',
 	settings_row_height_desc: '各テーブル行のピクセル高さ。',
 
+	// Inline fields
+	settings_inline_fields_name: 'Dataview インラインフィールドを読み取る',
+	settings_inline_fields_desc: 'ノート本文の key:: value フィールドを解析し、列の値として表示します（読み取り専用）',
+
 	// Database manager
 	db_untitled_note: '無題',
 	db_copy_suffix: '(コピー)',

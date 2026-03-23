@@ -38,7 +38,7 @@ async function processRowsInChunks(
 	currentVersion: number,
 ): Promise<NoteRow[] | null> {
 	if (notes.length <= CHUNK_THRESHOLD) {
-		return notes.map(f => manager.getNoteData(f, schema))
+		return Promise.all(notes.map(f => manager.getNoteData(f, schema)))
 	}
 
 	const result: NoteRow[] = []
@@ -46,7 +46,8 @@ async function processRowsInChunks(
 		if (versionRef.current !== currentVersion) return null
 
 		const chunk = notes.slice(i, i + CHUNK_SIZE)
-		result.push(...chunk.map(f => manager.getNoteData(f, schema)))
+		const rows = await Promise.all(chunk.map(f => manager.getNoteData(f, schema)))
+		result.push(...rows)
 
 		if (i + CHUNK_SIZE < notes.length) {
 			await new Promise<void>(resolve => setTimeout(resolve, 0))
@@ -109,7 +110,7 @@ export function useDatabaseRows(options: UseDatabaseRowsOptions): UseDatabaseRow
 		const notes = manager.getNotesInDatabase(dbFile, includeSubfolders)
 
 		if (cfg.schema.length === 0 && notes.length > 0) {
-			cfg.schema = manager.inferSchema(notes)
+			cfg.schema = await manager.inferSchema(notes)
 			await manager.writeConfig(dbFile, cfg)
 		}
 

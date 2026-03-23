@@ -405,6 +405,10 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	settings_row_height_name: 'Altura de fila predeterminada',
 	settings_row_height_desc: 'Altura en píxeles de cada fila de la tabla.',
 
+	// Inline fields
+	settings_inline_fields_name: 'Leer campos inline de dataview',
+	settings_inline_fields_desc: 'Interpreta campos key:: value del cuerpo de la nota y los muestra como valores de columna (solo lectura)',
+
 	// Database manager
 	db_untitled_note: 'Sin título',
 	db_copy_suffix: '(copia)',

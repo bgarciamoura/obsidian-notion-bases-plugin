@@ -405,6 +405,10 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	settings_row_height_name: 'Standard-Zeilenhöhe',
 	settings_row_height_desc: 'Höhe in Pixeln jeder Tabellenzeile.',
 
+	// Inline fields
+	settings_inline_fields_name: 'Dataview-Inline-Felder lesen',
+	settings_inline_fields_desc: 'Liest key:: value-Felder aus dem Notiztext und zeigt sie als Spaltenwerte an (schreibgeschützt)',
+
 	// Database manager
 	db_untitled_note: 'Unbenannt',
 	db_copy_suffix: '(Kopie)',

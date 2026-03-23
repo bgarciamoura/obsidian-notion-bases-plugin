@@ -17,6 +17,7 @@ export default class NotionBasesPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings()
 		this.manager = new DatabaseManager(this.app, this.settings.databaseFileName)
+		this.manager.readInlineFields = this.settings.readInlineFields
 
 		// Registrar o tipo de view customizado
 		this.registerView(

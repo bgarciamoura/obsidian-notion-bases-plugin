@@ -405,6 +405,10 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	settings_row_height_name: 'Hauteur de ligne par défaut',
 	settings_row_height_desc: 'Hauteur en pixels de chaque ligne du tableau.',
 
+	// Inline fields
+	settings_inline_fields_name: 'Lire les champs inline dataview',
+	settings_inline_fields_desc: 'Analyse les champs key:: value dans le corps de la note et les affiche comme valeurs de colonne (lecture seule)',
+
 	// Database manager
 	db_untitled_note: 'Sans titre',
 	db_copy_suffix: '(copie)',

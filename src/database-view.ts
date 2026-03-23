@@ -3,7 +3,6 @@ import { t } from './i18n'
 import { createElement } from 'react'
 import { createRoot, Root } from 'react-dom/client'
 import { AppContext } from './context'
-import { DatabaseManager } from './database-manager'
 import { DatabaseRoot } from './components/DatabaseRoot'
 import type NotionBasesPlugin from './main'
 
@@ -93,10 +92,7 @@ export class DatabaseView extends ItemView {
 			? this.app.vault.getFileByPath(this.dbFilePath) ?? null
 			: null
 
-		const manager = new DatabaseManager(
-			this.app,
-			this.plugin.settings.databaseFileName
-		)
+		const manager = this.plugin.manager
 
 		this.root = createRoot(container)
 		this.root.render(
