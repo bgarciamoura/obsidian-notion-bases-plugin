@@ -23,3 +23,9 @@ data.json
 
 # Hot Reload plugin
 .hotreload
+
+# Wolf files
+.wolf
+
+# Test files
+test-evidence
