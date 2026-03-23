@@ -119,7 +119,7 @@ function RuleEditor({ rule, schema, availableCols, getColType, onSave, onCancel 
 	const needsValue = !NO_VALUE_OPERATORS.has(draft.operator)
 
 	const col = schema.find(c => c.id === draft.columnId)
-	const selectOptions = col?.options?.map(o => o.value) ?? []
+	const selectOptions = col?.options?.map(o => o.value || (o as unknown as { label?: string }).label || '').filter(Boolean) ?? []
 	const isSelectType = colType === 'select' || colType === 'multiselect' || colType === 'status'
 
 	return (
