@@ -437,6 +437,15 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	cmd_open_database: 'Ouvrir la base de données de ce dossier',
 	cmd_create_database: 'Créer une nouvelle base de données dans le dossier actuel',
 
+	// Quick add
+	cmd_quick_add: 'Ajouter rapidement une ligne à la base de données',
+	quick_add_title: 'Ajout rapide',
+	quick_add_note_title: 'Titre',
+	quick_add_note_title_placeholder: 'Titre de la note...',
+	quick_add_create: 'Créer',
+	quick_add_create_and_open: 'Créer et ouvrir',
+	quick_add_no_visible_fields: 'Aucun champ modifiable dans cette base de données',
+
 	// Picker / View
 	picker_placeholder: 'Sélectionner une base de données...',
 	picker_root: '/ (Racine)',

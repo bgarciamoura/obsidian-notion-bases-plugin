@@ -437,6 +437,15 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	cmd_open_database: 'Abrir banco de dados desta pasta',
 	cmd_create_database: 'Criar novo banco de dados na pasta atual',
 
+	// Quick add
+	cmd_quick_add: 'Adicionar linha rapidamente ao banco de dados',
+	quick_add_title: 'Adição rápida',
+	quick_add_note_title: 'Título',
+	quick_add_note_title_placeholder: 'Título da nota...',
+	quick_add_create: 'Criar',
+	quick_add_create_and_open: 'Criar e abrir',
+	quick_add_no_visible_fields: 'Nenhum campo editável neste banco de dados',
+
 	// Picker / View
 	picker_placeholder: 'Selecionar banco de dados...',
 	picker_root: '/ (Raiz)',

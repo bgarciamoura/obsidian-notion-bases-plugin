@@ -437,6 +437,15 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	cmd_open_database: 'Datenbank für diesen Ordner öffnen',
 	cmd_create_database: 'Neue Datenbank im aktuellen Ordner erstellen',
 
+	// Quick add
+	cmd_quick_add: 'Zeile schnell zur Datenbank hinzufügen',
+	quick_add_title: 'Schnell hinzufügen',
+	quick_add_note_title: 'Titel',
+	quick_add_note_title_placeholder: 'Notiztitel...',
+	quick_add_create: 'Erstellen',
+	quick_add_create_and_open: 'Erstellen und öffnen',
+	quick_add_no_visible_fields: 'Keine bearbeitbaren Felder in dieser Datenbank',
+
 	// Picker / View
 	picker_placeholder: 'Datenbank auswählen...',
 	picker_root: '/ (Stammverzeichnis)',

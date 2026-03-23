@@ -435,6 +435,15 @@ const en = {
 	cmd_open_database: 'Open database for this folder',
 	cmd_create_database: 'Create new database in current folder',
 
+	// Quick add
+	cmd_quick_add: 'Quick add row to database',
+	quick_add_title: 'Quick add',
+	quick_add_note_title: 'Title',
+	quick_add_note_title_placeholder: 'Note title...',
+	quick_add_create: 'Create',
+	quick_add_create_and_open: 'Create and open',
+	quick_add_no_visible_fields: 'No editable fields in this database',
+
 	// Picker / View
 	picker_placeholder: 'Select database...',
 	picker_root: '/ (root)',

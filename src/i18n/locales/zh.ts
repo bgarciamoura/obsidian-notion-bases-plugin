@@ -437,6 +437,15 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	cmd_open_database: '打开此文件夹的数据库',
 	cmd_create_database: '在当前文件夹创建新数据库',
 
+	// Quick add
+	cmd_quick_add: '快速向数据库添加行',
+	quick_add_title: '快速添加',
+	quick_add_note_title: '标题',
+	quick_add_note_title_placeholder: '笔记标题...',
+	quick_add_create: '创建',
+	quick_add_create_and_open: '创建并打开',
+	quick_add_no_visible_fields: '此数据库中没有可编辑字段',
+
 	// Picker / View
 	picker_placeholder: '选择数据库...',
 	picker_root: '/（根目录）',

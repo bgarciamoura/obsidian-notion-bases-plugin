@@ -4,6 +4,7 @@ import { DATABASE_VIEW_TYPE, DatabaseView } from './database-view'
 import { DatabaseManager } from './database-manager'
 import { DEFAULT_SETTINGS, NotionBasesSettings, NotionBasesSettingTab } from './settings'
 import { DatabasePickerModal } from './database-picker-modal'
+import { QuickAddModal } from './quick-add-modal'
 import { registerDatabaseEmbed } from './database-embed'
 
 export default class NotionBasesPlugin extends Plugin {
@@ -44,6 +45,14 @@ export default class NotionBasesPlugin extends Plugin {
 				const activeFile = this.app.workspace.getActiveFile()
 				const folderPath = activeFile?.parent?.path ?? ''
 				await this.createAndOpenDatabase(folderPath)
+			},
+		})
+
+		this.addCommand({
+			id: 'quick-add',
+			name: t('cmd_quick_add'),
+			callback: () => {
+				this.openQuickAdd()
 			},
 		})
 
@@ -110,6 +119,21 @@ export default class NotionBasesPlugin extends Plugin {
 	}
 
 	// ── Helpers ──────────────────────────────────────────────────────────────
+
+	openQuickAdd() {
+		const databases = this.manager.getAllDatabases()
+			.sort((a, b) => (a.parent?.path ?? '').localeCompare(b.parent?.path ?? ''))
+
+		if (databases.length === 0) {
+			new Notice(t('no_databases_found'))
+			return
+		}
+
+		new DatabasePickerModal(this.app, databases, file => {
+			const config = this.manager.readConfig(file)
+			new QuickAddModal(this.app, this.manager, file, config.schema).open()
+		}).open()
+	}
 
 	openDatabasePicker() {
 		const databases = this.manager.getAllDatabases()

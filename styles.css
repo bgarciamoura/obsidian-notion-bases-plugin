@@ -5023,3 +5023,58 @@ body.nb-tl-resizing * {
 .is-mobile .nb-table-wrapper {
 	-webkit-overflow-scrolling: touch;
 }
+
+/* ── #94 Quick add modal ─────────────────────────────────────────────────── */
+
+.nb-quick-add-modal {
+	padding: 16px;
+}
+
+.nb-quick-add-modal h3 {
+	margin: 0 0 4px;
+}
+
+.nb-quick-add-db-name {
+	margin: 0 0 16px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.nb-quick-add-empty {
+	color: var(--text-muted);
+	font-style: italic;
+	margin: 12px 0;
+}
+
+.nb-quick-add-title-input {
+	width: 100%;
+}
+
+.nb-quick-add-buttons {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 16px;
+	padding-top: 12px;
+	border-top: 1px solid var(--divider-color);
+}
+
+.nb-quick-add-btn {
+	padding: 6px 16px;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	font-size: var(--font-ui-small);
+	background: var(--background-modifier-hover);
+	border: 1px solid var(--divider-color);
+	color: var(--text-normal);
+}
+
+.nb-quick-add-btn--primary {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.nb-quick-add-btn:hover {
+	opacity: 0.9;
+}
