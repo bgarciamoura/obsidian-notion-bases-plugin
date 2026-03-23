@@ -9,6 +9,7 @@ import {
 	ActiveFilter, applyFilters, applySorts,
 	getColumnIconStatic, getDefaultOperator,
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
+	getCardConditionalStyle,
 } from './filter-utils'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -17,6 +18,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
 import { SaveIndicator } from './SaveIndicator'
+import { ConditionalFormatPanel } from './ConditionalFormatPanel'
 import { useSaveTracker } from '../hooks/useSaveTracker'
 
 interface DatabaseBoardProps {
@@ -75,11 +77,12 @@ interface BoardCardProps {
 	onDragStart?: (e: React.DragEvent, filePath: string) => void
 	onTouchStart?: (e: React.TouchEvent, file: TFile) => void
 	onContextMenu?: (e: React.MouseEvent, file: TFile) => void
+	cardStyle?: React.CSSProperties
 }
 
 const BoardCard = React.memo(function BoardCard({
 	row, isMobile, visibleCols, dbFolderPath, includeSubfolders,
-	onOpen, onDragStart, onTouchStart, onContextMenu,
+	onOpen, onDragStart, onTouchStart, onContextMenu, cardStyle,
 }: BoardCardProps) {
 	const fileFolder = row._file.parent?.path ?? ''
 	const relPath = includeSubfolders && fileFolder.length > dbFolderPath.length
@@ -88,6 +91,7 @@ const BoardCard = React.memo(function BoardCard({
 	return (
 		<div
 			className="nb-board-card"
+			style={cardStyle}
 			draggable={!isMobile}
 			onDragStart={!isMobile ? e => {
 				e.stopPropagation()
@@ -132,6 +136,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const [groupByMenuOpen, setGroupByMenuOpen] = useState(false)
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
+	const [cfPanelOpen, setCfPanelOpen] = useState(false)
 	// card drag
 	const [cardDragOver, setCardDragOver] = useState<string | null>(null)
 	// column drag
@@ -142,6 +147,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const groupByMenuRef = useRef<HTMLDivElement>(null)
 	const filterMenuRef = useRef<HTMLDivElement>(null)
+	const cfPanelRef = useRef<HTMLDivElement>(null)
 	const mobileActionBarRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => { setActiveView(externalView) }, [externalView.id])
@@ -179,6 +185,14 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [filterMenuOpen])
+
+	useEffect(() => {
+		if (!cfPanelOpen) return
+		const h = (e: MouseEvent) => {
+			if (cfPanelRef.current && !cfPanelRef.current.contains(e.target as Node)) setCfPanelOpen(false)
+		}
+		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+	}, [cfPanelOpen])
 
 	// ── Groupable columns ─────────────────────────────────────────────────────
 
@@ -674,6 +688,28 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 						</div>
 					)}
 				</div>
+
+				{/* Conditional formatting */}
+				<div className="nb-fields-menu-wrapper" ref={cfPanelRef}>
+					<button
+						className={`nb-toolbar-btn nb-toolbar-btn--icon${(activeView.conditionalFormats?.length ?? 0) > 0 ? ' nb-toolbar-btn--active' : ''}`}
+						onClick={() => setCfPanelOpen(v => !v)}
+						title={t('conditional_formatting')}
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+							<rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M3 15h18" /><path d="M9 3v18" />
+						</svg>
+						{(activeView.conditionalFormats?.length ?? 0) > 0 && <span className="nb-hidden-badge">{activeView.conditionalFormats!.length}</span>}
+					</button>
+					{cfPanelOpen && (
+						<ConditionalFormatPanel
+							rules={activeView.conditionalFormats ?? []}
+							schema={config.schema}
+							onChange={rules => { void saveView({ ...activeView, conditionalFormats: rules }) }}
+							onClose={() => setCfPanelOpen(false)}
+						/>
+					)}
+				</div>
 			</div>
 
 			{/* Filter pills */}
@@ -843,6 +879,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 													onDragStart={handleCardDragStart}
 													onTouchStart={handleCardTouchStart}
 													onContextMenu={handleCardContextMenu}
+													cardStyle={activeView.conditionalFormats?.length ? getCardConditionalStyle(row, activeView.conditionalFormats, config.schema) : undefined}
 												/>
 											)
 											return shouldVirtualize

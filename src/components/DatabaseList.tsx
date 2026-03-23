@@ -10,6 +10,7 @@ import {
 	ActiveFilter, applyFilters, applySorts,
 	getColumnIconStatic, getDefaultOperator,
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
+	getCardConditionalStyle,
 } from './filter-utils'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -19,6 +20,7 @@ import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from 
 import { Pagination } from './Pagination'
 import { usePagination } from '../hooks/usePagination'
 import { BottomSheet } from './BottomSheet'
+import { ConditionalFormatPanel } from './ConditionalFormatPanel'
 import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
 
 interface DatabaseListProps {
@@ -159,12 +161,13 @@ interface ListRowProps {
 	onLongPress: (file: TFile) => void
 	onContextMenu: (file: TFile) => void
 	longPressRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>
+	cardStyle?: React.CSSProperties
 }
 
 const ListRow = React.memo(function ListRow({
 	row, depth, hasChildren, isExpanded, isHierarchical, visibleCols,
 	dbFolderPath, includeSubfolders, onOpen, onToggleExpand,
-	isMobile, onLongPress, onContextMenu, longPressRef,
+	isMobile, onLongPress, onContextMenu, longPressRef, cardStyle,
 }: ListRowProps) {
 	const fileFolder = row._file.parent?.path ?? ''
 	const relPath = includeSubfolders && fileFolder.length > dbFolderPath.length
@@ -173,7 +176,7 @@ const ListRow = React.memo(function ListRow({
 	return (
 		<div
 			className="nb-list-row"
-			style={isHierarchical ? { paddingLeft: `${depth * 20 + 12}px` } : undefined}
+			style={{ ...(isHierarchical ? { paddingLeft: `${depth * 20 + 12}px` } : {}), ...cardStyle }}
 			onClick={() => onOpen(row._file)}
 			onContextMenu={!isMobile ? e => { e.preventDefault(); onContextMenu(row._file) } : undefined}
 			onTouchStart={isMobile ? () => { longPressRef.current = setTimeout(() => onLongPress(row._file), 500) } : undefined}
@@ -217,11 +220,13 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const [sortPanelOpen, setSortPanelOpen] = useState(false)
 	const [sortAnchorRect, setSortAnchorRect] = useState<DOMRect | null>(null)
+	const [cfPanelOpen, setCfPanelOpen] = useState(false)
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
 	const sortPanelRef = useRef<HTMLDivElement>(null)
 	const sortButtonRef = useRef<HTMLButtonElement>(null)
 	const mobileActionBarRef = useRef<HTMLDivElement>(null)
+	const cfPanelRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => { setActiveView(externalView) }, [externalView.id])
 
@@ -240,6 +245,14 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [filterMenuOpen])
+
+	useEffect(() => {
+		if (!cfPanelOpen) return
+		const h = (e: MouseEvent) => {
+			if (cfPanelRef.current && !cfPanelRef.current.contains(e.target as Node)) setCfPanelOpen(false)
+		}
+		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+	}, [cfPanelOpen])
 
 	useEffect(() => {
 		if (!fieldsMenuOpen) return
@@ -488,6 +501,28 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 				{sortPanelOpen && sortAnchorRect && (
 					<ListSortPanel sorts={activeView.sorts} schema={config.schema} onSortChange={s => { void handleSortChange(s) }} onClose={() => setSortPanelOpen(false)} anchorRect={sortAnchorRect} panelRef={sortPanelRef} />
 				)}
+
+				{/* Conditional formatting */}
+				<div className="nb-fields-menu-wrapper" ref={cfPanelRef}>
+					<button
+						className={`nb-toolbar-btn nb-toolbar-btn--icon${(activeView.conditionalFormats?.length ?? 0) > 0 ? ' nb-toolbar-btn--active' : ''}`}
+						onClick={() => setCfPanelOpen(v => !v)}
+						title={t('conditional_formatting')}
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+							<rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M3 15h18" /><path d="M9 3v18" />
+						</svg>
+						{(activeView.conditionalFormats?.length ?? 0) > 0 && <span className="nb-hidden-badge">{activeView.conditionalFormats!.length}</span>}
+					</button>
+					{cfPanelOpen && (
+						<ConditionalFormatPanel
+							rules={activeView.conditionalFormats ?? []}
+							schema={config.schema}
+							onChange={rules => { void saveView({ ...activeView, conditionalFormats: rules }) }}
+							onClose={() => setCfPanelOpen(false)}
+						/>
+					)}
+				</div>
 			</div>
 			{activeFilters.length > 0 && (
 				<div className="nb-filter-pills-row">
@@ -524,6 +559,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 							onLongPress={handleLongPress}
 							onContextMenu={handleContextMenu}
 							longPressRef={longPressRef}
+							cardStyle={activeView.conditionalFormats?.length ? getCardConditionalStyle(row, activeView.conditionalFormats, config.schema) : undefined}
 						/>
 					)
 				})}

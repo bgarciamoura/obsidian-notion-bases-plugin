@@ -10,6 +10,7 @@ import {
 	ActiveFilter, applyFilters, applySorts,
 	getColumnIconStatic, getDefaultOperator,
 	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
+	getCardConditionalStyle,
 } from './filter-utils'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -19,6 +20,7 @@ import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from 
 import { Pagination } from './Pagination'
 import { usePagination } from '../hooks/usePagination'
 import { BottomSheet } from './BottomSheet'
+import { ConditionalFormatPanel } from './ConditionalFormatPanel'
 
 interface DatabaseGalleryProps {
 	dbFile: TFile | null
@@ -110,10 +112,11 @@ interface GalleryCardProps {
 	dbFolderPath: string
 	includeSubfolders: boolean
 	onOpen: (file: TFile) => void
+	cardStyle?: React.CSSProperties
 }
 
 const GalleryCard = React.memo(function GalleryCard({
-	row, cardSize, coverField, visibleCols, dbFolderPath, includeSubfolders, onOpen,
+	row, cardSize, coverField, visibleCols, dbFolderPath, includeSubfolders, onOpen, cardStyle,
 }: GalleryCardProps) {
 	const app = useApp()
 
@@ -131,6 +134,7 @@ const GalleryCard = React.memo(function GalleryCard({
 	return (
 		<div
 			className={`nb-gallery-card nb-gallery-card--${cardSize}`}
+			style={cardStyle}
 			onClick={() => onOpen(row._file)}
 		>
 			{coverImageUrl ? (
@@ -181,6 +185,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 	const [sizeMenuOpen, setSizeMenuOpen] = useState(false)
 	const [sortPanelOpen, setSortPanelOpen] = useState(false)
 	const [sortAnchorRect, setSortAnchorRect] = useState<DOMRect | null>(null)
+	const [cfPanelOpen, setCfPanelOpen] = useState(false)
 
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
@@ -189,6 +194,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 	const sortPanelRef = useRef<HTMLDivElement>(null)
 	const sortButtonRef = useRef<HTMLButtonElement>(null)
 	const mobileActionBarRef = useRef<HTMLDivElement>(null)
+	const cfPanelRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => { setActiveView(externalView) }, [externalView.id])
 
@@ -207,6 +213,14 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 		}
 		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
 	}, [filterMenuOpen])
+
+	useEffect(() => {
+		if (!cfPanelOpen) return
+		const h = (e: MouseEvent) => {
+			if (cfPanelRef.current && !cfPanelRef.current.contains(e.target as Node)) setCfPanelOpen(false)
+		}
+		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+	}, [cfPanelOpen])
 
 	useEffect(() => {
 		if (!fieldsMenuOpen) return
@@ -547,6 +561,28 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 						panelRef={sortPanelRef}
 					/>
 				)}
+
+				{/* Conditional formatting */}
+				<div className="nb-fields-menu-wrapper" ref={cfPanelRef}>
+					<button
+						className={`nb-toolbar-btn nb-toolbar-btn--icon${(activeView.conditionalFormats?.length ?? 0) > 0 ? ' nb-toolbar-btn--active' : ''}`}
+						onClick={() => setCfPanelOpen(v => !v)}
+						title={t('conditional_formatting')}
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+							<rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M3 15h18" /><path d="M9 3v18" />
+						</svg>
+						{(activeView.conditionalFormats?.length ?? 0) > 0 && <span className="nb-hidden-badge">{activeView.conditionalFormats!.length}</span>}
+					</button>
+					{cfPanelOpen && (
+						<ConditionalFormatPanel
+							rules={activeView.conditionalFormats ?? []}
+							schema={config.schema}
+							onChange={rules => { void saveView({ ...activeView, conditionalFormats: rules }) }}
+							onClose={() => setCfPanelOpen(false)}
+						/>
+					)}
+				</div>
 			</div>
 
 			{/* Filter pills */}
@@ -583,18 +619,22 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 
 			{/* Gallery grid */}
 			<div className="nb-gallery" style={{ gridTemplateColumns: gridTemplate }}>
-				{pagedRows.map(row => (
-					<GalleryCard
-						key={row._file.path}
-						row={row}
-						cardSize={cardSize}
-						coverField={coverField}
-						visibleCols={visibleCols}
-						dbFolderPath={dbFolderPath}
-						includeSubfolders={activeView.includeSubfolders ?? false}
-						onOpen={openFile}
-					/>
-				))}
+				{pagedRows.map(row => {
+					const cfStyle = activeView.conditionalFormats?.length ? getCardConditionalStyle(row, activeView.conditionalFormats, config.schema) : undefined
+					return (
+						<GalleryCard
+							key={row._file.path}
+							row={row}
+							cardSize={cardSize}
+							coverField={coverField}
+							visibleCols={visibleCols}
+							dbFolderPath={dbFolderPath}
+							includeSubfolders={activeView.includeSubfolders ?? false}
+							onOpen={openFile}
+							cardStyle={cfStyle}
+						/>
+					)
+				})}
 
 				{/* Add card */}
 				<div className="nb-gallery-card nb-gallery-card--add" onClick={() => { void handleAddRow() }}>
