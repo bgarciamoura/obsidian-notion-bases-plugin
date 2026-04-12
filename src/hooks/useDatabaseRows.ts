@@ -133,7 +133,7 @@ export function useDatabaseRows(options: UseDatabaseRowsOptions): UseDatabaseRow
 			setActiveFilters(restoreFilterPills(pills, cfg.schema))
 		}
 
-		setConfig(prev => ({ schema: cfg.schema, views: prev.views }))
+		setConfig({ schema: cfg.schema, views: cfg.views })
 		setRows(noteRows)
 		onLoaded?.(cfg, noteRows)
 		setLoading(false)
