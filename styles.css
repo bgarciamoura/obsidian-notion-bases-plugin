@@ -2451,6 +2451,41 @@
 	background: var(--background-modifier-hover);
 }
 
+.nb-view-tab-settings-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	margin-left: auto;
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	font-size: 14px;
+	cursor: pointer;
+	border-radius: var(--radius-s);
+}
+
+.nb-view-tab-settings-btn:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.is-mobile .nb-view-tab-settings-btn {
+	min-width: 40px;
+	min-height: 40px;
+}
+
+.nb-db-settings-template-path {
+	margin: 4px 0 12px 0;
+	padding: 6px 10px;
+	font-size: 0.85em;
+	color: var(--text-muted);
+	background: var(--background-secondary);
+	border-radius: var(--radius-s);
+	word-break: break-all;
+}
+
 .nb-view-add-menu {
 	position: absolute;
 	top: calc(100% + 4px);

@@ -12,6 +12,7 @@ import {
 	ViewConfig,
 } from './types'
 import { parseInlineFields, frontmatterLineCount } from './inline-fields'
+import { TemplatePickerModal } from './template-picker-modal'
 
 export const DATABASE_MARKER = 'notion-bases'
 
@@ -55,6 +56,8 @@ export class DatabaseManager {
 		return {
 			schema,
 			views: Array.isArray(fm['views']) && (fm['views'] as unknown[]).length > 0 ? fm['views'] as ViewConfig[] : [DEFAULT_VIEW],
+			templatePath: typeof fm['templatePath'] === 'string' && fm['templatePath'] ? fm['templatePath'] : undefined,
+			askTemplateOnCreate: fm['askTemplateOnCreate'] === true,
 		}
 	}
 
@@ -63,6 +66,10 @@ export class DatabaseManager {
 			fm[DATABASE_MARKER] = true
 			fm['schema'] = config.schema
 			fm['views'] = config.views
+			if (config.templatePath) fm['templatePath'] = config.templatePath
+			else delete fm['templatePath']
+			if (config.askTemplateOnCreate) fm['askTemplateOnCreate'] = true
+			else delete fm['askTemplateOnCreate']
 		})
 	}
 
@@ -292,7 +299,11 @@ export class DatabaseManager {
 		await this.app.fileManager.renameFile(file, newPath)
 	}
 
-	async createNote(dbFile: TFile, initialFrontmatter?: Record<string, unknown>): Promise<TFile> {
+	async createNote(
+		dbFile: TFile,
+		initialFrontmatter?: Record<string, unknown>,
+		templatePath?: string | null,
+	): Promise<TFile> {
 		const folderPath = dbFile.parent?.path ?? ''
 		const base = normalizePath(`${folderPath}/${t('db_untitled_note')}`)
 		let path = `${base}.md`
@@ -308,7 +319,54 @@ export class DatabaseManager {
 				}
 			})
 		}
+		if (templatePath) {
+			await this.applyTemplate(newFile, templatePath)
+		}
 		return newFile
+	}
+
+	/** createNote + automatic template resolution based on db config. Opens picker if askTemplateOnCreate is on. */
+	async createNoteWithTemplate(dbFile: TFile, initialFrontmatter?: Record<string, unknown>): Promise<TFile> {
+		const config = this.readConfig(dbFile)
+		if (config.askTemplateOnCreate) {
+			const templatePath = await new Promise<string | null>(resolve => {
+				new TemplatePickerModal(this.app, (path) => resolve(path), config.templatePath ? this.folderOf(config.templatePath) : null).open()
+			})
+			return this.createNote(dbFile, initialFrontmatter, templatePath)
+		}
+		return this.createNote(dbFile, initialFrontmatter, config.templatePath ?? null)
+	}
+
+	private folderOf(path: string): string | null {
+		const idx = path.lastIndexOf('/')
+		return idx > 0 ? path.slice(0, idx) : null
+	}
+
+	/** Append template body to a note, substituting {{title}}, {{date}}, {{time}}, {{folder}}. */
+	async applyTemplate(targetFile: TFile, templatePath: string): Promise<void> {
+		const templateFile = this.app.vault.getFileByPath(normalizePath(templatePath))
+		if (!templateFile) return
+
+		const raw = await this.app.vault.read(templateFile)
+		// Strip the template's own frontmatter if present — row frontmatter is authoritative
+		const body = raw.replace(/^---\n[\s\S]*?\n---\n?/, '')
+		if (!body.trim()) return
+
+		const moment = (window as unknown as { moment?: (d?: Date) => { format: (fmt: string) => string } }).moment
+		const now = new Date()
+		const fmtDate = (fmt: string) => moment ? moment(now).format(fmt) : now.toISOString().slice(0, 10)
+		const fmtTime = (fmt: string) => moment ? moment(now).format(fmt) : now.toTimeString().slice(0, 5)
+
+		const processed = body
+			.replace(/\{\{title\}\}/g, targetFile.basename)
+			.replace(/\{\{folder\}\}/g, targetFile.parent?.path ?? '')
+			.replace(/\{\{date:([^}]+)\}\}/g, (_m, f) => fmtDate(String(f)))
+			.replace(/\{\{time:([^}]+)\}\}/g, (_m, f) => fmtTime(String(f)))
+			.replace(/\{\{date\}\}/g, fmtDate('YYYY-MM-DD'))
+			.replace(/\{\{time\}\}/g, fmtTime('HH:mm'))
+
+		const current = await this.app.vault.read(targetFile)
+		await this.app.vault.modify(targetFile, current + processed)
 	}
 
 	// ── Lookup helpers ─────────────────────────────────────────────────────

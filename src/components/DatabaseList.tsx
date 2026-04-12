@@ -299,7 +299,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 		await saveView({ ...activeView, sorts: newSorts })
 	}, [activeView, saveView])
 
-	const handleAddRow = async () => { if (dbFile) await manager.createNote(dbFile) }
+	const handleAddRow = async () => { if (dbFile) await manager.createNoteWithTemplate(dbFile) }
 
 	// ── Hierarchy state ───────────────────────────────────────────────────────
 
