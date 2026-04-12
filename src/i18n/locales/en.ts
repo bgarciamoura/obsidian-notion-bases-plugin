@@ -473,6 +473,19 @@ const en = {
 	save: 'Save',
 	cancel: 'Cancel',
 	value: 'Value',
+
+	// Database settings modal (row templates)
+	db_settings_open: 'Database settings',
+	db_settings_title: 'Database settings',
+	db_settings_template_name: 'Row template',
+	db_settings_template_desc: 'Apply this template to the body of every new row created in this database.',
+	db_settings_template_choose: 'Choose template',
+	db_settings_template_clear: 'Clear template',
+	db_settings_template_none: 'No template selected',
+	db_settings_ask_name: 'Ask for template on create',
+	db_settings_ask_desc: 'Prompt for a template each time a new row is added instead of applying the default.',
+	template_picker_placeholder: 'Choose a template...',
+	template_picker_none: 'No template (empty body)',
 } as const
 
 export default en

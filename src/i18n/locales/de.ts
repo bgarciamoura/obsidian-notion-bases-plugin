@@ -475,6 +475,19 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	save: 'Speichern',
 	cancel: 'Abbrechen',
 	value: 'Wert',
+
+	// Database settings modal (row templates)
+	db_settings_open: 'Datenbankeinstellungen',
+	db_settings_title: 'Datenbankeinstellungen',
+	db_settings_template_name: 'Zeilenvorlage',
+	db_settings_template_desc: 'Wendet diese Vorlage auf den Inhalt jeder neuen Zeile in dieser Datenbank an.',
+	db_settings_template_choose: 'Vorlage wählen',
+	db_settings_template_clear: 'Vorlage entfernen',
+	db_settings_template_none: 'Keine Vorlage ausgewählt',
+	db_settings_ask_name: 'Vorlage beim Erstellen abfragen',
+	db_settings_ask_desc: 'Bei jeder neuen Zeile nach einer Vorlage fragen, anstatt die Standardvorlage anzuwenden.',
+	template_picker_placeholder: 'Vorlage auswählen...',
+	template_picker_none: 'Keine Vorlage (leerer Inhalt)',
 }
 
 export default de

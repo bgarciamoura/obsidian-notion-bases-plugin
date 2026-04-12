@@ -475,6 +475,19 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	save: '保存',
 	cancel: '取消',
 	value: '值',
+
+	// Database settings modal (row templates)
+	db_settings_open: '数据库设置',
+	db_settings_title: '数据库设置',
+	db_settings_template_name: '行模板',
+	db_settings_template_desc: '将此模板应用于在此数据库中创建的每一新行的正文。',
+	db_settings_template_choose: '选择模板',
+	db_settings_template_clear: '清除模板',
+	db_settings_template_none: '未选择模板',
+	db_settings_ask_name: '创建时询问模板',
+	db_settings_ask_desc: '每次添加新行时提示选择模板，而不是应用默认模板。',
+	template_picker_placeholder: '选择一个模板...',
+	template_picker_none: '无模板（空正文）',
 }
 
 export default zh

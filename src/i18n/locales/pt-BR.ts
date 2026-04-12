@@ -475,6 +475,19 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	save: 'Salvar',
 	cancel: 'Cancelar',
 	value: 'Valor',
+
+	// Database settings modal (row templates)
+	db_settings_open: 'Configurações do banco de dados',
+	db_settings_title: 'Configurações do banco de dados',
+	db_settings_template_name: 'Modelo de linha',
+	db_settings_template_desc: 'Aplica este modelo ao corpo de cada nova linha criada neste banco de dados.',
+	db_settings_template_choose: 'Escolher modelo',
+	db_settings_template_clear: 'Remover modelo',
+	db_settings_template_none: 'Nenhum modelo selecionado',
+	db_settings_ask_name: 'Perguntar pelo modelo ao criar',
+	db_settings_ask_desc: 'Solicitar um modelo toda vez que uma nova linha for adicionada, em vez de usar o padrão.',
+	template_picker_placeholder: 'Escolha um modelo...',
+	template_picker_none: 'Sem modelo (corpo vazio)',
 }
 
 export default ptBR

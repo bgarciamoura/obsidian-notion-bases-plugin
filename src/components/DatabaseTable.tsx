@@ -527,7 +527,7 @@ function SortPanel({ sorts, schema, onSortChange, onClose, anchorRect, panelRef 
 		</div>,
 		document.body
 	)
-}
+}
 
 function ResizeHandle({ onResize, onAutoFit }: { onResize: (w: number) => void; onAutoFit?: () => void }) {
 	const handleMouseDown = (e: React.MouseEvent) => {
@@ -1226,14 +1226,14 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	const handleAddRow = async () => {
 		if (!dbFile) return
-		const newFile = await manager.createNote(dbFile)
+		const newFile = await manager.createNoteWithTemplate(dbFile)
 		lastCreatedPath.current = newFile.path
 		// loadData será chamado pelo evento vault.on('create')
 	}
 
 	const handleAddSubRow = useCallback(async (parentTitle: string) => {
 		if (!dbFile || !hierarchyCol) return
-		const newFile = await manager.createNote(dbFile, { [hierarchyCol.id]: [parentTitle] })
+		const newFile = await manager.createNoteWithTemplate(dbFile, { [hierarchyCol.id]: [parentTitle] })
 		lastCreatedPath.current = newFile.path
 	}, [dbFile, hierarchyCol, manager])
 

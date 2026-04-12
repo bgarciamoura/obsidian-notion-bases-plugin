@@ -475,6 +475,19 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	save: 'Guardar',
 	cancel: 'Cancelar',
 	value: 'Valor',
+
+	// Database settings modal (row templates)
+	db_settings_open: 'Configuración de la base de datos',
+	db_settings_title: 'Configuración de la base de datos',
+	db_settings_template_name: 'Plantilla de fila',
+	db_settings_template_desc: 'Aplica esta plantilla al cuerpo de cada nueva fila creada en esta base de datos.',
+	db_settings_template_choose: 'Elegir plantilla',
+	db_settings_template_clear: 'Quitar plantilla',
+	db_settings_template_none: 'Sin plantilla seleccionada',
+	db_settings_ask_name: 'Pedir plantilla al crear',
+	db_settings_ask_desc: 'Solicitar una plantilla cada vez que se añada una nueva fila en lugar de aplicar la predeterminada.',
+	template_picker_placeholder: 'Elige una plantilla...',
+	template_picker_none: 'Sin plantilla (cuerpo vacío)',
 }
 
 export default es
