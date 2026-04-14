@@ -448,6 +448,23 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	cmd_create_database: 'Créer une nouvelle base de données dans le dossier actuel',
 	ctx_create_database: 'Créer une base de données ici',
 
+	// Folder arrangement
+	arr_settings_title: 'Organisation par dossiers',
+	arr_settings_desc: 'Déplace automatiquement les fichiers de ligne dans des sous-dossiers imbriqués selon les valeurs des propriétés sélectionnées, dans l\'ordre.',
+	arr_settings_enabled_name: 'Activer l\'organisation par dossiers',
+	arr_settings_enabled_desc: 'Quand activé, les lignes sont déplacées dès qu\'une des propriétés sélectionnées change. Désactivé par défaut.',
+	arr_settings_no_props: 'Aucune propriété sélectionnée. Ajoutez-en une ci-dessous pour définir la hiérarchie de dossiers.',
+	arr_settings_no_candidates: 'Aucune colonne éligible. L\'organisation par dossiers prend en charge les colonnes de texte, sélection, statut et date.',
+	arr_settings_add_placeholder: 'Sélectionner une propriété...',
+	arr_settings_add_btn: 'Ajouter',
+	arr_settings_preview_btn: 'Aperçu et application aux lignes existantes',
+	arr_preview_title: 'Aperçu de l\'organisation par dossiers',
+	arr_preview_empty: 'Aucune ligne ne doit être déplacée.',
+	arr_preview_desc: '$count ligne(s) seront déplacées :',
+	arr_preview_apply: 'Appliquer',
+	arr_preview_cancel: 'Annuler',
+	arr_preview_applied: '$count ligne(s) déplacée(s).',
+
 	// Quick add
 	cmd_quick_add: 'Ajouter rapidement une ligne à la base de données',
 	quick_add_title: 'Ajout rapide',

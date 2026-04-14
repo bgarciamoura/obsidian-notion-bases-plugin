@@ -448,6 +448,23 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	cmd_create_database: '在当前文件夹创建新数据库',
 	ctx_create_database: '在此处创建数据库',
 
+	// Folder arrangement
+	arr_settings_title: '文件夹排列',
+	arr_settings_desc: '根据所选属性的值，按顺序自动将行文件移动到嵌套子文件夹中。',
+	arr_settings_enabled_name: '启用文件夹排列',
+	arr_settings_enabled_desc: '启用后，所选属性之一发生更改时立即移动行。默认关闭。',
+	arr_settings_no_props: '未选择任何属性。请在下方添加一个以定义文件夹层级。',
+	arr_settings_no_candidates: '没有可用列。文件夹排列支持文本、选择、状态和日期列。',
+	arr_settings_add_placeholder: '选择一个属性...',
+	arr_settings_add_btn: '添加',
+	arr_settings_preview_btn: '预览并应用到现有行',
+	arr_preview_title: '文件夹排列预览',
+	arr_preview_empty: '没有需要移动的行。',
+	arr_preview_desc: '将移动 $count 行：',
+	arr_preview_apply: '应用',
+	arr_preview_cancel: '取消',
+	arr_preview_applied: '已移动 $count 行。',
+
 	// Quick add
 	cmd_quick_add: '快速向数据库添加行',
 	quick_add_title: '快速添加',

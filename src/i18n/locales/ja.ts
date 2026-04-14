@@ -448,6 +448,23 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	cmd_create_database: '現在のフォルダーに新しいデータベースを作成',
 	ctx_create_database: 'ここにデータベースを作成',
 
+	// Folder arrangement
+	arr_settings_title: 'フォルダー整理',
+	arr_settings_desc: '選択したプロパティの値に基づいて、行ファイルを順番にネストされたサブフォルダーへ自動的に移動します。',
+	arr_settings_enabled_name: 'フォルダー整理を有効にする',
+	arr_settings_enabled_desc: '有効にすると、選択したプロパティのいずれかが変更されるとすぐに行が移動されます。デフォルトはオフです。',
+	arr_settings_no_props: 'プロパティが選択されていません。下に追加してフォルダー階層を定義してください。',
+	arr_settings_no_candidates: '対象となる列がありません。フォルダー整理はテキスト、選択、ステータス、日付列に対応しています。',
+	arr_settings_add_placeholder: 'プロパティを選択...',
+	arr_settings_add_btn: '追加',
+	arr_settings_preview_btn: 'プレビューして既存の行に適用',
+	arr_preview_title: 'フォルダー整理のプレビュー',
+	arr_preview_empty: '移動が必要な行はありません。',
+	arr_preview_desc: '$count 行が移動されます：',
+	arr_preview_apply: '適用',
+	arr_preview_cancel: 'キャンセル',
+	arr_preview_applied: '$count 行を移動しました。',
+
 	// Quick add
 	cmd_quick_add: 'データベースに行をすばやく追加',
 	quick_add_title: 'クイック追加',

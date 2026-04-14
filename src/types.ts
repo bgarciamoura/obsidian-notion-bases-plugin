@@ -145,11 +145,17 @@ export interface EmbedState {
 
 // ── Database config (stored in _database.md frontmatter) ───────────────────
 
+export interface FolderArrangementConfig {
+	enabled: boolean
+	propertyIds: string[]
+}
+
 export interface DatabaseConfig {
 	schema: ColumnSchema[]
 	views: ViewConfig[]
 	templatePath?: string
 	askTemplateOnCreate?: boolean
+	folderArrangement?: FolderArrangementConfig
 }
 
 export const DEFAULT_VIEW: ViewConfig = {

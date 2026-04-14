@@ -446,6 +446,23 @@ const en = {
 	cmd_create_database: 'Create new database in current folder',
 	ctx_create_database: 'Create database here',
 
+	// Folder arrangement
+	arr_settings_title: 'Folder arrangement',
+	arr_settings_desc: 'Automatically move row files into nested subfolders based on the values of the selected properties, in order.',
+	arr_settings_enabled_name: 'Enable folder arrangement',
+	arr_settings_enabled_desc: 'When on, rows are moved as soon as one of the selected properties changes. Off by default.',
+	arr_settings_no_props: 'No properties selected. Add one below to define the folder hierarchy.',
+	arr_settings_no_candidates: 'No eligible columns. Folder arrangement supports text, select, status, and date columns.',
+	arr_settings_add_placeholder: 'Select a property...',
+	arr_settings_add_btn: 'Add',
+	arr_settings_preview_btn: 'Preview & apply to existing rows',
+	arr_preview_title: 'Folder arrangement preview',
+	arr_preview_empty: 'No rows need to be moved.',
+	arr_preview_desc: '$count row(s) will be moved:',
+	arr_preview_apply: 'Apply',
+	arr_preview_cancel: 'Cancel',
+	arr_preview_applied: 'Moved $count row(s).',
+
 	// Quick add
 	cmd_quick_add: 'Quick add row to database',
 	quick_add_title: 'Quick add',
