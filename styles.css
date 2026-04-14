@@ -5503,3 +5503,14 @@ body.nb-tl-resizing * {
 .nb-cf-btn--cancel:hover {
 	background: var(--background-modifier-border);
 }
+
+/* Live placeholder pills (rendered by the markdown post-processor) */
+.nb-placeholder-pill {
+	display: inline-block;
+	padding: 1px 8px;
+	border-radius: 10px;
+	font-size: 0.85em;
+	line-height: 1.4;
+	white-space: nowrap;
+	vertical-align: baseline;
+}
