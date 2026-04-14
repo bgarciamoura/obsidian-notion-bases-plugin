@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian'
-import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
@@ -9,9 +9,9 @@ import {
 import {
 	ActiveFilter, applyFilters, applySorts,
 	getColumnIconStatic, getDefaultOperator,
-	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
 	getCardConditionalStyle,
 } from './filter-utils'
+import { FilterPillsRow } from './FilterPillsRow'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
@@ -97,50 +97,6 @@ function ListSortPanel({ sorts, schema, onSortChange, onClose, anchorRect, panel
 			)}
 		</div>,
 		document.body
-	)
-}
-
-// ── Filter pill operator picker (inline) ────────────────────────────────────
-
-function FilterPill({ filter, onUpdate, onRemove, onToggleConjunction, showConjunction }: {
-	filter: ActiveFilter
-	onUpdate: (operator: FilterOperator, value: string) => void
-	onRemove: () => void
-	onToggleConjunction: () => void
-	showConjunction: boolean
-}) {
-	const ops = getOperatorsForType(filter.columnType)
-	return (
-		<Fragment>
-			{showConjunction && (
-				<button
-					className={`nb-pill-conjunction${filter.conjunction === 'or' ? ' nb-pill-conjunction--or' : ''}`}
-					onClick={onToggleConjunction}
-				>
-					{filter.conjunction === 'or' ? t('conjunction_or') : t('conjunction_and')}
-				</button>
-			)}
-			<span className="nb-filter-pill">
-				<span className="nb-pill-icon">{filter.icon}</span>
-				<span className="nb-pill-name">{filter.columnName}</span>
-				<select
-					className="nb-pill-op-select"
-					value={filter.operator}
-					onChange={e => onUpdate(e.target.value as FilterOperator, filter.value)}
-				>
-					{ops.map(op => <option key={op} value={op}>{OPERATOR_LABELS[op]}</option>)}
-				</select>
-				{!NO_VALUE_OPERATORS.has(filter.operator) && (
-					<input
-						className="nb-pill-value-input"
-						type="text"
-						value={filter.value}
-						onChange={e => onUpdate(filter.operator, e.target.value)}
-					/>
-				)}
-				<button className="nb-pill-remove" onClick={onRemove}>×</button>
-			</span>
-		</Fragment>
 	)
 }
 
@@ -524,13 +480,15 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 					)}
 				</div>
 			</div>
-			{activeFilters.length > 0 && (
-				<div className="nb-filter-pills-row">
-					{activeFilters.map((f, idx) => (
-						<FilterPill key={f.id} filter={f} showConjunction={idx > 0} onUpdate={(op, val) => updateFilter(f.id, op, val)} onRemove={() => removeFilter(f.id)} onToggleConjunction={() => toggleConjunction(f.id)} />
-					))}
-				</div>
-			)}
+			<FilterPillsRow
+				activeFilters={activeFilters}
+				schema={config.schema}
+				onUpdate={updateFilter}
+				onRemove={removeFilter}
+				onToggleConjunction={toggleConjunction}
+				collapsed={!!activeView.filtersCollapsed}
+				onToggleCollapsed={() => { void saveView({ ...activeView, filtersCollapsed: !activeView.filtersCollapsed }) }}
+			/>
 		</>
 	)
 
