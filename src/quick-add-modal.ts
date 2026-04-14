@@ -156,7 +156,7 @@ export class QuickAddModal extends Modal {
 		}
 
 		try {
-			const newFile = await this.manager.createNote(this.dbFile, frontmatter)
+			const newFile = await this.manager.createNoteWithTemplate(this.dbFile, frontmatter)
 
 			// Rename if title was provided
 			if (this.titleValue.trim()) {

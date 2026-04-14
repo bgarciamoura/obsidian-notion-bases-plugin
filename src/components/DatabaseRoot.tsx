@@ -2,6 +2,7 @@ import { TFile } from 'obsidian'
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
+import { DatabaseSettingsModal } from '../database-settings-modal'
 import { DatabaseConfig, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW, EmbedState, ViewConfig } from '../types'
 import { DatabaseTable } from './DatabaseTable'
 import { DatabaseList } from './DatabaseList'
@@ -408,6 +409,20 @@ export function DatabaseRoot({
 						</div>
 					)}
 				</div>
+				<button
+					className="nb-view-tab-settings-btn"
+					title={t('db_settings_open')}
+					onClick={() => {
+						if (!dbFile) return
+						new DatabaseSettingsModal(app, config, async (updated) => {
+							const newConfig = { ...config, ...updated }
+							setConfig(newConfig)
+							await manager.writeConfig(dbFile, newConfig)
+						}).open()
+					}}
+				>
+					⚙
+				</button>
 			</div>
 			{activeView.type === 'table'
 				? <DatabaseTable

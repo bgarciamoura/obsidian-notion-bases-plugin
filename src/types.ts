@@ -146,6 +146,8 @@ export interface EmbedState {
 export interface DatabaseConfig {
 	schema: ColumnSchema[]
 	views: ViewConfig[]
+	templatePath?: string
+	askTemplateOnCreate?: boolean
 }
 
 export const DEFAULT_VIEW: ViewConfig = {

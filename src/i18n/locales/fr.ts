@@ -475,6 +475,19 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	save: 'Enregistrer',
 	cancel: 'Annuler',
 	value: 'Valeur',
+
+	// Database settings modal (row templates)
+	db_settings_open: 'Paramètres de la base de données',
+	db_settings_title: 'Paramètres de la base de données',
+	db_settings_template_name: 'Modèle de ligne',
+	db_settings_template_desc: 'Applique ce modèle au corps de chaque nouvelle ligne créée dans cette base de données.',
+	db_settings_template_choose: 'Choisir un modèle',
+	db_settings_template_clear: 'Effacer le modèle',
+	db_settings_template_none: 'Aucun modèle sélectionné',
+	db_settings_ask_name: 'Demander un modèle à la création',
+	db_settings_ask_desc: 'Demander un modèle à chaque ajout de ligne au lieu d\'appliquer celui par défaut.',
+	template_picker_placeholder: 'Choisir un modèle...',
+	template_picker_none: 'Aucun modèle (corps vide)',
 }
 
 export default fr

@@ -475,6 +475,19 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	save: '保存',
 	cancel: 'キャンセル',
 	value: '値',
+
+	// Database settings modal (row templates)
+	db_settings_open: 'データベース設定',
+	db_settings_title: 'データベース設定',
+	db_settings_template_name: '行テンプレート',
+	db_settings_template_desc: 'このデータベースに新しく作成されるすべての行の本文にこのテンプレートを適用します。',
+	db_settings_template_choose: 'テンプレートを選択',
+	db_settings_template_clear: 'テンプレートを削除',
+	db_settings_template_none: 'テンプレートが選択されていません',
+	db_settings_ask_name: '作成時にテンプレートを確認する',
+	db_settings_ask_desc: 'デフォルトを適用する代わりに、新しい行を追加するたびにテンプレートを選択するよう促します。',
+	template_picker_placeholder: 'テンプレートを選択...',
+	template_picker_none: 'テンプレートなし（本文を空にする）',
 }
 
 export default ja
