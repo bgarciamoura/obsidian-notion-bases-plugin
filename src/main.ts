@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, Plugin, TFile, WorkspaceLeaf } from 'obsidian'
+import { MarkdownView, Notice, Plugin, TFile, TFolder, WorkspaceLeaf } from 'obsidian'
 import { t } from './i18n'
 import { DATABASE_VIEW_TYPE, DatabaseView } from './database-view'
 import { DatabaseManager } from './database-manager'
@@ -94,6 +94,22 @@ export default class NotionBasesPlugin extends Plugin {
 						this._redirecting = false
 					}
 				}
+			})
+		)
+
+		// Menu de contexto do explorador de arquivos — "Create database here" em pastas
+		this.registerEvent(
+			this.app.workspace.on('file-menu', (menu, abstractFile) => {
+				if (!(abstractFile instanceof TFolder)) return
+				if (this.manager.getDatabaseFileInFolder(abstractFile.path)) return
+				menu.addItem(item => {
+					item
+						.setTitle(t('ctx_create_database'))
+						.setIcon('database')
+						.onClick(async () => {
+							await this.createAndOpenDatabase(abstractFile.path)
+						})
+				})
 			})
 		)
 

@@ -446,6 +446,7 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	// Commands
 	cmd_open_database: 'このフォルダーのデータベースを開く',
 	cmd_create_database: '現在のフォルダーに新しいデータベースを作成',
+	ctx_create_database: 'ここにデータベースを作成',
 
 	// Quick add
 	cmd_quick_add: 'データベースに行をすばやく追加',
