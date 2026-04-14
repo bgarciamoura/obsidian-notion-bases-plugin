@@ -1820,6 +1820,27 @@
 	word-break: break-word;
 }
 
+/* Per-column wrap (applied via wrap toggle in the column menu) */
+.nb-td--wrap .nb-td-inner {
+	height: auto;
+	max-height: none;
+	min-height: var(--nb-row-height);
+	overflow: visible;
+	align-items: flex-start;
+	padding: 6px 0;
+}
+
+.nb-td--wrap .nb-cell-text,
+.nb-td--wrap .nb-cell-clickable {
+	white-space: normal;
+	word-break: break-word;
+	overflow: visible;
+	text-overflow: clip;
+	align-items: flex-start;
+	height: auto;
+	min-height: var(--nb-row-height);
+}
+
 /* ── Linha de agregação ─────────────────────────────────────────────────────── */
 
 .nb-tfoot {

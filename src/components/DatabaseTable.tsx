@@ -141,11 +141,12 @@ function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEdit
 								const cfStyle = conditionalFormats?.length && schema
 									? getConditionalStyle(row.original as NoteRow, cell.column.id, conditionalFormats, schema)
 									: undefined
+								const wrapCell = !!schema?.find(s => s.id === cell.column.id)?.wrap
 								return (
 									<td
 										key={cell.id}
 										data-col-id={cell.column.id}
-										className={['nb-td', sticky ? 'nb-td--sticky' : '', sticky?.isLast ? 'nb-td--sticky-last' : ''].filter(Boolean).join(' ')}
+										className={['nb-td', sticky ? 'nb-td--sticky' : '', sticky?.isLast ? 'nb-td--sticky-last' : '', wrapCell ? 'nb-td--wrap' : ''].filter(Boolean).join(' ')}
 										style={{ width: cell.column.getSize(), ...(sticky ? { left: sticky.left, zIndex: 1 } : {}), ...cfStyle }}
 										onClick={e => e.stopPropagation()}
 									>

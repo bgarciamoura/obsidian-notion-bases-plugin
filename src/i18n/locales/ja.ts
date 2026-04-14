@@ -97,6 +97,8 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	configure_image_folder: '画像フォルダーを設定',
 	field_type_label: 'フィールドタイプ',
 	hide_field: 'フィールドを非表示',
+	enable_wrap_text: 'テキストを折り返す',
+	disable_wrap_text: '折り返しを解除',
 	delete_field: 'フィールドを削除',
 
 	// Column types

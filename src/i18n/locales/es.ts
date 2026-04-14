@@ -97,6 +97,8 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	configure_image_folder: 'Configurar carpeta de imágenes',
 	field_type_label: 'Tipo de campo',
 	hide_field: 'Ocultar campo',
+	enable_wrap_text: 'Ajustar texto',
+	disable_wrap_text: 'No ajustar texto',
 	delete_field: 'Eliminar campo',
 
 	// Column types

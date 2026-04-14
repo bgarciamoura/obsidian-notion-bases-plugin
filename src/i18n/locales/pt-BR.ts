@@ -97,6 +97,8 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	configure_image_folder: 'Configurar pasta de imagens',
 	field_type_label: 'Tipo de campo',
 	hide_field: 'Ocultar campo',
+	enable_wrap_text: 'Quebrar texto',
+	disable_wrap_text: 'Não quebrar texto',
 	delete_field: 'Excluir campo',
 
 	// Column types
