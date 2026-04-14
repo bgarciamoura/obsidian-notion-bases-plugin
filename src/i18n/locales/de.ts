@@ -446,6 +446,7 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	// Commands
 	cmd_open_database: 'Datenbank für diesen Ordner öffnen',
 	cmd_create_database: 'Neue Datenbank im aktuellen Ordner erstellen',
+	ctx_create_database: 'Datenbank hier erstellen',
 
 	// Folder arrangement
 	arr_settings_title: 'Ordnerorganisation',

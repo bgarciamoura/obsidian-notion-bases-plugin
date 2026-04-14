@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, Plugin, TFile, WorkspaceLeaf } from 'obsidian'
+import { MarkdownView, Notice, Plugin, TFile, TFolder, WorkspaceLeaf } from 'obsidian'
 import { t } from './i18n'
 import { DATABASE_VIEW_TYPE, DatabaseView } from './database-view'
 import { DatabaseManager } from './database-manager'
@@ -6,6 +6,7 @@ import { DEFAULT_SETTINGS, NotionBasesSettings, NotionBasesSettingTab } from './
 import { DatabasePickerModal } from './database-picker-modal'
 import { QuickAddModal } from './quick-add-modal'
 import { registerDatabaseEmbed } from './database-embed'
+import { createLivePlaceholderProcessor } from './live-placeholders'
 
 export default class NotionBasesPlugin extends Plugin {
 	settings: NotionBasesSettings
@@ -97,6 +98,22 @@ export default class NotionBasesPlugin extends Plugin {
 			})
 		)
 
+		// Menu de contexto do explorador de arquivos — "Create database here" em pastas
+		this.registerEvent(
+			this.app.workspace.on('file-menu', (menu, abstractFile) => {
+				if (!(abstractFile instanceof TFolder)) return
+				if (this.manager.getDatabaseFileInFolder(abstractFile.path)) return
+				menu.addItem(item => {
+					item
+						.setTitle(t('ctx_create_database'))
+						.setIcon('database')
+						.onClick(async () => {
+							await this.createAndOpenDatabase(abstractFile.path)
+						})
+				})
+			})
+		)
+
 		// Folder arrangement: mover linhas para subpastas conforme valores das colunas configuradas
 		this.registerEvent(
 			this.app.metadataCache.on('changed', (file) => {
@@ -114,6 +131,9 @@ export default class NotionBasesPlugin extends Plugin {
 
 		// Embed de database em notas via ```nb-database
 		registerDatabaseEmbed(this)
+
+		// Live placeholders — substitui {{columnId}} no corpo das notas em tempo de renderização
+		this.registerMarkdownPostProcessor(createLivePlaceholderProcessor(this.app, this.manager))
 
 		// Settings tab
 		this.addSettingTab(new NotionBasesSettingTab(this.app, this))

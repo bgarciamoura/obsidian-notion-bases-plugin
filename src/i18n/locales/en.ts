@@ -444,6 +444,7 @@ const en = {
 	// Commands
 	cmd_open_database: 'Open database for this folder',
 	cmd_create_database: 'Create new database in current folder',
+	ctx_create_database: 'Create database here',
 
 	// Folder arrangement
 	arr_settings_title: 'Folder arrangement',

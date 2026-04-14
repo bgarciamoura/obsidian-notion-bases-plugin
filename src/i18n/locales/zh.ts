@@ -446,6 +446,7 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	// Commands
 	cmd_open_database: '打开此文件夹的数据库',
 	cmd_create_database: '在当前文件夹创建新数据库',
+	ctx_create_database: '在此处创建数据库',
 
 	// Folder arrangement
 	arr_settings_title: '文件夹排列',

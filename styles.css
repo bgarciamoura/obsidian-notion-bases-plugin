@@ -5587,3 +5587,14 @@ body.nb-tl-resizing * {
 	justify-content: flex-end;
 	margin-top: 12px;
 }
+
+/* Live placeholder pills (rendered by the markdown post-processor) */
+.nb-placeholder-pill {
+	display: inline-block;
+	padding: 1px 8px;
+	border-radius: 10px;
+	font-size: 0.85em;
+	line-height: 1.4;
+	white-space: nowrap;
+	vertical-align: baseline;
+}
