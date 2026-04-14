@@ -55,6 +55,7 @@ export interface ColumnSchema {
 	rollupTargetColumnId?: string     // rollup: which column in the target database
 	rollupFunction?: RollupFunction   // rollup: aggregation function
 	isHierarchical?: boolean          // self-relation used as hierarchy parent column
+	wrap?: boolean                    // table view: wrap long text cells onto multiple lines
 }
 
 // ── View / filter / sort ────────────────────────────────────────────────────

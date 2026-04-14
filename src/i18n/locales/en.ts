@@ -95,6 +95,8 @@ const en = {
 	configure_image_folder: 'Configure image folder',
 	field_type_label: 'Field type',
 	hide_field: 'Hide field',
+	enable_wrap_text: 'Wrap text',
+	disable_wrap_text: 'Unwrap text',
 	delete_field: 'Delete field',
 
 	// Column types

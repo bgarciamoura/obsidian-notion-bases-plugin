@@ -97,6 +97,8 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	configure_image_folder: 'Bildordner konfigurieren',
 	field_type_label: 'Feldtyp',
 	hide_field: 'Feld ausblenden',
+	enable_wrap_text: 'Text umbrechen',
+	disable_wrap_text: 'Umbruch deaktivieren',
 	delete_field: 'Feld löschen',
 
 	// Column types

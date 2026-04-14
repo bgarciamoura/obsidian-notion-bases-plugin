@@ -602,9 +602,17 @@ export class DatabaseManager {
 		if (nonNull.every(v => typeof v === 'number')) return 'number'
 		if (nonNull.every(v => Array.isArray(v))) return 'multiselect'
 
-		// Baixa cardinalidade → select
-		const unique = new Set(nonNull.map(String))
-		if (unique.size <= 8) return 'select'
+		const strs: string[] = nonNull.map(v => {
+			if (typeof v === 'object' && v !== null) return JSON.stringify(v)
+			if (typeof v === 'string') return v
+			if (typeof v === 'number' || typeof v === 'boolean') return String(v)
+			return ''
+		})
+		const looksLikeSentence = strs.some(s => s.length > 40 || (/\s/.test(s) && /[.!?,;:]/.test(s)))
+		if (looksLikeSentence) return 'text'
+
+		const unique = new Set(strs)
+		if (unique.size <= 8 && unique.size < nonNull.length) return 'select'
 
 		return 'text'
 	}

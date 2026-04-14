@@ -97,6 +97,8 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	configure_image_folder: '配置图片文件夹',
 	field_type_label: '字段类型',
 	hide_field: '隐藏字段',
+	enable_wrap_text: '自动换行',
+	disable_wrap_text: '取消换行',
 	delete_field: '删除字段',
 
 	// Column types

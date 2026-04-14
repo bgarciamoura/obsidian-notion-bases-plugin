@@ -1176,6 +1176,16 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						</button>
 					))}
 
+					{(col.type === 'text' || col.type === 'title' || col.type === 'url' || col.type === 'email' || col.type === 'phone') && (
+						<button
+							className="nb-menu-item"
+							onClick={() => { void updateCol({ wrap: !col.wrap }); setMenuOpen(false) }}
+						>
+							<span className="nb-menu-item-icon">↵</span>
+							<span>{col.wrap ? t('disable_wrap_text') : t('enable_wrap_text')}</span>
+						</button>
+					)}
+
 					<div className="nb-menu-separator" />
 					<button className="nb-menu-item" onClick={() => { void handleHide() }}>
 						<span className="nb-menu-item-icon">👁</span>
