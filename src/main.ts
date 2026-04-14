@@ -97,6 +97,21 @@ export default class NotionBasesPlugin extends Plugin {
 			})
 		)
 
+		// Folder arrangement: mover linhas para subpastas conforme valores das colunas configuradas
+		this.registerEvent(
+			this.app.metadataCache.on('changed', (file) => {
+				if (!(file instanceof TFile)) return
+				if (file.extension !== 'md') return
+				if (this.manager.isDatabaseFile(file)) return
+				if (this.manager.isArrangementInProgress(file.path)) return
+				const dbFile = this.manager.findGoverningDatabase(file)
+				if (!dbFile) return
+				const config = this.manager.readConfig(dbFile)
+				if (!config.folderArrangement?.enabled) return
+				void this.manager.applyArrangement(file, dbFile, config)
+			})
+		)
+
 		// Embed de database em notas via ```nb-database
 		registerDatabaseEmbed(this)
 

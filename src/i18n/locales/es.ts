@@ -447,6 +447,23 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	cmd_open_database: 'Abrir base de datos de esta carpeta',
 	cmd_create_database: 'Crear nueva base de datos en la carpeta actual',
 
+	// Folder arrangement
+	arr_settings_title: 'Organización por carpetas',
+	arr_settings_desc: 'Mueve automáticamente los archivos de fila a subcarpetas anidadas según los valores de las propiedades seleccionadas, en orden.',
+	arr_settings_enabled_name: 'Activar organización por carpetas',
+	arr_settings_enabled_desc: 'Cuando está activado, las filas se mueven en cuanto cambia una de las propiedades seleccionadas. Desactivado por defecto.',
+	arr_settings_no_props: 'No hay propiedades seleccionadas. Añade una a continuación para definir la jerarquía de carpetas.',
+	arr_settings_no_candidates: 'No hay columnas elegibles. La organización por carpetas admite columnas de texto, selección, estado y fecha.',
+	arr_settings_add_placeholder: 'Seleccionar una propiedad...',
+	arr_settings_add_btn: 'Añadir',
+	arr_settings_preview_btn: 'Previsualizar y aplicar a filas existentes',
+	arr_preview_title: 'Previsualización de la organización por carpetas',
+	arr_preview_empty: 'No hay filas que mover.',
+	arr_preview_desc: '$count fila(s) serán movidas:',
+	arr_preview_apply: 'Aplicar',
+	arr_preview_cancel: 'Cancelar',
+	arr_preview_applied: '$count fila(s) movida(s).',
+
 	// Quick add
 	cmd_quick_add: 'Añadir fila rápidamente a la base de datos',
 	quick_add_title: 'Añadir rápido',

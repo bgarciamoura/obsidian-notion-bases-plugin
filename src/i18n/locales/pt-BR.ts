@@ -447,6 +447,23 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	cmd_open_database: 'Abrir banco de dados desta pasta',
 	cmd_create_database: 'Criar novo banco de dados na pasta atual',
 
+	// Folder arrangement
+	arr_settings_title: 'Organização por pastas',
+	arr_settings_desc: 'Move automaticamente os arquivos de linha para subpastas aninhadas com base nos valores das propriedades selecionadas, na ordem definida.',
+	arr_settings_enabled_name: 'Ativar organização por pastas',
+	arr_settings_enabled_desc: 'Quando ativado, as linhas são movidas assim que uma das propriedades selecionadas é alterada. Desativado por padrão.',
+	arr_settings_no_props: 'Nenhuma propriedade selecionada. Adicione uma abaixo para definir a hierarquia de pastas.',
+	arr_settings_no_candidates: 'Nenhuma coluna elegível. A organização por pastas suporta colunas de texto, seleção, status e data.',
+	arr_settings_add_placeholder: 'Selecionar uma propriedade...',
+	arr_settings_add_btn: 'Adicionar',
+	arr_settings_preview_btn: 'Pré-visualizar e aplicar às linhas existentes',
+	arr_preview_title: 'Pré-visualização da organização por pastas',
+	arr_preview_empty: 'Nenhuma linha precisa ser movida.',
+	arr_preview_desc: '$count linha(s) será(ão) movida(s):',
+	arr_preview_apply: 'Aplicar',
+	arr_preview_cancel: 'Cancelar',
+	arr_preview_applied: '$count linha(s) movida(s).',
+
 	// Quick add
 	cmd_quick_add: 'Adicionar linha rapidamente ao banco de dados',
 	quick_add_title: 'Adição rápida',

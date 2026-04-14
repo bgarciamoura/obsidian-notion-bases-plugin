@@ -6,6 +6,7 @@ import {
 	DatabaseConfig,
 	DEFAULT_DATABASE_CONFIG,
 	DEFAULT_VIEW,
+	FolderArrangementConfig,
 	InlineFieldMeta,
 	NoteRow,
 	RollupFunction,
@@ -15,6 +16,10 @@ import { parseInlineFields, frontmatterLineCount } from './inline-fields'
 import { TemplatePickerModal } from './template-picker-modal'
 
 export const DATABASE_MARKER = 'notion-bases'
+
+export function sanitizeSegment(s: string): string {
+	return s.replace(/[/\\:*?"<>|]/g, '').replace(/\s+/g, ' ').trim()
+}
 
 export class DatabaseManager {
 	readInlineFields = false
@@ -53,11 +58,20 @@ export class DatabaseManager {
 			!(col.options?.some(o => o.value === '[object Object]'))
 		)
 
+		const rawArrangement = fm['folderArrangement']
+		let folderArrangement: FolderArrangementConfig | undefined
+		if (rawArrangement && typeof rawArrangement === 'object' && !Array.isArray(rawArrangement)) {
+			const r = rawArrangement as Record<string, unknown>
+			const ids = Array.isArray(r['propertyIds']) ? (r['propertyIds'] as unknown[]).filter((v): v is string => typeof v === 'string') : []
+			folderArrangement = { enabled: r['enabled'] === true, propertyIds: ids }
+		}
+
 		return {
 			schema,
 			views: Array.isArray(fm['views']) && (fm['views'] as unknown[]).length > 0 ? fm['views'] as ViewConfig[] : [DEFAULT_VIEW],
 			templatePath: typeof fm['templatePath'] === 'string' && fm['templatePath'] ? fm['templatePath'] : undefined,
 			askTemplateOnCreate: fm['askTemplateOnCreate'] === true,
+			folderArrangement,
 		}
 	}
 
@@ -70,6 +84,14 @@ export class DatabaseManager {
 			else delete fm['templatePath']
 			if (config.askTemplateOnCreate) fm['askTemplateOnCreate'] = true
 			else delete fm['askTemplateOnCreate']
+			if (config.folderArrangement && config.folderArrangement.propertyIds.length > 0) {
+				fm['folderArrangement'] = {
+					enabled: !!config.folderArrangement.enabled,
+					propertyIds: config.folderArrangement.propertyIds,
+				}
+			} else {
+				delete fm['folderArrangement']
+			}
 		})
 	}
 
@@ -403,6 +425,117 @@ export class DatabaseManager {
 		if (body.trim()) {
 			const current = await this.app.vault.read(targetFile)
 			await this.app.vault.modify(targetFile, current + substitute(body))
+		}
+	}
+
+	// ── Folder arrangement ─────────────────────────────────────────────────
+
+	private folderArrangementInProgress = new Set<string>()
+
+	/** Returns the database file that "governs" a row file (db located in any ancestor folder). */
+	findGoverningDatabase(file: TFile): TFile | null {
+		let folder = file.parent
+		while (folder) {
+			const db = this.getDatabaseFileInFolder(folder.path)
+			if (db && db.path !== file.path) return db
+			folder = folder.parent
+		}
+		return null
+	}
+
+	/**
+	 * Compute the path a row file should live at given the database's folderArrangement config.
+	 * Returns null if the file is already at the right place, the db file itself, or arrangement is off.
+	 */
+	computeArrangedPath(file: TFile, dbFile: TFile, config: DatabaseConfig): string | null {
+		const arr = config.folderArrangement
+		if (!arr || !arr.enabled || arr.propertyIds.length === 0) return null
+		if (file.path === dbFile.path) return null
+
+		const fm = this.app.metadataCache.getFileCache(file)?.frontmatter as Record<string, unknown> | undefined
+		const segments: string[] = []
+		for (const id of arr.propertyIds) {
+			const v = fm?.[id]
+			if (v == null || v === '') break
+			const raw = Array.isArray(v) ? (v[0] as unknown) : v
+			if (raw == null || raw === '') break
+			let str: string
+			if (typeof raw === 'string') str = raw
+			else if (typeof raw === 'number' || typeof raw === 'boolean' || typeof raw === 'bigint') str = String(raw)
+			else continue
+			const seg = sanitizeSegment(str)
+			if (!seg) break
+			segments.push(seg)
+		}
+
+		const dbFolder = dbFile.parent?.path ?? ''
+		const targetFolder = [dbFolder, ...segments].filter(Boolean).join('/')
+		const target = normalizePath(`${targetFolder ? `${targetFolder}/` : ''}${file.basename}.md`)
+		if (target === file.path) return null
+		return target
+	}
+
+	isArrangementInProgress(path: string): boolean {
+		return this.folderArrangementInProgress.has(path)
+	}
+
+	/** Move the file to its arranged location if needed. Returns true if a move happened. */
+	async applyArrangement(file: TFile, dbFile: TFile, config: DatabaseConfig): Promise<boolean> {
+		const target = this.computeArrangedPath(file, dbFile, config)
+		if (!target) return false
+		if (this.folderArrangementInProgress.has(file.path)) return false
+
+		const targetFolder = target.slice(0, target.lastIndexOf('/'))
+		if (targetFolder) await this.ensureFolder(targetFolder)
+
+		// Skip if a sibling with the same basename already exists at target
+		if (this.app.vault.getFileByPath(target)) return false
+
+		this.folderArrangementInProgress.add(file.path)
+		this.folderArrangementInProgress.add(target)
+		try {
+			await this.app.fileManager.renameFile(file, target)
+		} finally {
+			setTimeout(() => {
+				this.folderArrangementInProgress.delete(file.path)
+				this.folderArrangementInProgress.delete(target)
+			}, 500)
+		}
+		return true
+	}
+
+	/** Apply arrangement to every row in the database. Returns the list of moves performed. */
+	async applyArrangementToAll(dbFile: TFile, config: DatabaseConfig): Promise<{ from: string; to: string }[]> {
+		const moves: { from: string; to: string }[] = []
+		const notes = this.getNotesInDatabase(dbFile, true)
+		for (const note of notes) {
+			const target = this.computeArrangedPath(note, dbFile, config)
+			if (!target) continue
+			const from = note.path
+			const moved = await this.applyArrangement(note, dbFile, config)
+			if (moved) moves.push({ from, to: target })
+		}
+		return moves
+	}
+
+	/** Compute (without applying) the moves that would happen for every row. */
+	previewArrangement(dbFile: TFile, config: DatabaseConfig): { file: TFile; from: string; to: string | null }[] {
+		const notes = this.getNotesInDatabase(dbFile, true)
+		return notes.map(note => ({
+			file: note,
+			from: note.path,
+			to: this.computeArrangedPath(note, dbFile, config),
+		}))
+	}
+
+	private async ensureFolder(path: string): Promise<void> {
+		const parts = path.split('/').filter(Boolean)
+		let cur = ''
+		for (const p of parts) {
+			cur = cur ? `${cur}/${p}` : p
+			if (!this.app.vault.getFolderByPath(cur)) {
+				try { await this.app.vault.createFolder(cur) } catch { /* race: another caller created it */ }
+			}
 		}
 	}
 

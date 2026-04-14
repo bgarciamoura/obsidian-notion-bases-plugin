@@ -447,6 +447,23 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	cmd_open_database: 'Datenbank für diesen Ordner öffnen',
 	cmd_create_database: 'Neue Datenbank im aktuellen Ordner erstellen',
 
+	// Folder arrangement
+	arr_settings_title: 'Ordnerorganisation',
+	arr_settings_desc: 'Verschiebt Zeilendateien automatisch in verschachtelte Unterordner basierend auf den Werten der ausgewählten Eigenschaften, in der angegebenen Reihenfolge.',
+	arr_settings_enabled_name: 'Ordnerorganisation aktivieren',
+	arr_settings_enabled_desc: 'Wenn aktiviert, werden Zeilen verschoben, sobald sich eine der ausgewählten Eigenschaften ändert. Standardmäßig deaktiviert.',
+	arr_settings_no_props: 'Keine Eigenschaften ausgewählt. Fügen Sie unten eine hinzu, um die Ordnerhierarchie zu definieren.',
+	arr_settings_no_candidates: 'Keine geeigneten Spalten. Die Ordnerorganisation unterstützt Text-, Auswahl-, Status- und Datumsspalten.',
+	arr_settings_add_placeholder: 'Eigenschaft auswählen...',
+	arr_settings_add_btn: 'Hinzufügen',
+	arr_settings_preview_btn: 'Vorschau und auf bestehende Zeilen anwenden',
+	arr_preview_title: 'Vorschau der Ordnerorganisation',
+	arr_preview_empty: 'Keine Zeilen müssen verschoben werden.',
+	arr_preview_desc: '$count Zeile(n) werden verschoben:',
+	arr_preview_apply: 'Anwenden',
+	arr_preview_cancel: 'Abbrechen',
+	arr_preview_applied: '$count Zeile(n) verschoben.',
+
 	// Quick add
 	cmd_quick_add: 'Zeile schnell zur Datenbank hinzufügen',
 	quick_add_title: 'Schnell hinzufügen',
