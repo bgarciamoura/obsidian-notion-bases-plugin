@@ -36,6 +36,16 @@ export function DatabaseRoot({
 
 	// ── Shared config (used for direct mode tabs + free embed initialization) ─
 	const [config, setConfig] = useState<DatabaseConfig>(DEFAULT_DATABASE_CONFIG)
+	const pendingSelfWrites = useRef(0)
+	const writeConfigAndTrack = useCallback(async (cfg: DatabaseConfig) => {
+		if (!dbFile) return
+		pendingSelfWrites.current++
+		try {
+			await manager.writeConfig(dbFile, cfg)
+		} finally {
+			setTimeout(() => { pendingSelfWrites.current = Math.max(0, pendingSelfWrites.current - 1) }, 150)
+		}
+	}, [dbFile, manager])
 
 	// ── Direct mode state ─────────────────────────────────────────────────────
 	const [activeViewId, setActiveViewId] = useState('')
@@ -91,7 +101,9 @@ export function DatabaseRoot({
 	useEffect(() => {
 		if (!dbFile || !isDirectMode) return
 		const onChange = (file: TFile) => {
-			if (file === dbFile) setConfig(manager.readConfig(dbFile))
+			if (file !== dbFile) return
+			if (pendingSelfWrites.current > 0) return
+			setConfig(manager.readConfig(dbFile))
 		}
 		app.metadataCache.on('changed', onChange)
 		return () => app.metadataCache.off('changed', onChange)
@@ -147,7 +159,7 @@ export function DatabaseRoot({
 		const newViews = reorderViews(config.views, dragViewId, toId)
 		const newConfig = { ...config, views: newViews }
 		setConfig(newConfig); setDragViewId(null)
-		await manager.writeConfig(dbFile, newConfig)
+		await writeConfigAndTrack(newConfig)
 	}
 
 	const handleEmbedTabDrop = async (toId: string) => {
@@ -299,8 +311,8 @@ export function DatabaseRoot({
 		const newViews = config.views.map(v => v.id === updatedView.id ? updatedView : v)
 		const newConfig = { ...config, views: newViews }
 		setConfig(newConfig)
-		await manager.writeConfig(dbFile, newConfig)
-	}, [config, dbFile, manager])
+		await writeConfigAndTrack(newConfig)
+	}, [config, dbFile, writeConfigAndTrack])
 
 	const addView = useCallback(async (type: ViewConfig['type']) => {
 		if (!dbFile) return
@@ -323,8 +335,8 @@ export function DatabaseRoot({
 		setConfig(newConfig)
 		setActiveViewId(newView.id)
 		setAddMenuOpen(false)
-		await manager.writeConfig(dbFile, newConfig)
-	}, [config, dbFile, manager])
+		await writeConfigAndTrack(newConfig)
+	}, [config, dbFile, writeConfigAndTrack])
 
 	const removeView = useCallback(async (viewId: string) => {
 		if (!dbFile || config.views.length <= 1) return
@@ -332,8 +344,8 @@ export function DatabaseRoot({
 		const newConfig = { ...config, views: newViews }
 		setConfig(newConfig)
 		if (activeViewId === viewId) setActiveViewId(newViews[0].id)
-		await manager.writeConfig(dbFile, newConfig)
-	}, [config, dbFile, manager, activeViewId])
+		await writeConfigAndTrack(newConfig)
+	}, [config, dbFile, writeConfigAndTrack, activeViewId])
 
 	const activeView = config.views.find(v => v.id === activeViewId) ?? config.views[0] ?? DEFAULT_VIEW
 	const isSingleTableView = config.views.length === 1 && activeView.type === 'table'
@@ -342,7 +354,7 @@ export function DatabaseRoot({
 		if (!dbFile) return
 		const newConfig = { ...config, views: updatedViews }
 		setConfig(newConfig)
-		await manager.writeConfig(dbFile, newConfig)
+		await writeConfigAndTrack(newConfig)
 	}
 
 	return (
@@ -417,8 +429,8 @@ export function DatabaseRoot({
 						new DatabaseSettingsModal(app, config, async (updated) => {
 							const newConfig = { ...config, ...updated }
 							setConfig(newConfig)
-							await manager.writeConfig(dbFile, newConfig)
-						}).open()
+							await writeConfigAndTrack(newConfig)
+						}, manager, dbFile).open()
 					}}
 				>
 					⚙
