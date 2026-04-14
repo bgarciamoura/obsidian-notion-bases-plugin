@@ -2080,43 +2080,59 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 		{/* Linha de pills de filtros ativos */}
 		{activeFilters.length > 0 && !(shouldCollapse && searchExpanded) && (
-			<div className="nb-pills-row">
-				<DndContext
-					sensors={sensors}
-					collisionDetection={closestCenter}
-					onDragStart={() => setOpenFilterPill(null)}
-					onDragEnd={handlePillDragEnd}
+			<div className={`nb-pills-row${activeView.filtersCollapsed ? ' nb-filter-pills-row--collapsed' : ''}`}>
+				{!activeView.filtersCollapsed && (
+					<DndContext
+						sensors={sensors}
+						collisionDetection={closestCenter}
+						onDragStart={() => setOpenFilterPill(null)}
+						onDragEnd={handlePillDragEnd}
+					>
+						<SortableContext items={activeFilters.map(f => f.id)} strategy={horizontalListSortingStrategy}>
+							{activeFilters.map((filter, idx) => (
+								<Fragment key={filter.id}>
+									{idx > 0 && (
+										<button
+											className={`nb-pill-conjunction ${filter.conjunction === 'or' ? 'nb-pill-conjunction--or' : ''}`}
+											onClick={() => toggleConjunction(filter.id)}
+											title="Clique para alternar entre E / OU"
+										>
+											{filter.conjunction === 'or' ? t('conjunction_or') : t('conjunction_and')}
+										</button>
+									)}
+									<SortablePill
+										filter={filter}
+										isActive={openFilterPill === filter.id}
+										onToggle={() => setOpenFilterPill(v => v === filter.id ? null : filter.id)}
+										onRemove={() => removeFilter(filter.id)}
+										btnRef={el => { filterPillRefs.current[filter.id] = el }}
+									/>
+								</Fragment>
+							))}
+						</SortableContext>
+					</DndContext>
+				)}
+				{activeView.filtersCollapsed && (
+					<span className="nb-filter-pills-collapsed-label">
+						{activeFilters.length === 1 ? t('filters_count_one') : t('filters_count_other').replace('{n}', String(activeFilters.length))}
+					</span>
+				)}
+				<button
+					className="nb-filter-pills-toggle"
+					onClick={() => { void saveView({ ...activeView, filtersCollapsed: !activeView.filtersCollapsed }) }}
+					title={activeView.filtersCollapsed ? t('show_filters') : t('hide_filters')}
 				>
-					<SortableContext items={activeFilters.map(f => f.id)} strategy={horizontalListSortingStrategy}>
-						{activeFilters.map((filter, idx) => (
-							<Fragment key={filter.id}>
-								{idx > 0 && (
-									<button
-										className={`nb-pill-conjunction ${filter.conjunction === 'or' ? 'nb-pill-conjunction--or' : ''}`}
-										onClick={() => toggleConjunction(filter.id)}
-										title="Clique para alternar entre E / OU"
-									>
-										{filter.conjunction === 'or' ? t('conjunction_or') : t('conjunction_and')}
-									</button>
-								)}
-								<SortablePill
-									filter={filter}
-									isActive={openFilterPill === filter.id}
-									onToggle={() => setOpenFilterPill(v => v === filter.id ? null : filter.id)}
-									onRemove={() => removeFilter(filter.id)}
-									btnRef={el => { filterPillRefs.current[filter.id] = el }}
-								/>
-							</Fragment>
-						))}
-					</SortableContext>
-				</DndContext>
+					<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+						{activeView.filtersCollapsed ? <polyline points="6 9 12 15 18 9"/> : <polyline points="18 15 12 9 6 15"/>}
+					</svg>
+				</button>
 			</div>
 		)}
 
 		{/* Dropdown portal para pill aberta */}
 		{(() => {
 			const filter = activeFilters.find(f => f.id === openFilterPill)
-			if (!filter || !pillDropdownPos) return null
+			if (!filter || !pillDropdownPos || activeView.filtersCollapsed) return null
 			return createPortal(
 				<div ref={pillDropdownRef} className="nb-filter-pill-dropdown" style={{ position: 'fixed', top: pillDropdownPos.top, left: pillDropdownPos.left, zIndex: 1000 }}>
 					<div className="nb-filter-query-row">

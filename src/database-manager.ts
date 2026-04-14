@@ -1,4 +1,4 @@
-import { App, TFile, TFolder, normalizePath } from 'obsidian'
+import { App, TFile, TFolder, normalizePath, parseYaml } from 'obsidian'
 import { t } from './i18n'
 import {
 	ColumnSchema,
@@ -342,22 +342,25 @@ export class DatabaseManager {
 		return idx > 0 ? path.slice(0, idx) : null
 	}
 
-	/** Append template body to a note, substituting {{title}}, {{date}}, {{time}}, {{folder}}. */
+	/**
+	 * Apply a template to a note: merges template frontmatter (existing row values win) and
+	 * appends the template body. Substitutes {{title}}, {{folder}}, {{date}}, {{time}} (with
+	 * optional moment format) in both frontmatter values and body.
+	 */
 	async applyTemplate(targetFile: TFile, templatePath: string): Promise<void> {
 		const templateFile = this.app.vault.getFileByPath(normalizePath(templatePath))
 		if (!templateFile) return
 
 		const raw = await this.app.vault.read(templateFile)
-		// Strip the template's own frontmatter if present — row frontmatter is authoritative
+		const fmMatch = raw.match(/^---\n([\s\S]*?)\n---\n?/)
 		const body = raw.replace(/^---\n[\s\S]*?\n---\n?/, '')
-		if (!body.trim()) return
 
 		const moment = (window as unknown as { moment?: (d?: Date) => { format: (fmt: string) => string } }).moment
 		const now = new Date()
 		const fmtDate = (fmt: string) => moment ? moment(now).format(fmt) : now.toISOString().slice(0, 10)
 		const fmtTime = (fmt: string) => moment ? moment(now).format(fmt) : now.toTimeString().slice(0, 5)
 
-		const processed = body
+		const substitute = (s: string) => s
 			.replace(/\{\{title\}\}/g, targetFile.basename)
 			.replace(/\{\{folder\}\}/g, targetFile.parent?.path ?? '')
 			.replace(/\{\{date:([^}]+)\}\}/g, (_m, f) => fmtDate(String(f)))
@@ -365,8 +368,42 @@ export class DatabaseManager {
 			.replace(/\{\{date\}\}/g, fmtDate('YYYY-MM-DD'))
 			.replace(/\{\{time\}\}/g, fmtTime('HH:mm'))
 
-		const current = await this.app.vault.read(targetFile)
-		await this.app.vault.modify(targetFile, current + processed)
+		const substituteDeep = (v: unknown): unknown => {
+			if (typeof v === 'string') return substitute(v)
+			if (Array.isArray(v)) return v.map(substituteDeep)
+			if (v && typeof v === 'object') {
+				const out: Record<string, unknown> = {}
+				for (const [k, val] of Object.entries(v as Record<string, unknown>)) out[k] = substituteDeep(val)
+				return out
+			}
+			return v
+		}
+
+		if (fmMatch) {
+			let tplFm: Record<string, unknown> = {}
+			try {
+				const parsed: unknown = parseYaml(fmMatch[1])
+				if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+					tplFm = substituteDeep(parsed) as Record<string, unknown>
+				}
+			} catch {
+				tplFm = {}
+			}
+			if (Object.keys(tplFm).length > 0) {
+				await this.app.fileManager.processFrontMatter(targetFile, (fm: Record<string, unknown>) => {
+					for (const [k, v] of Object.entries(tplFm)) {
+						const existing = fm[k]
+						const isEmpty = existing === undefined || existing === null || existing === ''
+						if (isEmpty) fm[k] = v
+					}
+				})
+			}
+		}
+
+		if (body.trim()) {
+			const current = await this.app.vault.read(targetFile)
+			await this.app.vault.modify(targetFile, current + substitute(body))
+		}
 	}
 
 	// ── Lookup helpers ─────────────────────────────────────────────────────

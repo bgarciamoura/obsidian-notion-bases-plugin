@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian'
-import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
@@ -9,9 +9,9 @@ import {
 import {
 	ActiveFilter, applyFilters, applySorts,
 	getColumnIconStatic, getDefaultOperator,
-	OPERATOR_LABELS, NO_VALUE_OPERATORS, getOperatorsForType,
 	getCardConditionalStyle,
 } from './filter-utils'
+import { FilterPillsRow } from './FilterPillsRow'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
@@ -586,30 +586,15 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 			</div>
 
 			{/* Filter pills */}
-			{activeFilters.length > 0 && (
-				<div className="nb-filter-pills-row">
-					{activeFilters.map((f, idx) => (
-						<Fragment key={f.id}>
-							{idx > 0 && (
-								<button className={`nb-pill-conjunction${f.conjunction === 'or' ? ' nb-pill-conjunction--or' : ''}`} onClick={() => toggleConjunction(f.id)}>
-									{f.conjunction === 'or' ? t('conjunction_or') : t('conjunction_and')}
-								</button>
-							)}
-							<span className="nb-filter-pill">
-								<span className="nb-pill-icon">{f.icon}</span>
-								<span className="nb-pill-name">{f.columnName}</span>
-								<select className="nb-pill-op-select" value={f.operator} onChange={e => updateFilter(f.id, e.target.value as FilterOperator, f.value)}>
-									{getOperatorsForType(f.columnType).map(op => <option key={op} value={op}>{OPERATOR_LABELS[op]}</option>)}
-								</select>
-								{!NO_VALUE_OPERATORS.has(f.operator) && (
-									<input className="nb-pill-value-input" type="text" value={f.value} onChange={e => updateFilter(f.id, f.operator, e.target.value)} />
-								)}
-								<button className="nb-pill-remove" onClick={() => removeFilter(f.id)}>×</button>
-							</span>
-						</Fragment>
-					))}
-				</div>
-			)}
+			<FilterPillsRow
+				activeFilters={activeFilters}
+				schema={config.schema}
+				onUpdate={updateFilter}
+				onRemove={removeFilter}
+				onToggleConjunction={toggleConjunction}
+				collapsed={!!activeView.filtersCollapsed}
+				onToggleCollapsed={() => { void saveView({ ...activeView, filtersCollapsed: !activeView.filtersCollapsed }) }}
+			/>
 		</>
 	)
 

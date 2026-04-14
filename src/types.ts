@@ -123,6 +123,7 @@ export interface ViewConfig {
 	chartAggregation?: 'count' | 'sum' | 'avg' | 'min' | 'max'
 	rowOrder?: string[]
 	conditionalFormats?: ConditionalFormatRule[]
+	filtersCollapsed?: boolean
 }
 
 export interface ConditionalFormatRule {

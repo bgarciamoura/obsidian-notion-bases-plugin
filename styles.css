@@ -1966,7 +1966,8 @@
 
 /* ── Filter pills row ────────────────────────────────────────────────────── */
 
-.nb-pills-row {
+.nb-pills-row,
+.nb-filter-pills-row {
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -1977,8 +1978,34 @@
 	border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.nb-pills-row::-webkit-scrollbar {
+.nb-pills-row::-webkit-scrollbar,
+.nb-filter-pills-row::-webkit-scrollbar {
 	display: none;
+}
+
+.nb-filter-pills-collapsed-label {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	padding: 2px 4px;
+}
+
+.nb-filter-pills-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	margin-left: auto;
+	padding: 2px 6px;
+	background: transparent;
+	border: none;
+	border-radius: var(--radius-s);
+	color: var(--text-muted);
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.nb-filter-pills-toggle:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
 }
 
 .nb-filter-pill-sortable {
