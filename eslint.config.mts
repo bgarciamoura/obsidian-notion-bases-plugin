@@ -38,6 +38,7 @@ export default tseslint.config(
 	globalIgnores([
 		"node_modules",
 		"dist",
+		".wolf",
 		"esbuild.config.mjs",
 		"eslint.config.js",
 		"release.mjs",
