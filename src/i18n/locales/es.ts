@@ -446,6 +446,7 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	// Commands
 	cmd_open_database: 'Abrir base de datos de esta carpeta',
 	cmd_create_database: 'Crear nueva base de datos en la carpeta actual',
+	ctx_create_database: 'Crear base de datos aquí',
 
 	// Quick add
 	cmd_quick_add: 'Añadir fila rápidamente a la base de datos',

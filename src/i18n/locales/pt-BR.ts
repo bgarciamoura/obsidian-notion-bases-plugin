@@ -446,6 +446,7 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	// Commands
 	cmd_open_database: 'Abrir banco de dados desta pasta',
 	cmd_create_database: 'Criar novo banco de dados na pasta atual',
+	ctx_create_database: 'Criar banco de dados aqui',
 
 	// Quick add
 	cmd_quick_add: 'Adicionar linha rapidamente ao banco de dados',
