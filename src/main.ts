@@ -6,6 +6,7 @@ import { DEFAULT_SETTINGS, NotionBasesSettings, NotionBasesSettingTab } from './
 import { DatabasePickerModal } from './database-picker-modal'
 import { QuickAddModal } from './quick-add-modal'
 import { registerDatabaseEmbed } from './database-embed'
+import { createLivePlaceholderProcessor } from './live-placeholders'
 
 export default class NotionBasesPlugin extends Plugin {
 	settings: NotionBasesSettings
@@ -115,6 +116,9 @@ export default class NotionBasesPlugin extends Plugin {
 
 		// Embed de database em notas via ```nb-database
 		registerDatabaseEmbed(this)
+
+		// Live placeholders — substitui {{columnId}} no corpo das notas em tempo de renderização
+		this.registerMarkdownPostProcessor(createLivePlaceholderProcessor(this.app, this.manager))
 
 		// Settings tab
 		this.addSettingTab(new NotionBasesSettingTab(this.app, this))
