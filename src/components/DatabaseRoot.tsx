@@ -4,6 +4,9 @@ import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import { DatabaseSettingsModal } from '../database-settings-modal'
 import { DatabaseConfig, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW, EmbedState, ViewConfig } from '../types'
+import { applyFilters } from './filter-utils'
+import { restoreFilterPills } from '../hooks/useDatabaseRows'
+import { evaluateFormulas } from '../formula-engine'
 import { DatabaseTable } from './DatabaseTable'
 import { DatabaseList } from './DatabaseList'
 import { DatabaseBoard } from './DatabaseBoard'
@@ -426,11 +429,28 @@ export function DatabaseRoot({
 					title={t('db_settings_open')}
 					onClick={() => {
 						if (!dbFile) return
+						const restrictToPaths = (() => {
+							const pills = activeView.activePills ?? []
+							if (pills.length === 0) return undefined
+							const filters = restoreFilterPills(pills, config.schema)
+							if (filters.length === 0) return undefined
+							const notes = manager.getNotesInDatabase(dbFile, activeView.includeSubfolders)
+							const rawRows = notes.map(f => manager.getNoteDataSync(f, config.schema))
+							const resolved = manager.resolveRollupsForRows(
+								manager.resolveLookupsForRows(
+									evaluateFormulas(rawRows, config.schema),
+									config.schema,
+								),
+								config.schema,
+							)
+							const filtered = applyFilters(resolved, filters)
+							return new Set(filtered.map(r => r._file.path))
+						})()
 						new DatabaseSettingsModal(app, config, async (updated) => {
 							const newConfig = { ...config, ...updated }
 							setConfig(newConfig)
 							await writeConfigAndTrack(newConfig)
-						}, manager, dbFile).open()
+						}, manager, dbFile, restrictToPaths).open()
 					}}
 				>
 					⚙

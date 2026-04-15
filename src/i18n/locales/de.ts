@@ -461,6 +461,7 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	arr_preview_title: 'Vorschau der Ordnerorganisation',
 	arr_preview_empty: 'Keine Zeilen müssen verschoben werden.',
 	arr_preview_desc: '$count Zeile(n) werden verschoben:',
+	arr_preview_filtered_note: 'Nur in der aktuellen Ansicht sichtbare Dateien werden berücksichtigt.',
 	arr_preview_apply: 'Anwenden',
 	arr_preview_cancel: 'Abbrechen',
 	arr_preview_applied: '$count Zeile(n) verschoben.',

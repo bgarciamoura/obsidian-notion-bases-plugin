@@ -461,6 +461,7 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	arr_preview_title: 'Aperçu de l\'organisation par dossiers',
 	arr_preview_empty: 'Aucune ligne ne doit être déplacée.',
 	arr_preview_desc: '$count ligne(s) seront déplacées :',
+	arr_preview_filtered_note: 'Seuls les fichiers visibles dans la vue actuelle seront pris en compte.',
 	arr_preview_apply: 'Appliquer',
 	arr_preview_cancel: 'Annuler',
 	arr_preview_applied: '$count ligne(s) déplacée(s).',

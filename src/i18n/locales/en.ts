@@ -459,6 +459,7 @@ const en = {
 	arr_preview_title: 'Folder arrangement preview',
 	arr_preview_empty: 'No rows need to be moved.',
 	arr_preview_desc: '$count row(s) will be moved:',
+	arr_preview_filtered_note: 'Only files visible in the current view will be considered.',
 	arr_preview_apply: 'Apply',
 	arr_preview_cancel: 'Cancel',
 	arr_preview_applied: 'Moved $count row(s).',

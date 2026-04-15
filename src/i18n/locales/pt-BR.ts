@@ -461,6 +461,7 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	arr_preview_title: 'Pré-visualização da organização por pastas',
 	arr_preview_empty: 'Nenhuma linha precisa ser movida.',
 	arr_preview_desc: '$count linha(s) será(ão) movida(s):',
+	arr_preview_filtered_note: 'Apenas arquivos visíveis na view atual serão considerados.',
 	arr_preview_apply: 'Aplicar',
 	arr_preview_cancel: 'Cancelar',
 	arr_preview_applied: '$count linha(s) movida(s).',

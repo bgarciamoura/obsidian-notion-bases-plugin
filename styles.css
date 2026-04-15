@@ -1838,7 +1838,6 @@
 	text-overflow: clip;
 	align-items: flex-start;
 	height: auto;
-	min-height: var(--nb-row-height);
 }
 
 /* ── Linha de agregação ─────────────────────────────────────────────────────── */
