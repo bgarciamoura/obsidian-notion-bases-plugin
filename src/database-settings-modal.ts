@@ -18,6 +18,7 @@ export class DatabaseSettingsModal extends Modal {
 	private onSave: (updated: SettingsUpdate) => Promise<void> | void
 	private manager: DatabaseManager | null
 	private dbFile: TFile | null
+	private restrictToPaths: Set<string> | undefined
 
 	constructor(
 		app: App,
@@ -25,12 +26,14 @@ export class DatabaseSettingsModal extends Modal {
 		onSave: (updated: SettingsUpdate) => Promise<void> | void,
 		manager?: DatabaseManager,
 		dbFile?: TFile | null,
+		restrictToPaths?: Set<string>,
 	) {
 		super(app)
 		this.config = config
 		this.onSave = onSave
 		this.manager = manager ?? null
 		this.dbFile = dbFile ?? null
+		this.restrictToPaths = restrictToPaths
 	}
 
 	onOpen(): void {
@@ -193,7 +196,7 @@ export class DatabaseSettingsModal extends Modal {
 			})
 			previewBtn.onclick = () => {
 				if (!this.manager || !this.dbFile) return
-				new FolderArrangementPreviewModal(this.app, this.manager, this.dbFile, { ...this.config, folderArrangement: current }).open()
+				new FolderArrangementPreviewModal(this.app, this.manager, this.dbFile, { ...this.config, folderArrangement: current }, this.restrictToPaths).open()
 			}
 		}
 	}
