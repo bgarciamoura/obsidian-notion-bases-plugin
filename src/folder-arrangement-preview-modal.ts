@@ -9,6 +9,7 @@ export class FolderArrangementPreviewModal extends Modal {
 		private manager: DatabaseManager,
 		private dbFile: TFile,
 		private config: DatabaseConfig,
+		private restrictToPaths?: Set<string>,
 	) {
 		super(app)
 	}
@@ -18,7 +19,11 @@ export class FolderArrangementPreviewModal extends Modal {
 		contentEl.empty()
 		contentEl.createEl('h2', { text: t('arr_preview_title') })
 
-		const moves = this.manager.previewArrangement(this.dbFile, this.config)
+		if (this.restrictToPaths) {
+			contentEl.createEl('p', { text: t('arr_preview_filtered_note'), cls: 'nb-arr-preview-filtered-note' })
+		}
+
+		const moves = this.manager.previewArrangement(this.dbFile, this.config, this.restrictToPaths)
 			.filter(m => m.to !== null)
 
 		if (moves.length === 0) {
@@ -43,7 +48,7 @@ export class FolderArrangementPreviewModal extends Modal {
 		applyBtn.onclick = async () => {
 			applyBtn.disabled = true
 			cancelBtn.disabled = true
-			const applied = await this.manager.applyArrangementToAll(this.dbFile, this.config)
+			const applied = await this.manager.applyArrangementToAll(this.dbFile, this.config, this.restrictToPaths)
 			new Notice(t('arr_preview_applied').replace('$count', String(applied.length)))
 			this.close()
 		}

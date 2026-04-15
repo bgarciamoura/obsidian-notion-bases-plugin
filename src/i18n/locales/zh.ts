@@ -461,6 +461,7 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	arr_preview_title: '文件夹排列预览',
 	arr_preview_empty: '没有需要移动的行。',
 	arr_preview_desc: '将移动 $count 行：',
+	arr_preview_filtered_note: '仅考虑当前视图中可见的文件。',
 	arr_preview_apply: '应用',
 	arr_preview_cancel: '取消',
 	arr_preview_applied: '已移动 $count 行。',

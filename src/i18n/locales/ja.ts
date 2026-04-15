@@ -461,6 +461,7 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	arr_preview_title: 'フォルダー整理のプレビュー',
 	arr_preview_empty: '移動が必要な行はありません。',
 	arr_preview_desc: '$count 行が移動されます：',
+	arr_preview_filtered_note: '現在のビューで表示されているファイルのみが対象になります。',
 	arr_preview_apply: '適用',
 	arr_preview_cancel: 'キャンセル',
 	arr_preview_applied: '$count 行を移動しました。',

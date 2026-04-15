@@ -57,7 +57,7 @@ async function processRowsInChunks(
 	return versionRef.current === currentVersion ? result : null
 }
 
-function restoreFilterPills(
+export function restoreFilterPills(
 	pills: ViewConfig['activePills'],
 	schema: ColumnSchema[],
 ): ActiveFilter[] {

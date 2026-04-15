@@ -461,6 +461,7 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	arr_preview_title: 'Previsualización de la organización por carpetas',
 	arr_preview_empty: 'No hay filas que mover.',
 	arr_preview_desc: '$count fila(s) serán movidas:',
+	arr_preview_filtered_note: 'Solo se considerarán los archivos visibles en la vista actual.',
 	arr_preview_apply: 'Aplicar',
 	arr_preview_cancel: 'Cancelar',
 	arr_preview_applied: '$count fila(s) movida(s).',

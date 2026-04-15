@@ -49,11 +49,12 @@ import { usePagination } from '../hooks/usePagination'
 import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
 
 // ── Virtual row rendering (separate component to isolate hooks) ──────────
-function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHeight: number) {
+function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHeight: number, disabled = false) {
 	const [range, setRange] = useState({ scrollTop: 0, viewportHeight: 800 })
 	const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	useEffect(() => {
+		if (disabled) return
 		const el = scrollRef.current
 		if (!el) return
 		const flush = () => setRange({ scrollTop: el.scrollTop, viewportHeight: el.clientHeight })
@@ -70,8 +71,9 @@ function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHei
 		const ro = new ResizeObserver(flush)
 		ro.observe(el)
 		return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); if (pendingRef.current) clearTimeout(pendingRef.current) }
-	}, [scrollRef])
+	}, [scrollRef, disabled])
 
+	if (disabled) return { startIdx: 0, endIdx: Number.POSITIVE_INFINITY, topPad: 0 }
 	const overscan = 20
 	const startIdx = Math.max(0, Math.floor(range.scrollTop / rowHeight) - overscan)
 	const endIdx = Math.ceil((range.scrollTop + range.viewportHeight) / rowHeight) + overscan
@@ -102,10 +104,11 @@ interface VirtualTbodyProps {
 	onRowDrop?: (filePath: string) => void
 	conditionalFormats?: ConditionalFormatRule[]
 	schema?: ColumnSchema[]
+	disableVirtual?: boolean
 }
 
-function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEditingCell, setContextMenuFile, longPressRef, columns, onAddRow, hierarchyMap, onToggleExpand, onAddSubRow, expandedSet, allExpanded, rowDragEnabled, dragOverPath, onRowDragStart, onRowDragOver, onRowDragEnd, onRowDrop, conditionalFormats, schema }: VirtualTbodyProps) {
-	const { startIdx, endIdx, topPad } = useVirtualScroll(scrollRef, rowHeight)
+function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEditingCell, setContextMenuFile, longPressRef, columns, onAddRow, hierarchyMap, onToggleExpand, onAddSubRow, expandedSet, allExpanded, rowDragEnabled, dragOverPath, onRowDragStart, onRowDragOver, onRowDragEnd, onRowDrop, conditionalFormats, schema, disableVirtual }: VirtualTbodyProps) {
+	const { startIdx, endIdx, topPad } = useVirtualScroll(scrollRef, rowHeight, disableVirtual)
 	const visibleRows = rows.slice(startIdx, Math.min(rows.length, endIdx))
 	const bottomPad = Math.max(0, (rows.length - Math.min(rows.length, endIdx)) * rowHeight)
 
@@ -2325,6 +2328,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 					<VirtualTbody
 						scrollRef={tableWrapperRef}
 						rowHeight={activeView.rowHeight === 'compact' ? 28 : activeView.rowHeight === 'tall' ? 64 : 36}
+						disableVirtual={config.schema.some(c => c.wrap && !activeView.hiddenColumns.includes(c.id))}
 						rows={tableRows as VirtualTbodyProps['rows']}
 						stickyMap={stickyMap}
 						isMobile={isMobile}
