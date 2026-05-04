@@ -174,6 +174,37 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	formula_group_math: 'Mathématiques',
 	formula_group_utils: 'Utilitaires',
 
+	// Formula reference descriptions
+	formula_desc_if: 'Retourne a si cond est vrai, sinon b',
+	formula_desc_ifs: 'Teste les conditions en séquence',
+	formula_desc_and: 'Vrai si tous sont vrais',
+	formula_desc_or: 'Vrai si au moins un est vrai',
+	formula_desc_not: 'Inverse la valeur logique',
+	formula_desc_comparators: 'Compare deux valeurs ; utiliser avec IF',
+	formula_desc_sum: 'Somme toutes les valeurs de la colonne',
+	formula_desc_avg: 'Moyenne des valeurs de la colonne',
+	formula_desc_count: 'Compte les valeurs non vides de la colonne',
+	formula_desc_min: 'Plus petite valeur de la colonne',
+	formula_desc_max: 'Plus grande valeur de la colonne',
+	formula_desc_concat: 'Concatène des textes (ou utiliser &)',
+	formula_desc_len: 'Nombre de caractères',
+	formula_desc_upper_lower: 'Majuscules / minuscules',
+	formula_desc_trim: 'Supprime les espaces en début et en fin',
+	formula_desc_left: 'n premiers caractères',
+	formula_desc_right: 'n derniers caractères',
+	formula_desc_mid: 'Sous-chaîne à partir de la position',
+	formula_desc_substitute: 'Remplace les occurrences',
+	formula_desc_round: 'Arrondit n à d décimales',
+	formula_desc_floor_ceil: 'Arrondit vers le bas / vers le haut',
+	formula_desc_abs: 'Valeur absolue',
+	formula_desc_mod: 'Reste de la division',
+	formula_desc_power: 'Base élevée à l\'exposant',
+	formula_desc_sqrt: 'Racine carrée',
+	formula_desc_isnull: 'Vrai si v est vide ou nul',
+	formula_desc_coalesce: 'Première valeur non vide',
+	formula_desc_text: 'Convertit en texte',
+	formula_desc_value: 'Convertit en nombre',
+
 	// Number format panel
 	number_format_title: 'Format',
 	number_decimals_label: 'Décimales',
@@ -348,6 +379,9 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	show_filters: 'Afficher les filtres',
 	filters_count_one: '1 filtre',
 	filters_count_other: '{n} filtres',
+	tooltip_drag_reorder: 'Glisser pour réorganiser',
+	tooltip_search: 'Rechercher',
+	tooltip_toggle_and_or: 'Cliquer pour basculer entre AND / OR',
 	tooltip_close: 'Fermer',
 	tooltip_remove: 'Supprimer',
 	tooltip_move_up: 'Monter',
@@ -512,6 +546,9 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	db_settings_ask_desc: 'Demander un modèle à chaque ajout de ligne au lieu d\'appliquer celui par défaut.',
 	template_picker_placeholder: 'Choisir un modèle...',
 	template_picker_none: 'Aucun modèle (corps vide)',
+
+	// Folder picker modal
+	folder_picker_placeholder: 'Choisissez un dossier de destination...',
 }
 
 export default fr

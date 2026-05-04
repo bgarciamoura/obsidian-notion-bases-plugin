@@ -612,7 +612,7 @@ function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, on
 					{...listeners}
 					{...attributes}
 					className="nb-col-drag-handle"
-					title="Arrastar para reordenar"
+					title={t('tooltip_drag_reorder')}
 				>⠿</span>
 				{children}
 				{onToggleSort && (
@@ -661,7 +661,7 @@ function SortablePill({ filter, isActive, onToggle, onRemove, btnRef }: {
 				{...listeners}
 				{...attributes}
 				className="nb-pill-drag-handle"
-				title="Arrastar para reordenar"
+				title={t('tooltip_drag_reorder')}
 			>
 				<svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor">
 					<circle cx="2" cy="2.5" r="1.2"/><circle cx="6" cy="2.5" r="1.2"/>
@@ -1808,7 +1808,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			<div className="nb-toolbar">
 				<div className={`nb-search-container${shouldCollapse ? (searchExpanded ? ' nb-search-container--expanded' : ' nb-search-container--collapsed') : ''}`}>
 					{shouldCollapse && (
-						<button className="nb-search-icon-btn" onClick={expandSearch} title="Buscar">
+						<button className="nb-search-icon-btn" onClick={expandSearch} title={t('tooltip_search')}>
 							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 								<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
 							</svg>
@@ -2096,7 +2096,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 										<button
 											className={`nb-pill-conjunction ${filter.conjunction === 'or' ? 'nb-pill-conjunction--or' : ''}`}
 											onClick={() => toggleConjunction(filter.id)}
-											title="Clique para alternar entre E / OU"
+											title={t('tooltip_toggle_and_or')}
 										>
 											{filter.conjunction === 'or' ? t('conjunction_or') : t('conjunction_and')}
 										</button>

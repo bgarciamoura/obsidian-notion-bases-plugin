@@ -174,6 +174,37 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	formula_group_math: 'Matemáticas',
 	formula_group_utils: 'Utilidades',
 
+	// Formula reference descriptions
+	formula_desc_if: 'Devuelve a si cond es verdadero, de lo contrario b',
+	formula_desc_ifs: 'Prueba condiciones en secuencia',
+	formula_desc_and: 'Verdadero si todos son verdaderos',
+	formula_desc_or: 'Verdadero si alguno es verdadero',
+	formula_desc_not: 'Invierte el valor lógico',
+	formula_desc_comparators: 'Compara dos valores; usar con IF',
+	formula_desc_sum: 'Suma todos los valores de la columna',
+	formula_desc_avg: 'Promedio de los valores de la columna',
+	formula_desc_count: 'Cuenta los valores no vacíos de la columna',
+	formula_desc_min: 'Valor más pequeño de la columna',
+	formula_desc_max: 'Valor más grande de la columna',
+	formula_desc_concat: 'Concatena textos (o usar &)',
+	formula_desc_len: 'Número de caracteres',
+	formula_desc_upper_lower: 'Mayúsculas / minúsculas',
+	formula_desc_trim: 'Elimina espacios al inicio y al final',
+	formula_desc_left: 'Primeros n caracteres',
+	formula_desc_right: 'Últimos n caracteres',
+	formula_desc_mid: 'Subcadena a partir de la posición',
+	formula_desc_substitute: 'Reemplaza ocurrencias',
+	formula_desc_round: 'Redondea n a d decimales',
+	formula_desc_floor_ceil: 'Redondea hacia abajo / hacia arriba',
+	formula_desc_abs: 'Valor absoluto',
+	formula_desc_mod: 'Resto de la división',
+	formula_desc_power: 'Base elevada al exponente',
+	formula_desc_sqrt: 'Raíz cuadrada',
+	formula_desc_isnull: 'Verdadero si v está vacío o es nulo',
+	formula_desc_coalesce: 'Primer valor no vacío',
+	formula_desc_text: 'Convierte a texto',
+	formula_desc_value: 'Convierte a número',
+
 	// Number format panel
 	number_format_title: 'Formato',
 	number_decimals_label: 'Decimales',
@@ -348,6 +379,9 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	show_filters: 'Mostrar filtros',
 	filters_count_one: '1 filtro',
 	filters_count_other: '{n} filtros',
+	tooltip_drag_reorder: 'Arrastar para reordenar',
+	tooltip_search: 'Buscar',
+	tooltip_toggle_and_or: 'Clic para alternar entre AND / OR',
 	tooltip_close: 'Cerrar',
 	tooltip_remove: 'Eliminar',
 	tooltip_move_up: 'Mover arriba',
@@ -512,6 +546,9 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	db_settings_ask_desc: 'Solicitar una plantilla cada vez que se añada una nueva fila en lugar de aplicar la predeterminada.',
 	template_picker_placeholder: 'Elige una plantilla...',
 	template_picker_none: 'Sin plantilla (cuerpo vacío)',
+
+	// Folder picker modal
+	folder_picker_placeholder: 'Elige una carpeta de destino...',
 }
 
 export default es

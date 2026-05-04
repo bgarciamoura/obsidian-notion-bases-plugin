@@ -174,6 +174,37 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	formula_group_math: 'Mathematik',
 	formula_group_utils: 'Hilfsfunktionen',
 
+	// Formula reference descriptions
+	formula_desc_if: 'Gibt a zurück wenn cond wahr ist, sonst b',
+	formula_desc_ifs: 'Prüft Bedingungen der Reihe nach',
+	formula_desc_and: 'Wahr wenn alle wahr sind',
+	formula_desc_or: 'Wahr wenn mindestens eines wahr ist',
+	formula_desc_not: 'Kehrt den logischen Wert um',
+	formula_desc_comparators: 'Vergleicht zwei Werte; mit IF verwenden',
+	formula_desc_sum: 'Summiert alle Werte der Spalte',
+	formula_desc_avg: 'Durchschnitt der Spaltenwerte',
+	formula_desc_count: 'Zählt nicht leere Werte der Spalte',
+	formula_desc_min: 'Kleinster Wert der Spalte',
+	formula_desc_max: 'Größter Wert der Spalte',
+	formula_desc_concat: 'Verkettet Texte (oder & verwenden)',
+	formula_desc_len: 'Anzahl der Zeichen',
+	formula_desc_upper_lower: 'Großbuchstaben / Kleinbuchstaben',
+	formula_desc_trim: 'Entfernt führende und nachfolgende Leerzeichen',
+	formula_desc_left: 'Erste n Zeichen',
+	formula_desc_right: 'Letzte n Zeichen',
+	formula_desc_mid: 'Teilstring ab Position',
+	formula_desc_substitute: 'Ersetzt Vorkommen',
+	formula_desc_round: 'Rundet n auf d Dezimalstellen',
+	formula_desc_floor_ceil: 'Rundet ab / auf',
+	formula_desc_abs: 'Absoluter Wert',
+	formula_desc_mod: 'Rest der Division',
+	formula_desc_power: 'Basis hoch Exponent',
+	formula_desc_sqrt: 'Quadratwurzel',
+	formula_desc_isnull: 'Wahr wenn v leer oder null ist',
+	formula_desc_coalesce: 'Erster nicht leerer Wert',
+	formula_desc_text: 'Konvertiert in Text',
+	formula_desc_value: 'Konvertiert in Zahl',
+
 	// Number format panel
 	number_format_title: 'Format',
 	number_decimals_label: 'Dezimalstellen',
@@ -348,6 +379,9 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	show_filters: 'Filter anzeigen',
 	filters_count_one: '1 filter',
 	filters_count_other: '{n} filter',
+	tooltip_drag_reorder: 'Ziehen zum Neuordnen',
+	tooltip_search: 'Suchen',
+	tooltip_toggle_and_or: 'Klicken zum Umschalten zwischen UND / ODER',
 	tooltip_close: 'Schließen',
 	tooltip_remove: 'Entfernen',
 	tooltip_move_up: 'Nach oben',
@@ -512,6 +546,9 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	db_settings_ask_desc: 'Bei jeder neuen Zeile nach einer Vorlage fragen, anstatt die Standardvorlage anzuwenden.',
 	template_picker_placeholder: 'Vorlage auswählen...',
 	template_picker_none: 'Keine Vorlage (leerer Inhalt)',
+
+	// Folder picker modal
+	folder_picker_placeholder: 'Zielordner auswählen...',
 }
 
 export default de

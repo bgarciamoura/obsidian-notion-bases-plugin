@@ -172,6 +172,37 @@ const en = {
 	formula_group_math: 'Math',
 	formula_group_utils: 'Utilities',
 
+	// Formula reference descriptions
+	formula_desc_if: 'Returns a if cond is true, otherwise b',
+	formula_desc_ifs: 'Tests conditions in sequence',
+	formula_desc_and: 'True if all are true',
+	formula_desc_or: 'True if any is true',
+	formula_desc_not: 'Inverts the logical value',
+	formula_desc_comparators: 'Compares two values; use with IF',
+	formula_desc_sum: 'Sums all values in the column',
+	formula_desc_avg: 'Average of values in the column',
+	formula_desc_count: 'Counts non-empty values in the column',
+	formula_desc_min: 'Smallest value in the column',
+	formula_desc_max: 'Largest value in the column',
+	formula_desc_concat: 'Concatenates texts (or use &)',
+	formula_desc_len: 'Number of characters',
+	formula_desc_upper_lower: 'Uppercase / lowercase',
+	formula_desc_trim: 'Removes leading and trailing whitespace',
+	formula_desc_left: 'First n characters',
+	formula_desc_right: 'Last n characters',
+	formula_desc_mid: 'Substring starting at position',
+	formula_desc_substitute: 'Replaces occurrences',
+	formula_desc_round: 'Rounds n to d decimal places',
+	formula_desc_floor_ceil: 'Rounds down / up',
+	formula_desc_abs: 'Absolute value',
+	formula_desc_mod: 'Remainder of division',
+	formula_desc_power: 'Base raised to exponent',
+	formula_desc_sqrt: 'Square root',
+	formula_desc_isnull: 'True if v is empty or null',
+	formula_desc_coalesce: 'First non-empty value',
+	formula_desc_text: 'Converts to text',
+	formula_desc_value: 'Converts to number',
+
 	// Number format panel
 	number_format_title: 'Format',
 	number_decimals_label: 'Decimal places',
@@ -346,6 +377,9 @@ const en = {
 	show_filters: 'Show filters',
 	filters_count_one: '1 filter',
 	filters_count_other: '{n} filters',
+	tooltip_drag_reorder: 'Drag to reorder',
+	tooltip_search: 'Search',
+	tooltip_toggle_and_or: 'Click to toggle between AND / OR',
 	tooltip_close: 'Close',
 	tooltip_remove: 'Remove',
 	tooltip_move_up: 'Move up',
@@ -510,6 +544,9 @@ const en = {
 	db_settings_ask_desc: 'Prompt for a template each time a new row is added instead of applying the default.',
 	template_picker_placeholder: 'Choose a template...',
 	template_picker_none: 'No template (empty body)',
+
+	// Folder picker modal
+	folder_picker_placeholder: 'Choose a destination folder...',
 } as const
 
 export default en
