@@ -348,7 +348,6 @@ export function DatabaseRoot({
 	}, [config, dbFile, writeConfigAndTrack, activeViewId])
 
 	const activeView = config.views.find(v => v.id === activeViewId) ?? config.views[0] ?? DEFAULT_VIEW
-	const isSingleTableView = config.views.length === 1 && activeView.type === 'table'
 
 	const saveDirectViewNames = async (updatedViews: ViewConfig[]) => {
 		if (!dbFile) return
@@ -441,8 +440,8 @@ export function DatabaseRoot({
 					key={activeViewId}
 					dbFile={dbFile}
 					manager={manager}
-					externalView={isSingleTableView ? undefined : activeView}
-					onViewChange={isSingleTableView ? undefined : handleViewChange}
+					externalView={activeView}
+					onViewChange={handleViewChange}
 				/>
 				: renderView(activeView, handleViewChange, activeViewId)
 			}
