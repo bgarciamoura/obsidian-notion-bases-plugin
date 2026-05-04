@@ -174,6 +174,37 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	formula_group_math: 'Matemática',
 	formula_group_utils: 'Utilitários',
 
+	// Formula reference descriptions
+	formula_desc_if: 'Retorna a se cond for verdadeiro, caso contrário b',
+	formula_desc_ifs: 'Testa condições em sequência',
+	formula_desc_and: 'Verdadeiro se todos forem verdadeiros',
+	formula_desc_or: 'Verdadeiro se algum for verdadeiro',
+	formula_desc_not: 'Inverte o valor lógico',
+	formula_desc_comparators: 'Compara dois valores; use com IF',
+	formula_desc_sum: 'Soma todos os valores da coluna',
+	formula_desc_avg: 'Média dos valores da coluna',
+	formula_desc_count: 'Conta valores não vazios da coluna',
+	formula_desc_min: 'Menor valor da coluna',
+	formula_desc_max: 'Maior valor da coluna',
+	formula_desc_concat: 'Concatena textos (ou use &)',
+	formula_desc_len: 'Número de caracteres',
+	formula_desc_upper_lower: 'Maiúsculas / minúsculas',
+	formula_desc_trim: 'Remove espaços no início e no fim',
+	formula_desc_left: 'Primeiros n caracteres',
+	formula_desc_right: 'Últimos n caracteres',
+	formula_desc_mid: 'Substring a partir da posição',
+	formula_desc_substitute: 'Substitui ocorrências',
+	formula_desc_round: 'Arredonda n para d casas decimais',
+	formula_desc_floor_ceil: 'Arredonda para baixo / para cima',
+	formula_desc_abs: 'Valor absoluto',
+	formula_desc_mod: 'Resto da divisão',
+	formula_desc_power: 'Base elevada ao expoente',
+	formula_desc_sqrt: 'Raiz quadrada',
+	formula_desc_isnull: 'Verdadeiro se v estiver vazio ou nulo',
+	formula_desc_coalesce: 'Primeiro valor não vazio',
+	formula_desc_text: 'Converte para texto',
+	formula_desc_value: 'Converte para número',
+
 	// Number format panel
 	number_format_title: 'Formatar',
 	number_decimals_label: 'Casas decimais',
@@ -348,6 +379,9 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	show_filters: 'Exibir filtros',
 	filters_count_one: '1 filtro',
 	filters_count_other: '{n} filtros',
+	tooltip_drag_reorder: 'Arrastar para reordenar',
+	tooltip_search: 'Pesquisar',
+	tooltip_toggle_and_or: 'Clique para alternar entre AND / OR',
 	tooltip_close: 'Fechar',
 	tooltip_remove: 'Remover',
 	tooltip_move_up: 'Mover para cima',
@@ -512,6 +546,9 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	db_settings_ask_desc: 'Solicitar um modelo toda vez que uma nova linha for adicionada, em vez de usar o padrão.',
 	template_picker_placeholder: 'Escolha um modelo...',
 	template_picker_none: 'Sem modelo (corpo vazio)',
+
+	// Folder picker modal
+	folder_picker_placeholder: 'Escolha uma pasta de destino...',
 }
 
 export default ptBR

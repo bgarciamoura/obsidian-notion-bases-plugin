@@ -77,7 +77,7 @@ export function FilterPillsRow({
 								<button
 									className={`nb-pill-conjunction${f.conjunction === 'or' ? ' nb-pill-conjunction--or' : ''}`}
 									onClick={() => onToggleConjunction(f.id)}
-									title="Clique para alternar entre E / OU"
+									title={t('tooltip_toggle_and_or')}
 								>
 									{f.conjunction === 'or' ? t('conjunction_or') : t('conjunction_and')}
 								</button>

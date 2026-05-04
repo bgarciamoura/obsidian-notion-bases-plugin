@@ -174,6 +174,37 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	formula_group_math: '数学',
 	formula_group_utils: '工具',
 
+	// Formula reference descriptions
+	formula_desc_if: '若 cond 为真则返回 a，否则返回 b',
+	formula_desc_ifs: '按顺序测试条件',
+	formula_desc_and: '所有条件为真时返回真',
+	formula_desc_or: '任一条件为真时返回真',
+	formula_desc_not: '反转逻辑值',
+	formula_desc_comparators: '比较两个值；与 IF 配合使用',
+	formula_desc_sum: '对列中所有值求和',
+	formula_desc_avg: '列中值的平均数',
+	formula_desc_count: '统计列中非空值的数量',
+	formula_desc_min: '列中的最小值',
+	formula_desc_max: '列中的最大值',
+	formula_desc_concat: '拼接文本（也可使用 &）',
+	formula_desc_len: '字符数',
+	formula_desc_upper_lower: '转为大写 / 小写',
+	formula_desc_trim: '删除首尾空白字符',
+	formula_desc_left: '前 n 个字符',
+	formula_desc_right: '后 n 个字符',
+	formula_desc_mid: '从指定位置截取子字符串',
+	formula_desc_substitute: '替换匹配的内容',
+	formula_desc_round: '将 n 四舍五入到 d 位小数',
+	formula_desc_floor_ceil: '向下取整 / 向上取整',
+	formula_desc_abs: '绝对值',
+	formula_desc_mod: '除法余数',
+	formula_desc_power: '底数的指数次幂',
+	formula_desc_sqrt: '平方根',
+	formula_desc_isnull: '若 v 为空或 null 则为真',
+	formula_desc_coalesce: '第一个非空值',
+	formula_desc_text: '转换为文本',
+	formula_desc_value: '转换为数字',
+
 	// Number format panel
 	number_format_title: '格式',
 	number_decimals_label: '小数位数',
@@ -348,6 +379,9 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	show_filters: '显示筛选',
 	filters_count_one: '1 个筛选',
 	filters_count_other: '{n} 个筛选',
+	tooltip_drag_reorder: '拖动以重新排序',
+	tooltip_search: '搜索',
+	tooltip_toggle_and_or: '点击切换 AND / OR',
 	tooltip_close: '关闭',
 	tooltip_remove: '移除',
 	tooltip_move_up: '上移',
@@ -512,6 +546,9 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	db_settings_ask_desc: '每次添加新行时提示选择模板，而不是应用默认模板。',
 	template_picker_placeholder: '选择一个模板...',
 	template_picker_none: '无模板（空正文）',
+
+	// Folder picker modal
+	folder_picker_placeholder: '选择目标文件夹...',
 }
 
 export default zh

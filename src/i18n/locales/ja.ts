@@ -174,6 +174,37 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	formula_group_math: '数学',
 	formula_group_utils: 'ユーティリティ',
 
+	// Formula reference descriptions
+	formula_desc_if: 'cond が真なら a を返し、そうでなければ b を返す',
+	formula_desc_ifs: '条件を順番にテストする',
+	formula_desc_and: 'すべてが真のとき真',
+	formula_desc_or: 'いずれかが真のとき真',
+	formula_desc_not: '論理値を反転する',
+	formula_desc_comparators: '2 つの値を比較する；IF と組み合わせて使用',
+	formula_desc_sum: '列のすべての値を合計する',
+	formula_desc_avg: '列の値の平均',
+	formula_desc_count: '列の空でない値を数える',
+	formula_desc_min: '列の最小値',
+	formula_desc_max: '列の最大値',
+	formula_desc_concat: 'テキストを連結する（または & を使用）',
+	formula_desc_len: '文字数',
+	formula_desc_upper_lower: '大文字 / 小文字に変換',
+	formula_desc_trim: '先頭と末尾の空白を削除する',
+	formula_desc_left: '最初の n 文字',
+	formula_desc_right: '最後の n 文字',
+	formula_desc_mid: '指定位置からの部分文字列',
+	formula_desc_substitute: '出現箇所を置換する',
+	formula_desc_round: 'n を d 小数点以下に丸める',
+	formula_desc_floor_ceil: '切り捨て / 切り上げ',
+	formula_desc_abs: '絶対値',
+	formula_desc_mod: '除算の余り',
+	formula_desc_power: '底の指数乗',
+	formula_desc_sqrt: '平方根',
+	formula_desc_isnull: 'v が空または null のとき真',
+	formula_desc_coalesce: '最初の空でない値',
+	formula_desc_text: 'テキストに変換する',
+	formula_desc_value: '数値に変換する',
+
 	// Number format panel
 	number_format_title: '書式',
 	number_decimals_label: '小数点以下の桁数',
@@ -348,6 +379,9 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	show_filters: 'フィルターを表示',
 	filters_count_one: '1 件のフィルター',
 	filters_count_other: '{n} 件のフィルター',
+	tooltip_drag_reorder: 'ドラッグして並べ替え',
+	tooltip_search: '検索',
+	tooltip_toggle_and_or: 'クリックして AND / OR を切り替え',
 	tooltip_close: '閉じる',
 	tooltip_remove: '削除',
 	tooltip_move_up: '上に移動',
@@ -512,6 +546,9 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	db_settings_ask_desc: 'デフォルトを適用する代わりに、新しい行を追加するたびにテンプレートを選択するよう促します。',
 	template_picker_placeholder: 'テンプレートを選択...',
 	template_picker_none: 'テンプレートなし（本文を空にする）',
+
+	// Folder picker modal
+	folder_picker_placeholder: '移動先フォルダーを選択...',
 }
 
 export default ja

@@ -32,7 +32,7 @@ export default tseslint.config(
 	{
 		files: ["src/i18n/locales/en.ts"],
 		rules: {
-			"obsidianmd/ui/sentence-case-locale-module": "error",
+			"obsidianmd/ui/sentence-case-locale-module": ["error", { ignoreWords: ["AND", "OR", "IF"] }],
 		},
 	},
 	globalIgnores([

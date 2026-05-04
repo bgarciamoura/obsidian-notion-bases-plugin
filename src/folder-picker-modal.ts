@@ -1,4 +1,5 @@
 import { App, FuzzySuggestModal, TFolder } from 'obsidian'
+import { t } from './i18n'
 
 export class FolderPickerModal extends FuzzySuggestModal<TFolder> {
 	private onChoose: (folder: TFolder) => void
@@ -6,7 +7,7 @@ export class FolderPickerModal extends FuzzySuggestModal<TFolder> {
 	constructor(app: App, onChoose: (folder: TFolder) => void) {
 		super(app)
 		this.onChoose = onChoose
-		this.setPlaceholder('Escolha uma pasta de destino...')
+		this.setPlaceholder(t('folder_picker_placeholder'))
 	}
 
 	getItems(): TFolder[] {
