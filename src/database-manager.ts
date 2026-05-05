@@ -505,9 +505,10 @@ export class DatabaseManager {
 	}
 
 	/** Apply arrangement to every row in the database. Returns the list of moves performed. */
-	async applyArrangementToAll(dbFile: TFile, config: DatabaseConfig): Promise<{ from: string; to: string }[]> {
+	async applyArrangementToAll(dbFile: TFile, config: DatabaseConfig, restrictToPaths?: Set<string>): Promise<{ from: string; to: string }[]> {
 		const moves: { from: string; to: string }[] = []
 		const notes = this.getNotesInDatabase(dbFile, true)
+			.filter(n => !restrictToPaths || restrictToPaths.has(n.path))
 		for (const note of notes) {
 			const target = this.computeArrangedPath(note, dbFile, config)
 			if (!target) continue
@@ -519,8 +520,9 @@ export class DatabaseManager {
 	}
 
 	/** Compute (without applying) the moves that would happen for every row. */
-	previewArrangement(dbFile: TFile, config: DatabaseConfig): { file: TFile; from: string; to: string | null }[] {
+	previewArrangement(dbFile: TFile, config: DatabaseConfig, restrictToPaths?: Set<string>): { file: TFile; from: string; to: string | null }[] {
 		const notes = this.getNotesInDatabase(dbFile, true)
+			.filter(n => !restrictToPaths || restrictToPaths.has(n.path))
 		return notes.map(note => ({
 			file: note,
 			from: note.path,
