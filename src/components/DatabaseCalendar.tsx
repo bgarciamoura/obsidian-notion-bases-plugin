@@ -121,7 +121,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	const [dragOverDay, setDragOverDay] = useState<number | null>(null)
 	const [expandedDay, setExpandedDay] = useState<string | null>(null)
 	const [actionDay, setActionDay] = useState<{ year: number; month: number; day: number } | null>(null)
-	const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const longPressRef = useRef<number | null>(null)
 	const weekBodyRef = useRef<HTMLDivElement>(null)
 	const [nowMinutes, setNowMinutes] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes() })
 
@@ -135,8 +135,8 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	// Update current time indicator every minute
 	useEffect(() => {
 		const tick = () => { const n = new Date(); setNowMinutes(n.getHours() * 60 + n.getMinutes()) }
-		const id = setInterval(tick, 60_000)
-		return () => clearInterval(id)
+		const id = activeWindow.setInterval(tick, 60_000)
+		return () => activeWindow.clearInterval(id)
 	}, [])
 
 	const saveView = useCallback(async (updated: ViewConfig) => {
@@ -154,7 +154,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [filterMenuOpen])
 
 	useEffect(() => {
@@ -163,7 +163,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) setFieldsMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [fieldsMenuOpen])
 
 	useEffect(() => {
@@ -172,7 +172,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (dateFieldMenuRef.current && !dateFieldMenuRef.current.contains(e.target as Node)) setDateFieldMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [dateFieldMenuOpen])
 
 	// ── Derived data ─────────────────────────────────────────────────────────
@@ -263,7 +263,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	const weekAnchor = viewMode === 'week' && weekDays.length > 0 ? weekDays[0].toISOString() : ''
 	useEffect(() => {
 		if (viewMode !== 'week' || loading) return
-		const timer = setTimeout(() => {
+		const timer = activeWindow.setTimeout(() => {
 			const el = weekBodyRef.current
 			if (!el || el.scrollHeight <= el.clientHeight) return
 			const SLOT_HEIGHT = 48
@@ -273,7 +273,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 			const viewportHeight = el.clientHeight
 			el.scrollTo({ top: Math.max(0, targetPx - viewportHeight * 0.25), behavior: 'smooth' })
 		}, 100)
-		return () => clearTimeout(timer)
+		return () => activeWindow.clearTimeout(timer)
 	}, [viewMode, weekAnchor, loading])
 
 	// ── Actions ───────────────────────────────────────────────────────────────
@@ -722,9 +722,9 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 										onDragLeave={handleDayDragLeave}
 										onDrop={e => { void handleDayDrop(e, currentYear, currentMonth, day) }}
 										title={!isMobile ? t('calendar_click_to_create') : undefined}
-										onTouchStart={isMobile ? () => { longPressRef.current = setTimeout(() => { setActionDay({ year: currentYear, month: currentMonth, day }) }, 500) } : undefined}
-										onTouchMove={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
-										onTouchEnd={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+										onTouchStart={isMobile ? () => { longPressRef.current = activeWindow.setTimeout(() => { setActionDay({ year: currentYear, month: currentMonth, day }) }, 500) } : undefined}
+										onTouchMove={isMobile ? () => { if (longPressRef.current) { activeWindow.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+										onTouchEnd={isMobile ? () => { if (longPressRef.current) { activeWindow.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
 									>
 										<div className="nb-cal-cell-header">
 											<span className={`nb-cal-day-num${isToday ? ' nb-cal-day-num--today' : ''}`}>{day}</span>

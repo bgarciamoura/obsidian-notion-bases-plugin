@@ -77,7 +77,7 @@ function aggregateData(
 	xAxis: string,
 	yAxis: string | undefined,
 	aggregation: string,
-	schema: ColumnSchema[],
+	_schema: ColumnSchema[],
 ): ChartDataPoint[] {
 	const groups = new Map<string, NoteRow[]>()
 
@@ -458,7 +458,7 @@ function ChartSortPanel({ sorts, schema, onSortChange, onClose, anchorRect, pane
 				</div>
 			)}
 		</div>,
-		document.body
+		activeDocument.body
 	)
 }
 
@@ -546,7 +546,7 @@ export function DatabaseCharts({ dbFile, manager, externalView, onViewChange }: 
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [filterMenuOpen])
 
 	useEffect(() => {
@@ -556,7 +556,7 @@ export function DatabaseCharts({ dbFile, manager, externalView, onViewChange }: 
 			if (sortButtonRef.current?.contains(e.target as Node)) return
 			if (sortPanelRef.current && !sortPanelRef.current.contains(e.target as Node)) setSortPanelOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [sortPanelOpen])
 
 	useEffect(() => {
@@ -565,7 +565,7 @@ export function DatabaseCharts({ dbFile, manager, externalView, onViewChange }: 
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (configPanelRef.current && !configPanelRef.current.contains(e.target as Node)) setConfigPanelOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [configPanelOpen])
 
 	// ── Filter actions ───────────────────────────────────────────────────────

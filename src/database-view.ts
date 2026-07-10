@@ -85,7 +85,7 @@ export class DatabaseView extends ItemView {
 		container.addClass('notion-bases-view-container')
 
 		// No keyboard detection needed — search input is now inside a BottomSheet
-		// (rendered via portal to document.body), which avoids Obsidian's behavior
+		// (rendered via portal to activeDocument.body), which avoids Obsidian's behavior
 		// of hiding view content when an input inside view-content gains focus.
 
 		const dbFile = this.dbFilePath

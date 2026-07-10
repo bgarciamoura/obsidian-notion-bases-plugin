@@ -496,7 +496,7 @@ export class DatabaseManager {
 		try {
 			await this.app.fileManager.renameFile(file, target)
 		} finally {
-			setTimeout(() => {
+			activeWindow.setTimeout(() => {
 				this.folderArrangementInProgress.delete(file.path)
 				this.folderArrangementInProgress.delete(target)
 			}, 500)

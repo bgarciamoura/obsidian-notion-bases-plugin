@@ -35,7 +35,7 @@ export class DatabasePickerModal extends FuzzySuggestModal<DatabaseEntry> {
 	}
 
 	renderSuggestion(entry: { item: DatabaseEntry }, el: HTMLElement): void {
-		el.createEl('div', { text: entry.item.label, cls: 'nb-picker-title' })
+		el.createDiv({ text: entry.item.label, cls: 'nb-picker-title' })
 		el.createEl('small', { text: entry.item.sublabel, cls: 'nb-picker-path' })
 	}
 

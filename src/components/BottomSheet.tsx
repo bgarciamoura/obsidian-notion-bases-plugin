@@ -24,8 +24,8 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
 			return
 		}
 		setAnimating(false)
-		const timer = setTimeout(() => setVisible(false), 250)
-		return () => clearTimeout(timer)
+		const timer = activeWindow.setTimeout(() => setVisible(false), 250)
+		return () => activeWindow.clearTimeout(timer)
 	}, [open])
 
 	// Close on Escape key
@@ -34,8 +34,8 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
 		const handler = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') onClose()
 		}
-		document.addEventListener('keydown', handler)
-		return () => document.removeEventListener('keydown', handler)
+		activeDocument.addEventListener('keydown', handler)
+		return () => activeDocument.removeEventListener('keydown', handler)
 	}, [open, onClose])
 
 	// Adapt to keyboard via visualViewport (works on some platforms)
@@ -70,6 +70,6 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
 				</div>
 			</div>
 		</div>,
-		document.body
+		activeDocument.body
 	)
 }

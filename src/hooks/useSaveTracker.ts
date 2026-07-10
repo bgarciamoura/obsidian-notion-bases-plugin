@@ -10,11 +10,11 @@ interface SaveTracker {
 export function useSaveTracker(fadeDelay = 2000): SaveTracker {
 	const [status, setStatus] = useState<SaveStatus>('idle')
 	const pendingRef = useRef(0)
-	const timerRef = useRef<ReturnType<typeof setTimeout>>()
+	const timerRef = useRef<number>()
 
 	const trackSave = useCallback(<T,>(promise: Promise<T>): Promise<T> => {
 		pendingRef.current++
-		if (timerRef.current) clearTimeout(timerRef.current)
+		if (timerRef.current) activeWindow.clearTimeout(timerRef.current)
 		setStatus('saving')
 
 		return promise.then(
@@ -22,7 +22,7 @@ export function useSaveTracker(fadeDelay = 2000): SaveTracker {
 				pendingRef.current--
 				if (pendingRef.current === 0) {
 					setStatus('saved')
-					timerRef.current = setTimeout(() => setStatus('idle'), fadeDelay)
+					timerRef.current = activeWindow.setTimeout(() => setStatus('idle'), fadeDelay)
 				}
 				return result
 			},
@@ -30,7 +30,7 @@ export function useSaveTracker(fadeDelay = 2000): SaveTracker {
 				pendingRef.current--
 				if (pendingRef.current === 0) {
 					setStatus('error')
-					timerRef.current = setTimeout(() => setStatus('idle'), fadeDelay)
+					timerRef.current = activeWindow.setTimeout(() => setStatus('idle'), fadeDelay)
 				}
 				throw err
 			},
