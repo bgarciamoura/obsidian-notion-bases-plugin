@@ -1,6 +1,6 @@
 {
 	"name": "notion-bases",
-	"version": "1.8.2",
+	"version": "1.8.3",
 	"description": "Banco de dados para o seu vault — tabela, kanban, galeria e mais.",
 	"main": "main.js",
 	"type": "module",
