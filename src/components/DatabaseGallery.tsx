@@ -98,7 +98,7 @@ function GallerySortPanel({ sorts, schema, onSortChange, onClose, anchorRect, pa
 				</div>
 			)}
 		</div>,
-		document.body
+		activeDocument.body
 	)
 }
 
@@ -211,7 +211,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [filterMenuOpen])
 
 	useEffect(() => {
@@ -219,7 +219,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 		const h = (e: MouseEvent) => {
 			if (cfPanelRef.current && !cfPanelRef.current.contains(e.target as Node)) setCfPanelOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [cfPanelOpen])
 
 	useEffect(() => {
@@ -228,7 +228,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) setFieldsMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [fieldsMenuOpen])
 
 	useEffect(() => {
@@ -237,7 +237,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (coverMenuRef.current && !coverMenuRef.current.contains(e.target as Node)) setCoverMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [coverMenuOpen])
 
 	useEffect(() => {
@@ -246,7 +246,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (sizeMenuRef.current && !sizeMenuRef.current.contains(e.target as Node)) setSizeMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [sizeMenuOpen])
 
 	useEffect(() => {
@@ -256,7 +256,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 			if (sortButtonRef.current?.contains(e.target as Node)) return
 			if (sortPanelRef.current && !sortPanelRef.current.contains(e.target as Node)) setSortPanelOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [sortPanelOpen])
 
 	// ── Derived data ─────────────────────────────────────────────────────────

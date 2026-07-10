@@ -344,7 +344,7 @@ function TextCell({ value, isEditing, onStartEdit, onCommit, onCancel, onOpen }:
 }) {
 	const inputRef = useRef<HTMLInputElement>(null)
 	const [draft, setDraft] = useState(value)
-	const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const clickTimer = useRef<number | null>(null)
 
 	useEffect(() => {
 		if (isEditing) {
@@ -354,17 +354,17 @@ function TextCell({ value, isEditing, onStartEdit, onCommit, onCancel, onOpen }:
 	}, [isEditing, value])
 
 	useEffect(() => {
-		return () => { if (clickTimer.current) clearTimeout(clickTimer.current) }
+		return () => { if (clickTimer.current) activeWindow.clearTimeout(clickTimer.current) }
 	}, [])
 
 	const handleTextClick = () => {
 		if (!onOpen) return
 		if (clickTimer.current !== null) {
-			clearTimeout(clickTimer.current)
+			activeWindow.clearTimeout(clickTimer.current)
 			clickTimer.current = null
 			return
 		}
-		clickTimer.current = setTimeout(() => {
+		clickTimer.current = activeWindow.setTimeout(() => {
 			clickTimer.current = null
 			onOpen()
 		}, 250)
@@ -372,7 +372,7 @@ function TextCell({ value, isEditing, onStartEdit, onCommit, onCancel, onOpen }:
 
 	const handleDoubleClick = () => {
 		if (clickTimer.current) {
-			clearTimeout(clickTimer.current)
+			activeWindow.clearTimeout(clickTimer.current)
 			clickTimer.current = null
 		}
 		onStartEdit()
@@ -591,8 +591,8 @@ function SelectCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 				onCancel()
 			}
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [isEditing, onCancel, flushPendingColors])
 
 	useEffect(() => {
@@ -614,8 +614,8 @@ function SelectCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 		const handler = (e: MouseEvent) => {
 			if (!colorPickerRef.current?.contains(e.target as Node)) setColorPickerFor(null)
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [colorPickerFor])
 
 	const addNewOption = async (name: string) => {
@@ -687,7 +687,7 @@ function SelectCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 				</div>
 			))}
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	const colorPicker = colorPickerFor && colorPickerPos ? createPortal(
@@ -719,7 +719,7 @@ function SelectCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 				</label>
 			</div>
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	return (
@@ -800,8 +800,8 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 				onCancel()
 			}
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [isEditing, onCancel, flushPendingColors])
 
 	useEffect(() => {
@@ -823,8 +823,8 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 		const handler = (e: MouseEvent) => {
 			if (!colorPickerRef.current?.contains(e.target as Node)) setColorPickerFor(null)
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [colorPickerFor])
 
 	const addNewStatus = async () => {
@@ -904,7 +904,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 				>+</button>
 			</div>
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	const colorPicker = colorPickerFor && colorPickerPos ? createPortal(
@@ -936,7 +936,7 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 				</label>
 			</div>
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	return (
@@ -1015,8 +1015,8 @@ function MultiSelectCell({ value, col, isEditing, onStartEdit, onCommit, onCance
 				onCancel()
 			}
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [isEditing, onCancel, flushPendingColors])
 
 	useEffect(() => {
@@ -1038,8 +1038,8 @@ function MultiSelectCell({ value, col, isEditing, onStartEdit, onCommit, onCance
 		const handler = (e: MouseEvent) => {
 			if (!colorPickerRef.current?.contains(e.target as Node)) setColorPickerFor(null)
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [colorPickerFor])
 
 	const toggle = (opt: string) => {
@@ -1116,7 +1116,7 @@ function MultiSelectCell({ value, col, isEditing, onStartEdit, onCommit, onCance
 				</div>
 			))}
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	const colorPicker = colorPickerFor && colorPickerPos ? createPortal(
@@ -1148,7 +1148,7 @@ function MultiSelectCell({ value, col, isEditing, onStartEdit, onCommit, onCance
 				</label>
 			</div>
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	return (
@@ -1244,8 +1244,8 @@ function DateCell({ value, isEditing, onStartEdit, onSave, onClose }: {
 		const handler = (e: MouseEvent) => {
 			if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) onClose()
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [isEditing, onClose])
 
 	const formatted = (() => {
@@ -1362,7 +1362,7 @@ function RollupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 
 // ── RelationCell ─────────────────────────────────────────────────────────────
 
-function RelationCell({ value, options, isEditing, onStartEdit, onCommit, onCancel }: {
+function RelationCell({ value, options, isEditing, onStartEdit, onCommit }: {
 	value: string[]
 	options: string[]
 	isEditing: boolean
@@ -1386,8 +1386,8 @@ function RelationCell({ value, options, isEditing, onStartEdit, onCommit, onCanc
 			const inDropdown = dropdownRef.current?.contains(e.target as Node)
 			if (!inWrapper && !inDropdown) { onCommit(selected); }
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [isEditing, onCommit, selected])
 
 	useEffect(() => {
@@ -1398,7 +1398,7 @@ function RelationCell({ value, options, isEditing, onStartEdit, onCommit, onCanc
 			const rect = wrapperRef.current.getBoundingClientRect()
 			setDropPos({ top: rect.bottom, left: rect.left, width: rect.width })
 		}
-		setTimeout(() => inputRef.current?.focus(), 0)
+		activeWindow.setTimeout(() => inputRef.current?.focus(), 0)
 	}, [isEditing])
 
 	const toggle = (opt: string) => {
@@ -1436,7 +1436,7 @@ function RelationCell({ value, options, isEditing, onStartEdit, onCommit, onCanc
 			))}
 			{filtered.length === 0 && <div className="nb-relation-empty">{t('relation_no_results')}</div>}
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	return (
@@ -1494,8 +1494,8 @@ function ImageCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 			if (cellRef.current?.contains(e.target as Node)) return
 			onCancel()
 		}
-		document.addEventListener('mousedown', h)
-		return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h)
+		return () => activeDocument.removeEventListener('mousedown', h)
 	}, [isEditing, onCancel])
 
 	const imageFile = value ? app.vault.getFileByPath(value) : null
@@ -1549,7 +1549,7 @@ function ImageCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 						</div>
 					)}
 				</div>,
-				document.body
+				activeDocument.body
 			)}
 		</>
 	)
@@ -1594,8 +1594,8 @@ function AudioCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 			if (cellRef.current?.contains(e.target as Node)) return
 			onCancel()
 		}
-		document.addEventListener('mousedown', h)
-		return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h)
+		return () => activeDocument.removeEventListener('mousedown', h)
 	}, [isEditing, onCancel])
 
 	const audioFile = value ? app.vault.getFileByPath(value) : null
@@ -1633,7 +1633,7 @@ function AudioCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 						))
 					)}
 				</div>,
-				document.body
+				activeDocument.body
 			)}
 		</>
 	)
@@ -1678,8 +1678,8 @@ function VideoCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 			if (cellRef.current?.contains(e.target as Node)) return
 			onCancel()
 		}
-		document.addEventListener('mousedown', h)
-		return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h)
+		return () => activeDocument.removeEventListener('mousedown', h)
 	}, [isEditing, onCancel])
 
 	const [playerOpen, setPlayerOpen] = useState(false)
@@ -1708,7 +1708,7 @@ function VideoCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 						<button className="nb-video-modal-close" onClick={() => setPlayerOpen(false)}>×</button>
 					</div>
 				</div>,
-				document.body
+				activeDocument.body
 			)}
 			{isEditing && dropPos && createPortal(
 				<div ref={dropdownRef} className="nb-select-dropdown" style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, minWidth: dropPos.width, zIndex: 9999 }}>
@@ -1733,7 +1733,7 @@ function VideoCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 						))
 					)}
 				</div>,
-				document.body
+				activeDocument.body
 			)}
 		</>
 	)

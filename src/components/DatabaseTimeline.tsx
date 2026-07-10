@@ -243,7 +243,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 				if (mobileActionBarRef.current?.contains(e.target as Node)) return
 				if (ref.current && !ref.current.contains(e.target as Node)) setter(false)
 			}
-			document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+			activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 		}, [open])
 
 	mkCloseEffect(filterMenuOpen, filterMenuRef, setFilterMenuOpen)
@@ -268,10 +268,10 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 		const onUp   = async (e: MouseEvent) => {
 			const delta = e.clientX - resizing.startX
 			setResizing(null); setResizeDelta(0)
-			document.body.classList.remove('nb-tl-resizing')
+			activeDocument.body.classList.remove('nb-tl-resizing')
 			if (Math.abs(delta) < 2) return
 			justResized.current = true
-			setTimeout(() => { justResized.current = false }, 200)
+			activeWindow.setTimeout(() => { justResized.current = false }, 200)
 			const { handle, origBarLeft, origBarWidth, startFieldId, endFieldId, filePath } = resizing
 			let newLeft = origBarLeft, newWidth = origBarWidth
 			if (handle === 'left') { newLeft = origBarLeft + delta; newWidth = origBarWidth - delta }
@@ -285,7 +285,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 				if (handle === 'right' && endFieldId)   fm[endFieldId]   = fmt(px2date(newLeft + newWidth - unitW, zoom, origin, unitW))
 			}))
 		}
-		document.body.classList.add('nb-tl-resizing')
+		activeDocument.body.classList.add('nb-tl-resizing')
 		const voidOnUp = (e: MouseEvent) => { void onUp(e) }
 		window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', voidOnUp)
 		return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', voidOnUp) }

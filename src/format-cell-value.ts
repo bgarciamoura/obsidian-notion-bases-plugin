@@ -82,7 +82,7 @@ export function formatCellValueText(value: unknown, col: ColumnSchema | undefine
 }
 
 function makePill(text: string, color: string): HTMLSpanElement {
-	const span = document.createElement('span')
+	const span = createSpan()
 	span.className = 'nb-placeholder-pill'
 	span.textContent = text
 	span.style.background = color
@@ -96,7 +96,7 @@ function makePill(text: string, color: string): HTMLSpanElement {
  * For everything else a single text node is returned.
  */
 export function formatCellValueNodes(value: unknown, col: ColumnSchema | undefined, formatHint?: string): Node[] {
-	if (value == null || value === '') return [document.createTextNode('')]
+	if (value == null || value === '') return [activeDocument.createTextNode('')]
 
 	if (col?.type === 'select' || col?.type === 'status') {
 		const text = toStr(value)
@@ -107,11 +107,11 @@ export function formatCellValueNodes(value: unknown, col: ColumnSchema | undefin
 		const nodes: Node[] = []
 		value.forEach((v, i) => {
 			const text = toStr(v)
-			if (i > 0) nodes.push(document.createTextNode(' '))
+			if (i > 0) nodes.push(activeDocument.createTextNode(' '))
 			nodes.push(makePill(text, getOptionColor(col.options ?? [], text)))
 		})
 		return nodes
 	}
 
-	return [document.createTextNode(formatCellValueText(value, col, formatHint))]
+	return [activeDocument.createTextNode(formatCellValueText(value, col, formatHint))]
 }

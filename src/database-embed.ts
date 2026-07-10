@@ -27,7 +27,7 @@ class DatabaseEmbedChild extends MarkdownRenderChild {
 		const dbFile = manager.getDatabaseFileInFolder(this.folderPath)
 
 		if (!dbFile) {
-			this.containerEl.createEl('div', {
+			this.containerEl.createDiv({
 				text: `Database not found: "${this.folderPath || '/'}"`,
 				cls: 'nb-embed-error',
 			})

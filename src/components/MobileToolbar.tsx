@@ -101,7 +101,7 @@ export function MobileToolbar({
 				</div>
 			)}
 
-			{/* Search overlay — rendered via portal to document.body, positioned at top */
+			{/* Search overlay — rendered via portal to activeDocument.body, positioned at top */
 			/* so the keyboard (at bottom) does not cover the input */}
 			{search && searchOpen && createPortal(
 				<div className="nb-mobile-search-overlay" onMouseDown={() => setSearchOpen(false)}>
@@ -124,7 +124,7 @@ export function MobileToolbar({
 						</button>
 					</div>
 				</div>,
-				document.body
+				activeDocument.body
 			)}
 
 			{/* Action bar */}
@@ -235,7 +235,7 @@ function MobilePillsStrip({ filters, rowCount, rowCountLabel, onFilterUpdate, on
 							</button>
 						</div>
 					</div>,
-					document.body
+					activeDocument.body
 				)
 			})()}
 		</>

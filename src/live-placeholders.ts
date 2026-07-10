@@ -30,7 +30,7 @@ function resolveNodes(
 	file: TFile,
 ): Node[] | null {
 	const builtin = resolveBuiltin(id, formatHint, file)
-	if (builtin !== null) return [document.createTextNode(builtin)]
+	if (builtin !== null) return [activeDocument.createTextNode(builtin)]
 	const col = schema.find(c => c.id === id)
 	const value = frontmatter[id]
 	if (value === undefined) return null
@@ -38,7 +38,7 @@ function resolveNodes(
 }
 
 function makePlaceholderSpan(id: string, formatHint: string | undefined): HTMLSpanElement {
-	const span = document.createElement('span')
+	const span = createSpan()
 	span.className = 'nb-placeholder'
 	span.dataset.token = id
 	if (formatHint) span.dataset.format = formatHint
@@ -58,13 +58,13 @@ function wrapTextNode(textNode: Text): boolean {
 
 	while ((match = PLACEHOLDER_RE.exec(text)) !== null) {
 		matched = true
-		if (match.index > lastIdx) parts.push(document.createTextNode(text.slice(lastIdx, match.index)))
+		if (match.index > lastIdx) parts.push(activeDocument.createTextNode(text.slice(lastIdx, match.index)))
 		parts.push(makePlaceholderSpan(match[1], match[2]))
 		lastIdx = match.index + match[0].length
 	}
 
 	if (!matched) return false
-	if (lastIdx < text.length) parts.push(document.createTextNode(text.slice(lastIdx)))
+	if (lastIdx < text.length) parts.push(activeDocument.createTextNode(text.slice(lastIdx)))
 
 	const parent = textNode.parentNode
 	if (!parent) return false
@@ -75,7 +75,7 @@ function wrapTextNode(textNode: Text): boolean {
 
 function wrapAllPlaceholders(root: HTMLElement): boolean {
 	const nodes: Text[] = []
-	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+	const walker = activeDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
 		acceptNode: (node) => {
 			let parent = node.parentElement
 			while (parent) {

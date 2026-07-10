@@ -50,7 +50,7 @@ async function processRowsInChunks(
 		result.push(...rows)
 
 		if (i + CHUNK_SIZE < notes.length) {
-			await new Promise<void>(resolve => setTimeout(resolve, 0))
+			await new Promise<void>(resolve => activeWindow.setTimeout(resolve, 0))
 		}
 	}
 
@@ -144,17 +144,17 @@ export function useDatabaseRows(options: UseDatabaseRowsOptions): UseDatabaseRow
 	useEffect(() => { void loadData() }, [loadData])
 
 	useEffect(() => {
-		let debounceTimer: ReturnType<typeof setTimeout> | null = null
+		let debounceTimer: number | null = null
 		const onChange = () => {
-			if (debounceTimer) clearTimeout(debounceTimer)
-			debounceTimer = setTimeout(() => { void loadData() }, DEBOUNCE_MS)
+			if (debounceTimer) activeWindow.clearTimeout(debounceTimer)
+			debounceTimer = activeWindow.setTimeout(() => { void loadData() }, DEBOUNCE_MS)
 		}
 		app.vault.on('create', onChange)
 		app.vault.on('delete', onChange)
 		app.vault.on('rename', onChange)
 		app.metadataCache.on('changed', onChange)
 		return () => {
-			if (debounceTimer) clearTimeout(debounceTimer)
+			if (debounceTimer) activeWindow.clearTimeout(debounceTimer)
 			app.vault.off('create', onChange)
 			app.vault.off('delete', onChange)
 			app.vault.off('rename', onChange)

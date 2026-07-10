@@ -43,7 +43,7 @@ export function DatabaseRoot({
 		try {
 			await manager.writeConfig(dbFile, cfg)
 		} finally {
-			setTimeout(() => { pendingSelfWrites.current = Math.max(0, pendingSelfWrites.current - 1) }, 150)
+			activeWindow.setTimeout(() => { pendingSelfWrites.current = Math.max(0, pendingSelfWrites.current - 1) }, 150)
 		}
 	}, [dbFile, manager])
 
@@ -113,13 +113,13 @@ export function DatabaseRoot({
 	useEffect(() => {
 		if (!addMenuOpen) return
 		const h = (e: MouseEvent) => { if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) setAddMenuOpen(false) }
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [addMenuOpen])
 
 	useEffect(() => {
 		if (!embedAddMenuOpen) return
 		const h = (e: MouseEvent) => { if (embedAddMenuRef.current && !embedAddMenuRef.current.contains(e.target as Node)) setEmbedAddMenuOpen(false) }
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [embedAddMenuOpen])
 
 	// ── Inline rename helpers ─────────────────────────────────────────────────
