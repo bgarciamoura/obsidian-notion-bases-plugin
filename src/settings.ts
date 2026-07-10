@@ -64,7 +64,6 @@ export class NotionBasesSettingTab extends PluginSettingTab {
 				slider
 					.setLimits(28, 80, 4)
 					.setValue(this.plugin.settings.defaultRowHeight)
-					.setDynamicTooltip()
 					.onChange(async value => {
 						this.plugin.settings.defaultRowHeight = value
 						await this.plugin.saveSettings()

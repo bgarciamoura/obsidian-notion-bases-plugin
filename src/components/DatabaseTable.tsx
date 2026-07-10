@@ -47,6 +47,7 @@ import { Pagination } from './Pagination'
 import { useSaveTracker } from '../hooks/useSaveTracker'
 import { usePagination } from '../hooks/usePagination'
 import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
+import { stringifyScalar } from '../value-utils'
 
 // ── Virtual row rendering (separate component to isolate hooks) ──────────
 function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHeight: number, disabled = false) {
@@ -62,7 +63,7 @@ function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHei
 		const onScroll = () => {
 			// Only re-render when scroll crosses a row boundary (reduces React updates)
 			if (pendingRef.current) return
-			pendingRef.current = activeWindow.setTimeout(() => {
+			pendingRef.current = window.setTimeout(() => {
 				pendingRef.current = null
 				flush()
 			}, 32) // ~30fps update rate — smooth enough, halves React work vs RAF
@@ -70,7 +71,7 @@ function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHei
 		el.addEventListener('scroll', onScroll, { passive: true })
 		const ro = new ResizeObserver(flush)
 		ro.observe(el)
-		return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); if (pendingRef.current) activeWindow.clearTimeout(pendingRef.current) }
+		return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); if (pendingRef.current) window.clearTimeout(pendingRef.current) }
 	}, [scrollRef, disabled])
 
 	if (disabled) return { startIdx: 0, endIdx: Number.POSITIVE_INFINITY, topPad: 0 }
@@ -128,9 +129,9 @@ function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEdit
 							className={`nb-row${isDragOver ? ' nb-row--drag-over' : ''}`}
 							onClick={() => setEditingCell(null)}
 							onContextMenu={e => { e.preventDefault(); setContextMenuFile(row.original._file) }}
-							onTouchStart={isMobile ? () => { longPressRef.current = activeWindow.setTimeout(() => setContextMenuFile(row.original._file), 500) } : undefined}
-							onTouchMove={isMobile ? () => { if (longPressRef.current) { activeWindow.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
-							onTouchEnd={isMobile ? () => { if (longPressRef.current) { activeWindow.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+							onTouchStart={isMobile ? () => { longPressRef.current = window.setTimeout(() => setContextMenuFile(row.original._file), 500) } : undefined}
+							onTouchMove={isMobile ? () => { if (longPressRef.current) { window.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+							onTouchEnd={isMobile ? () => { if (longPressRef.current) { window.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
 							onDragOver={rowDragEnabled ? e => { e.preventDefault(); onRowDragOver?.(filePath) } : undefined}
 							onDrop={rowDragEnabled ? e => { e.preventDefault(); onRowDrop?.(filePath) } : undefined}
 						>
@@ -142,7 +143,7 @@ function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEdit
 								const isExp = allExpanded ? !expandedSet?.has(row.original._file.path) : !!expandedSet?.has(row.original._file.path)
 								const isSelectCol = cell.column.id === '_select'
 								const cfStyle = conditionalFormats?.length && schema
-									? getConditionalStyle(row.original as NoteRow, cell.column.id, conditionalFormats, schema)
+									? getConditionalStyle(row.original, cell.column.id, conditionalFormats, schema)
 									: undefined
 								const wrapCell = !!schema?.find(s => s.id === cell.column.id)?.wrap
 								return (
@@ -1358,7 +1359,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			col.visible && !activeView.hiddenColumns.includes(col.id)
 		)
 		const escapeCell = (v: unknown): string => {
-				const s = v === null || v === undefined ? '' : String(v as string | number | boolean)
+				const s = v === null || v === undefined ? '' : stringifyScalar(v)
 			if (s.includes(',') || s.includes('"') || s.includes('\n')) {
 				return '"' + s.replace(/"/g, '""') + '"'
 			}
@@ -1594,30 +1595,30 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	useEffect(() => {
 		if (!shouldCollapse) {
 			setSearchExpanded(false)
-			if (searchInactivityTimer.current) activeWindow.clearTimeout(searchInactivityTimer.current)
+			if (searchInactivityTimer.current) window.clearTimeout(searchInactivityTimer.current)
 		}
 	}, [shouldCollapse])
 
 	useEffect(() => {
-		return () => { if (searchInactivityTimer.current) activeWindow.clearTimeout(searchInactivityTimer.current) }
+		return () => { if (searchInactivityTimer.current) window.clearTimeout(searchInactivityTimer.current) }
 	}, [])
 
 	const clearSearchTimer = () => {
 		if (searchInactivityTimer.current) {
-			activeWindow.clearTimeout(searchInactivityTimer.current)
+			window.clearTimeout(searchInactivityTimer.current)
 			searchInactivityTimer.current = null
 		}
 	}
 
 	const startSearchTimer = () => {
 		clearSearchTimer()
-		searchInactivityTimer.current = activeWindow.setTimeout(() => setSearchExpanded(false), 6000)
+		searchInactivityTimer.current = window.setTimeout(() => setSearchExpanded(false), 6000)
 	}
 
 	const expandSearch = () => {
 		setSearchExpanded(true)
 		startSearchTimer()
-		requestAnimationFrame(() => searchInputRef.current?.focus())
+		window.requestAnimationFrame(() => searchInputRef.current?.focus())
 	}
 
 	const collapseSearch = () => {
@@ -2383,7 +2384,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 											colType={config.schema.find(s => s.id === col.id)?.type ?? 'text'}
 											current={aggType}
 											onSelect={t => { void setAggregation(col.id, t) }}
-											anchorEl={activeDocument.querySelector(`[data-agg-col="${col.id}"]`) as HTMLElement}
+											anchorEl={activeDocument.querySelector(`[data-agg-col="${col.id}"]`)}
 										/>,
 										activeDocument.body
 									)}

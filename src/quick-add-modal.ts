@@ -42,7 +42,7 @@ export class QuickAddModal extends Modal {
 				text.onChange(v => { this.titleValue = v })
 				text.inputEl.addClass('nb-quick-add-title-input')
 				// Auto-focus
-				activeWindow.setTimeout(() => text.inputEl.focus(), 50)
+				window.setTimeout(() => text.inputEl.focus(), 50)
 			})
 
 		// Editable fields from schema

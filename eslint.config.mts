@@ -20,6 +20,7 @@ export default tseslint.config(
 				projectService: {
 					allowDefaultProject: [
 						'eslint.config.js',
+						'eslint.config.mts',
 						'manifest.json'
 					]
 				},
@@ -34,12 +35,17 @@ export default tseslint.config(
 		extends: [tseslint.configs.recommendedTypeChecked[0]],
 		rules: {
 			"@typescript-eslint/require-await": "error",
+			"@typescript-eslint/no-unnecessary-type-assertion": "error",
 		},
 	},
 	{
 		files: ["src/i18n/locales/en.ts"],
 		rules: {
-			"obsidianmd/ui/sentence-case-locale-module": ["error", { ignoreWords: ["AND", "OR", "IF"] }],
+			"obsidianmd/ui/sentence-case-locale-module": ["error", {
+				ignoreWords: ["AND", "OR", "IF"],
+				// Counts, filename suffixes and dataview syntax literals are not prose
+				ignoreRegex: ["^\\d", "^\\(copy", "key:: value"],
+			}],
 		},
 	},
 	globalIgnores([

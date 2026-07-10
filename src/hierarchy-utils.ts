@@ -1,5 +1,6 @@
 import { ColumnSchema, NoteRow, SortConfig } from './types'
 import { applySorts } from './components/filter-utils'
+import { stringifyScalar } from './value-utils'
 
 const MAX_DEPTH = 3
 
@@ -25,7 +26,7 @@ function getParentTitles(row: NoteRow, colId: string): string[] {
 	const val = row[colId]
 	if (!val) return []
 	if (Array.isArray(val)) return val as string[]
-	return [String(val as string | number | boolean)]
+	return [stringifyScalar(val)]
 }
 
 export function buildHierarchyTree(

@@ -50,7 +50,7 @@ async function processRowsInChunks(
 		result.push(...rows)
 
 		if (i + CHUNK_SIZE < notes.length) {
-			await new Promise<void>(resolve => activeWindow.setTimeout(resolve, 0))
+			await new Promise<void>(resolve => window.setTimeout(resolve, 0))
 		}
 	}
 
@@ -87,7 +87,7 @@ export function restoreFilterPills(
 			value: p.value,
 			conjunction: p.conjunction ?? 'and',
 		}]
-	}) as ActiveFilter[]
+	})
 }
 
 export function useDatabaseRows(options: UseDatabaseRowsOptions): UseDatabaseRowsResult {
@@ -146,15 +146,15 @@ export function useDatabaseRows(options: UseDatabaseRowsOptions): UseDatabaseRow
 	useEffect(() => {
 		let debounceTimer: number | null = null
 		const onChange = () => {
-			if (debounceTimer) activeWindow.clearTimeout(debounceTimer)
-			debounceTimer = activeWindow.setTimeout(() => { void loadData() }, DEBOUNCE_MS)
+			if (debounceTimer) window.clearTimeout(debounceTimer)
+			debounceTimer = window.setTimeout(() => { void loadData() }, DEBOUNCE_MS)
 		}
 		app.vault.on('create', onChange)
 		app.vault.on('delete', onChange)
 		app.vault.on('rename', onChange)
 		app.metadataCache.on('changed', onChange)
 		return () => {
-			if (debounceTimer) activeWindow.clearTimeout(debounceTimer)
+			if (debounceTimer) window.clearTimeout(debounceTimer)
 			app.vault.off('create', onChange)
 			app.vault.off('delete', onChange)
 			app.vault.off('rename', onChange)

@@ -17,6 +17,7 @@ import { useDatabaseRows } from '../hooks/useDatabaseRows'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { MobileToolbar, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
+import { stringifyScalar } from '../value-utils'
 
 interface DatabaseChartsProps {
 	dbFile: TFile | null
@@ -85,7 +86,7 @@ function aggregateData(
 		const rawX = xAxis === '_title' ? row._title : row[xAxis]
 		const labels = Array.isArray(rawX)
 			? (rawX as string[])
-			: [rawX == null ? t('no_value') : String(rawX as string | number | boolean)]
+			: [rawX == null ? t('no_value') : stringifyScalar(rawX)]
 		for (const label of labels) {
 			const key = label.trim() || t('no_value')
 			const list = groups.get(key) ?? []
@@ -106,7 +107,7 @@ function aggregateData(
 			const nums = groupRows
 				.map(r => {
 					const v = r[yAxis]
-					return typeof v === 'number' ? v : parseFloat(v == null ? '' : String(v as string | number | boolean))
+					return typeof v === 'number' ? v : parseFloat(v == null ? '' : stringifyScalar(v))
 				})
 				.filter(n => !isNaN(n))
 

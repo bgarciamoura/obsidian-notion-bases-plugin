@@ -20,6 +20,7 @@ import { BottomSheet } from './BottomSheet'
 import { SaveIndicator } from './SaveIndicator'
 import { ConditionalFormatPanel } from './ConditionalFormatPanel'
 import { useSaveTracker } from '../hooks/useSaveTracker'
+import { stringifyScalar } from '../value-utils'
 
 interface DatabaseBoardProps {
 	dbFile: TFile | null
@@ -107,8 +108,8 @@ const BoardCard = React.memo(function BoardCard({
 				<div className="nb-board-card-props">
 					{visibleCols.map(c => {
 						const val = row[c.id]
-						if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
-						const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+						if (val === null || val === undefined || stringifyScalar(val).trim() === '') return null
+						const display = Array.isArray(val) ? (val as string[]).join(', ') : stringifyScalar(val)
 						return (
 							<span key={c.id} className="nb-board-card-prop">
 								<span className="nb-board-card-prop-name">{c.name}:</span>
@@ -247,7 +248,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 				color: undefined,
 				rows: sortedRows.filter(r => {
 					const v = r[groupByCol.id]
-					return v === null || v === undefined || String(v as string | number | boolean).trim() === ''
+					return v === null || v === undefined || stringifyScalar(v).trim() === ''
 				}),
 			},
 		]
@@ -315,7 +316,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		let scrollInterval: number | null = null
 		let longPressHandled = false
 
-		const longPressTimer = activeWindow.setTimeout(() => {
+		const longPressTimer = window.setTimeout(() => {
 			longPressHandled = true
 			cleanup()
 			setContextMenuFile(rowFile)
@@ -331,18 +332,18 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			const nearRight = boardRect.right - clientX < edgeZone
 
 			if (!nearLeft && !nearRight) {
-				if (scrollInterval) { activeWindow.clearInterval(scrollInterval); scrollInterval = null }
+				if (scrollInterval) { window.clearInterval(scrollInterval); scrollInterval = null }
 				return
 			}
 			if (scrollInterval) return
 			const dir = nearRight ? 1 : -1
-			scrollInterval = activeWindow.setInterval(() => {
+			scrollInterval = window.setInterval(() => {
 				board.scrollLeft += dir * speed
 			}, 16)
 		}
 
 		const stopEdgeScroll = () => {
-			if (scrollInterval) { activeWindow.clearInterval(scrollInterval); scrollInterval = null }
+			if (scrollInterval) { window.clearInterval(scrollInterval); scrollInterval = null }
 		}
 
 		const cleanup = () => {
@@ -354,7 +355,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		const onMove = (ev: TouchEvent) => {
 			const t = ev.touches[0]
 			if (!active && Math.abs(t.clientX - touch.clientX) < 12 && Math.abs(t.clientY - touch.clientY) < 12) return
-			activeWindow.clearTimeout(longPressTimer)
+			window.clearTimeout(longPressTimer)
 			ev.preventDefault()
 			ev.stopPropagation()
 			if (!active) {
@@ -378,7 +379,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		}
 
 		const onEnd = () => {
-			activeWindow.clearTimeout(longPressTimer)
+			window.clearTimeout(longPressTimer)
 			stopEdgeScroll()
 			boardRef.current?.classList.remove('nb-board--dragging')
 			el.classList.remove('nb-touch-drag-source', 'nb-touch-drag-hidden')
@@ -412,18 +413,18 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			const nearRight = boardRect.right - clientX < edgeZone
 
 			if (!nearLeft && !nearRight) {
-				if (scrollInterval) { activeWindow.clearInterval(scrollInterval); scrollInterval = null }
+				if (scrollInterval) { window.clearInterval(scrollInterval); scrollInterval = null }
 				return
 			}
 			if (scrollInterval) return
 			const dir = nearRight ? 1 : -1
-			scrollInterval = activeWindow.setInterval(() => {
+			scrollInterval = window.setInterval(() => {
 				board.scrollLeft += dir * speed
 			}, 16)
 		}
 
 		const stopEdgeScroll = () => {
-			if (scrollInterval) { activeWindow.clearInterval(scrollInterval); scrollInterval = null }
+			if (scrollInterval) { window.clearInterval(scrollInterval); scrollInterval = null }
 		}
 
 		const onMove = (ev: TouchEvent) => {

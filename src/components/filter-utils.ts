@@ -1,6 +1,7 @@
 import type React from 'react'
 import { ColumnSchema, ConditionalFormatRule, FilterOperator, NoteRow, SortConfig } from '../types'
 import { t } from '../i18n'
+import { stringifyScalar } from '../value-utils'
 
 export interface ActiveFilter {
 	id: string
@@ -183,8 +184,8 @@ export function applySorts(rows: NoteRow[], sorts: SortConfig[]): NoteRow[] {
 			if (aVal === null || aVal === undefined) cmp = -1
 			else if (bVal === null || bVal === undefined) cmp = 1
 			else {
-				const aNum = parseFloat(String(aVal as string | number | boolean))
-				const bNum = parseFloat(String(bVal as string | number | boolean))
+				const aNum = parseFloat(stringifyScalar(aVal))
+				const bNum = parseFloat(stringifyScalar(bVal))
 				if (!isNaN(aNum) && !isNaN(bNum)) {
 					cmp = aNum - bNum
 				} else {

@@ -23,12 +23,12 @@
 		"@types/react": "^18.3.0",
 		"@types/react-dom": "^18.3.0",
 		"esbuild": "^0.27.4",
-		"eslint-plugin-obsidianmd": "0.1.9",
+		"eslint-plugin-obsidianmd": "^0.4.1",
 		"globals": "14.0.0",
 		"jiti": "2.6.1",
 		"tslib": "2.4.0",
 		"typescript": "^5.8.3",
-		"typescript-eslint": "8.35.1",
+		"typescript-eslint": "^8.63.0",
 		"vitest": "^4.1.0"
 	},
 	"dependencies": {

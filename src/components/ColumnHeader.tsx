@@ -178,7 +178,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			if (y + panelHeight > window.innerHeight) y = rect.top - panelHeight - 4
 			setPanelPos({ x, y })
 		}
-		activeWindow.setTimeout(() => formulaRef.current?.focus(), 50)
+		window.setTimeout(() => formulaRef.current?.focus(), 50)
 	}, [editingFormula])
 
 	// Drag logic para o painel de fórmula

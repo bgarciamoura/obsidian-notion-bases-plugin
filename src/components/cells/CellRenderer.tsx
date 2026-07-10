@@ -17,6 +17,7 @@ interface CellProps {
 // Como não temos acesso ao `table` aqui, recebemos callbacks via prop do DatabaseTable
 // Usamos um contexto React separado para isso
 import { createContext, useContext } from 'react'
+import { stringifyScalar } from '../../value-utils'
 
 interface CellContextType {
 	editingCell: { rowIndex: number; columnId: string } | null
@@ -236,7 +237,7 @@ export const CellRenderer = React.memo(function CellRenderer({ col, value, rowIn
 			return (
 				<LinkCell
 					value={value as string | null}
-					href={value ? String(value as string | number | boolean) : null}
+					href={value ? stringifyScalar(value) : null}
 					inputType="url"
 					isEditing={isEditing}
 					onStartEdit={startEditing}
@@ -349,22 +350,22 @@ function TextCell({ value, isEditing, onStartEdit, onCommit, onCancel, onOpen }:
 	useEffect(() => {
 		if (isEditing) {
 			setDraft(value)
-			requestAnimationFrame(() => inputRef.current?.select())
+			window.requestAnimationFrame(() => inputRef.current?.select())
 		}
 	}, [isEditing, value])
 
 	useEffect(() => {
-		return () => { if (clickTimer.current) activeWindow.clearTimeout(clickTimer.current) }
+		return () => { if (clickTimer.current) window.clearTimeout(clickTimer.current) }
 	}, [])
 
 	const handleTextClick = () => {
 		if (!onOpen) return
 		if (clickTimer.current !== null) {
-			activeWindow.clearTimeout(clickTimer.current)
+			window.clearTimeout(clickTimer.current)
 			clickTimer.current = null
 			return
 		}
-		clickTimer.current = activeWindow.setTimeout(() => {
+		clickTimer.current = window.setTimeout(() => {
 			clickTimer.current = null
 			onOpen()
 		}, 250)
@@ -372,7 +373,7 @@ function TextCell({ value, isEditing, onStartEdit, onCommit, onCancel, onOpen }:
 
 	const handleDoubleClick = () => {
 		if (clickTimer.current) {
-			activeWindow.clearTimeout(clickTimer.current)
+			window.clearTimeout(clickTimer.current)
 			clickTimer.current = null
 		}
 		onStartEdit()
@@ -426,7 +427,7 @@ function NumberCell({ value, isEditing, onStartEdit, onCommit, onCancel, format 
 	useEffect(() => {
 		if (isEditing) {
 			setDraft(value?.toString() ?? '')
-			requestAnimationFrame(() => inputRef.current?.select())
+			window.requestAnimationFrame(() => inputRef.current?.select())
 		}
 	}, [isEditing, value])
 
@@ -1332,7 +1333,7 @@ function CheckboxCell({ value, onCommit }: {
 // ── FormulaCell ──────────────────────────────────────────────────────────────
 
 function FormulaCell({ value, col }: { value: unknown; col: ColumnSchema }) {
-	const display = value === null || value === undefined ? '—' : String(value as string | number | boolean)
+	const display = value === null || value === undefined ? '—' : stringifyScalar(value)
 	return (
 		<div className="nb-cell-formula" title={t('formula_panel_title') + ': ' + (col.formula ?? '')}>
 			{display}
@@ -1343,7 +1344,7 @@ function FormulaCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 // ── LookupCell ───────────────────────────────────────────────────────────────
 
 function LookupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
-	const display = value === null || value === undefined ? '—' : String(value as string | number | boolean)
+	const display = value === null || value === undefined ? '—' : stringifyScalar(value)
 	return (
 		<div className="nb-cell-formula nb-cell-lookup" title={t('lookup_panel_title') + ' de ' + (col.refDatabasePath ?? '')}>
 			{display}
@@ -1352,7 +1353,7 @@ function LookupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 }
 
 function RollupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
-	const display = value === null || value === undefined ? '—' : String(value as string | number | boolean)
+	const display = value === null || value === undefined ? '—' : stringifyScalar(value)
 	return (
 		<div className="nb-cell-formula nb-cell-rollup" title={t('rollup_panel_title') + ': ' + (col.rollupFunction ?? '')}>
 			{display}
@@ -1398,7 +1399,7 @@ function RelationCell({ value, options, isEditing, onStartEdit, onCommit }: {
 			const rect = wrapperRef.current.getBoundingClientRect()
 			setDropPos({ top: rect.bottom, left: rect.left, width: rect.width })
 		}
-		activeWindow.setTimeout(() => inputRef.current?.focus(), 0)
+		window.setTimeout(() => inputRef.current?.focus(), 0)
 	}, [isEditing])
 
 	const toggle = (opt: string) => {

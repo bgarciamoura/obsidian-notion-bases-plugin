@@ -14,7 +14,7 @@ export function useSaveTracker(fadeDelay = 2000): SaveTracker {
 
 	const trackSave = useCallback(<T,>(promise: Promise<T>): Promise<T> => {
 		pendingRef.current++
-		if (timerRef.current) activeWindow.clearTimeout(timerRef.current)
+		if (timerRef.current) window.clearTimeout(timerRef.current)
 		setStatus('saving')
 
 		return promise.then(
@@ -22,7 +22,7 @@ export function useSaveTracker(fadeDelay = 2000): SaveTracker {
 				pendingRef.current--
 				if (pendingRef.current === 0) {
 					setStatus('saved')
-					timerRef.current = activeWindow.setTimeout(() => setStatus('idle'), fadeDelay)
+					timerRef.current = window.setTimeout(() => setStatus('idle'), fadeDelay)
 				}
 				return result
 			},
@@ -30,7 +30,7 @@ export function useSaveTracker(fadeDelay = 2000): SaveTracker {
 				pendingRef.current--
 				if (pendingRef.current === 0) {
 					setStatus('error')
-					timerRef.current = activeWindow.setTimeout(() => setStatus('idle'), fadeDelay)
+					timerRef.current = window.setTimeout(() => setStatus('idle'), fadeDelay)
 				}
 				throw err
 			},

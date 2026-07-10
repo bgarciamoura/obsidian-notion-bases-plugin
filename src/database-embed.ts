@@ -5,6 +5,7 @@ import { AppContext } from './context'
 import { DatabaseRoot } from './components/DatabaseRoot'
 import { DEFAULT_VIEW, EmbedState, ViewConfig } from './types'
 import type NotionBasesPlugin from './main'
+import { isRecord } from './value-utils'
 
 const EMBED_FM_KEY = 'notion-bases-embeds'
 
@@ -63,18 +64,20 @@ class DatabaseEmbedChild extends MarkdownRenderChild {
 		}
 
 		const hostFile = this.plugin.app.vault.getFileByPath(this.sourcePath)
-		const hostFm = hostFile
+		const hostFm: unknown = hostFile
 			? this.plugin.app.metadataCache.getFileCache(hostFile)?.frontmatter
 			: undefined
-		const savedData = (hostFm as Record<string, Record<string, unknown>> | undefined)?.[EMBED_FM_KEY]?.[this.embedId]
+		const embeds = isRecord(hostFm) ? hostFm[EMBED_FM_KEY] : undefined
+		const savedData = isRecord(embeds) ? embeds[this.embedId] : undefined
 
 		let props: object
 
 		if (this.forcedType) {
 			// Mode A — type declared in code block: single forced view, no tabs
 			const savedView = (savedData && typeof savedData === 'object' && !('activeViewId' in savedData)) ? savedData as ViewConfig : undefined
-			const dbFm = this.plugin.app.metadataCache.getFileCache(dbFile)?.frontmatter
-			const dbViews = (dbFm as Record<string, unknown[]> | undefined)?.views as ViewConfig[] | undefined
+			const dbFm: unknown = this.plugin.app.metadataCache.getFileCache(dbFile)?.frontmatter
+			const viewsRaw = isRecord(dbFm) ? dbFm['views'] : undefined
+			const dbViews = Array.isArray(viewsRaw) ? (viewsRaw as ViewConfig[]) : undefined
 			// Prefer the database view whose type matches the forced type, so
 			// type-specific config (board groupBy, calendar date column, …) carries over
 			const dbBaseView = dbViews?.find(v => v?.type === this.forcedType) ?? dbViews?.[0]

@@ -18,6 +18,7 @@ import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from 
 import { BottomSheet } from './BottomSheet'
 import { SaveIndicator } from './SaveIndicator'
 import { useSaveTracker } from '../hooks/useSaveTracker'
+import { stringifyScalar } from '../value-utils'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -172,8 +173,8 @@ const TimelineBar = React.memo(function TimelineBar({
 			{relPath ? <span className="nb-folder-path" style={{ marginLeft: 4 }}>{relPath}</span> : null}
 			{visibleCols.map(col => {
 				const val = row[col.id]
-				if (!val || String(val as string | number | boolean).trim() === '') return null
-				const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+				if (!val || stringifyScalar(val).trim() === '') return null
+				const display = Array.isArray(val) ? (val as string[]).join(', ') : stringifyScalar(val)
 				return <span key={col.id} className="nb-tl-bar-field"> · {display}</span>
 			})}
 			<div className="nb-tl-bar-handle nb-tl-bar-handle--right"
@@ -271,7 +272,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 			activeDocument.body.classList.remove('nb-tl-resizing')
 			if (Math.abs(delta) < 2) return
 			justResized.current = true
-			activeWindow.setTimeout(() => { justResized.current = false }, 200)
+			window.setTimeout(() => { justResized.current = false }, 200)
 			const { handle, origBarLeft, origBarWidth, startFieldId, endFieldId, filePath } = resizing
 			let newLeft = origBarLeft, newWidth = origBarWidth
 			if (handle === 'left') { newLeft = origBarLeft + delta; newWidth = origBarWidth - delta }
@@ -293,7 +294,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 
 	// Scroll to today on zoom change and initial mount
 	useEffect(() => {
-		requestAnimationFrame(() => {
+		window.requestAnimationFrame(() => {
 			if (!scrollRef.current) return
 			const target = Math.max(0, todayPx - scrollRef.current.clientWidth * 0.3)
 			scrollRef.current.scrollLeft = target
