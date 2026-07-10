@@ -49,3 +49,7 @@ export function parseYaml(s: string): unknown {
 export interface RowData {
 	[key: string]: unknown
 }
+
+export function getLanguage(): string {
+	return 'en'
+}
