@@ -22,6 +22,7 @@ import { usePagination } from '../hooks/usePagination'
 import { BottomSheet } from './BottomSheet'
 import { ConditionalFormatPanel } from './ConditionalFormatPanel'
 import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
+import { stringifyScalar } from '../value-utils'
 
 interface DatabaseListProps {
 	dbFile: TFile | null
@@ -135,9 +136,9 @@ const ListRow = React.memo(function ListRow({
 			style={{ ...(isHierarchical ? { paddingLeft: `${depth * 20 + 12}px` } : {}), ...cardStyle }}
 			onClick={() => onOpen(row._file)}
 			onContextMenu={!isMobile ? e => { e.preventDefault(); onContextMenu(row._file) } : undefined}
-			onTouchStart={isMobile ? () => { longPressRef.current = activeWindow.setTimeout(() => onLongPress(row._file), 500) } : undefined}
-			onTouchMove={isMobile ? () => { if (longPressRef.current) { activeWindow.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
-			onTouchEnd={isMobile ? () => { if (longPressRef.current) { activeWindow.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+			onTouchStart={isMobile ? () => { longPressRef.current = window.setTimeout(() => onLongPress(row._file), 500) } : undefined}
+			onTouchMove={isMobile ? () => { if (longPressRef.current) { window.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+			onTouchEnd={isMobile ? () => { if (longPressRef.current) { window.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
 		>
 			{hasChildren && (
 				<button className="nb-hierarchy-toggle" onClick={e => { e.stopPropagation(); onToggleExpand(row._file.path) }}>
@@ -151,8 +152,8 @@ const ListRow = React.memo(function ListRow({
 				<div className="nb-list-row-props">
 					{visibleCols.map(col => {
 						const val = row[col.id]
-						if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
-						const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+						if (val === null || val === undefined || stringifyScalar(val).trim() === '') return null
+						const display = Array.isArray(val) ? (val as string[]).join(', ') : stringifyScalar(val)
 						return (
 							<span key={col.id} className="nb-list-prop">
 								<span className="nb-list-prop-name">{col.name}:</span>

@@ -21,6 +21,7 @@ import { Pagination } from './Pagination'
 import { usePagination } from '../hooks/usePagination'
 import { BottomSheet } from './BottomSheet'
 import { ConditionalFormatPanel } from './ConditionalFormatPanel'
+import { stringifyScalar } from '../value-utils'
 
 interface DatabaseGalleryProps {
 	dbFile: TFile | null
@@ -157,8 +158,8 @@ const GalleryCard = React.memo(function GalleryCard({
 					<div className="nb-gallery-props">
 						{visibleCols.map(col => {
 							const val = row[col.id]
-							if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
-							const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+							if (val === null || val === undefined || stringifyScalar(val).trim() === '') return null
+							const display = Array.isArray(val) ? (val as string[]).join(', ') : stringifyScalar(val)
 							return (
 								<span key={col.id} className="nb-gallery-prop">
 									<span className="nb-gallery-prop-name">{col.name}:</span>

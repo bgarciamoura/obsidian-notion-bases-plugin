@@ -14,6 +14,7 @@ import {
 } from './types'
 import { parseInlineFields, frontmatterLineCount } from './inline-fields'
 import { TemplatePickerModal } from './template-picker-modal'
+import { isRecord, stringifyScalar } from './value-utils'
 
 export const DATABASE_MARKER = 'notion-bases'
 
@@ -45,7 +46,8 @@ export class DatabaseManager {
 
 	readConfig(file: TFile): DatabaseConfig {
 		const cache = this.app.metadataCache.getFileCache(file)
-		const fm = cache?.frontmatter as Record<string, unknown> | undefined
+		const fmRaw: unknown = cache?.frontmatter
+		const fm = isRecord(fmRaw) ? fmRaw : undefined
 		if (!fm || !fm[DATABASE_MARKER]) return structuredClone(DEFAULT_DATABASE_CONFIG)
 
 		const rawSchema = Array.isArray(fm['schema']) ? fm['schema'] as ColumnSchema[] : []
@@ -452,7 +454,8 @@ export class DatabaseManager {
 		if (!arr || !arr.enabled || arr.propertyIds.length === 0) return null
 		if (file.path === dbFile.path) return null
 
-		const fm = this.app.metadataCache.getFileCache(file)?.frontmatter as Record<string, unknown> | undefined
+		const fmRaw2: unknown = this.app.metadataCache.getFileCache(file)?.frontmatter
+		const fm = isRecord(fmRaw2) ? fmRaw2 : undefined
 		const segments: string[] = []
 		for (const id of arr.propertyIds) {
 			const v = fm?.[id]
@@ -496,7 +499,7 @@ export class DatabaseManager {
 		try {
 			await this.app.fileManager.renameFile(file, target)
 		} finally {
-			activeWindow.setTimeout(() => {
+			window.setTimeout(() => {
 				this.folderArrangementInProgress.delete(file.path)
 				this.folderArrangementInProgress.delete(target)
 			}, 500)
@@ -796,7 +799,7 @@ export class DatabaseManager {
 			if (type === 'multiselect' && Array.isArray(v)) {
 				for (const item of v) unique.add(String(item))
 			} else if (v !== null && v !== undefined) {
-				unique.add(String(v as string | number | boolean))
+				unique.add(stringifyScalar(v))
 			}
 		}
 

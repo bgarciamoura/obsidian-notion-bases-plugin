@@ -46,7 +46,7 @@ export function DatabaseRoot({
 		try {
 			await manager.writeConfig(dbFile, cfg)
 		} finally {
-			activeWindow.setTimeout(() => { pendingSelfWrites.current = Math.max(0, pendingSelfWrites.current - 1) }, 150)
+			window.setTimeout(() => { pendingSelfWrites.current = Math.max(0, pendingSelfWrites.current - 1) }, 150)
 		}
 	}, [dbFile, manager])
 
@@ -131,7 +131,7 @@ export function DatabaseRoot({
 		setRenamingViewId(viewId)
 		setRenameValue(currentName)
 		// Focus the input on next paint
-		requestAnimationFrame(() => {
+		window.requestAnimationFrame(() => {
 			renameInputRef.current?.select()
 		})
 	}

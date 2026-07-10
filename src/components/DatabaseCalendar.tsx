@@ -18,6 +18,7 @@ import { MobileToolbar, IconFields, IconFilter, IconSubfolders } from './MobileT
 import { BottomSheet } from './BottomSheet'
 import { SaveIndicator } from './SaveIndicator'
 import { useSaveTracker } from '../hooks/useSaveTracker'
+import { stringifyScalar } from '../value-utils'
 
 interface DatabaseCalendarProps {
 	dbFile: TFile | null
@@ -135,8 +136,8 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	// Update current time indicator every minute
 	useEffect(() => {
 		const tick = () => { const n = new Date(); setNowMinutes(n.getHours() * 60 + n.getMinutes()) }
-		const id = activeWindow.setInterval(tick, 60_000)
-		return () => activeWindow.clearInterval(id)
+		const id = window.setInterval(tick, 60_000)
+		return () => window.clearInterval(id)
 	}, [])
 
 	const saveView = useCallback(async (updated: ViewConfig) => {
@@ -239,7 +240,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		if (!dateField) return []
 		return filteredRows.filter(row => {
 			const val = (row as Record<string, unknown>)[dateField.id]
-			return !val || String(val as string | number | boolean).trim() === ''
+			return !val || stringifyScalar(val).trim() === ''
 		})
 	}, [filteredRows, dateField])
 
@@ -263,7 +264,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 	const weekAnchor = viewMode === 'week' && weekDays.length > 0 ? weekDays[0].toISOString() : ''
 	useEffect(() => {
 		if (viewMode !== 'week' || loading) return
-		const timer = activeWindow.setTimeout(() => {
+		const timer = window.setTimeout(() => {
 			const el = weekBodyRef.current
 			if (!el || el.scrollHeight <= el.clientHeight) return
 			const SLOT_HEIGHT = 48
@@ -273,7 +274,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 			const viewportHeight = el.clientHeight
 			el.scrollTo({ top: Math.max(0, targetPx - viewportHeight * 0.25), behavior: 'smooth' })
 		}, 100)
-		return () => activeWindow.clearTimeout(timer)
+		return () => window.clearTimeout(timer)
 	}, [viewMode, weekAnchor, loading])
 
 	// ── Actions ───────────────────────────────────────────────────────────────
@@ -722,9 +723,9 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 										onDragLeave={handleDayDragLeave}
 										onDrop={e => { void handleDayDrop(e, currentYear, currentMonth, day) }}
 										title={!isMobile ? t('calendar_click_to_create') : undefined}
-										onTouchStart={isMobile ? () => { longPressRef.current = activeWindow.setTimeout(() => { setActionDay({ year: currentYear, month: currentMonth, day }) }, 500) } : undefined}
-										onTouchMove={isMobile ? () => { if (longPressRef.current) { activeWindow.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
-										onTouchEnd={isMobile ? () => { if (longPressRef.current) { activeWindow.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+										onTouchStart={isMobile ? () => { longPressRef.current = window.setTimeout(() => { setActionDay({ year: currentYear, month: currentMonth, day }) }, 500) } : undefined}
+										onTouchMove={isMobile ? () => { if (longPressRef.current) { window.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+										onTouchEnd={isMobile ? () => { if (longPressRef.current) { window.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
 									>
 										<div className="nb-cal-cell-header">
 											<span className={`nb-cal-day-num${isToday ? ' nb-cal-day-num--today' : ''}`}>{day}</span>
@@ -759,8 +760,8 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 															<div className="nb-cal-card-props">
 																{visibleCols.map(col => {
 																	const val = row[col.id]
-																	if (val === null || val === undefined || String(val as string | number | boolean).trim() === '') return null
-																	const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val as string | number | boolean)
+																	if (val === null || val === undefined || stringifyScalar(val).trim() === '') return null
+																	const display = Array.isArray(val) ? (val as string[]).join(', ') : stringifyScalar(val)
 																	return (
 																		<span key={col.id} className="nb-cal-card-prop">
 																			{display}

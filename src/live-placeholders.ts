@@ -118,7 +118,7 @@ class PlaceholderChild extends MarkdownRenderChild {
 	}
 
 	private render(): void {
-		const fm = this.app.metadataCache.getFileCache(this.file)?.frontmatter as Record<string, unknown> | undefined
+		const fm = this.app.metadataCache.getFileCache(this.file)?.frontmatter
 		const frontmatter = fm ?? {}
 		const folderPath = this.file.parent?.path ?? ''
 		const dbFile = this.manager.getDatabaseFileInFolder(folderPath)

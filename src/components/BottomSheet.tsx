@@ -18,14 +18,14 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
 	useEffect(() => {
 		if (open) {
 			setVisible(true)
-			requestAnimationFrame(() => {
-				requestAnimationFrame(() => setAnimating(true))
+			window.requestAnimationFrame(() => {
+				window.requestAnimationFrame(() => setAnimating(true))
 			})
 			return
 		}
 		setAnimating(false)
-		const timer = activeWindow.setTimeout(() => setVisible(false), 250)
-		return () => activeWindow.clearTimeout(timer)
+		const timer = window.setTimeout(() => setVisible(false), 250)
+		return () => window.clearTimeout(timer)
 	}, [open])
 
 	// Close on Escape key

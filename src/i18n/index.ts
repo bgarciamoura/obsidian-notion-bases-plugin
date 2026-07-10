@@ -11,7 +11,7 @@ type Keys = keyof typeof en
 type LocaleDict = Partial<Record<Keys, string>>
 
 const locales: Record<string, LocaleDict> = {
-	en: en as LocaleDict,
+	en: en,
 	'pt-BR': ptBR,
 	'pt': ptBR,
 	es,

@@ -1,5 +1,6 @@
 import { ColumnSchema, NoteRow } from './types'
 import { t as i18n } from './i18n'
+import { stringifyScalar } from './value-utils'
 
 // ── Erros ─────────────────────────────────────────────────────────────────────
 
@@ -202,7 +203,7 @@ function toNum(v: unknown): number {
 function toStr(v: unknown): string {
 	if (v === null || v === undefined) return ''
 	if (Array.isArray(v)) return (v as unknown[]).map(toStr).join(', ')
-	return String(v as string | number | boolean)
+	return stringifyScalar(v)
 }
 
 function truthy(v: unknown): boolean {
