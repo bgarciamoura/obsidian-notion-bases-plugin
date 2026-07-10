@@ -8,6 +8,34 @@ import type NotionBasesPlugin from './main'
 
 const EMBED_FM_KEY = 'notion-bases-embeds'
 
+const VIEW_TYPES: ReadonlyArray<ViewConfig['type']> = ['table', 'list', 'board', 'gallery', 'calendar', 'timeline', 'chart']
+
+export interface EmbedBlockParams {
+	folderPath: string
+	embedId: string
+	forcedType?: ViewConfig['type']
+}
+
+export function parseEmbedBlock(source: string): EmbedBlockParams {
+	let folderPath = ''
+	let embedId = ''
+	let forcedType: ViewConfig['type'] | undefined
+
+	for (const line of source.trim().split('\n')) {
+		const pathMatch = line.match(/^path:\s*(.+)$/)
+		if (pathMatch) folderPath = pathMatch[1].trim()
+		const idMatch = line.match(/^id:\s*(.+)$/)
+		if (idMatch) embedId = idMatch[1].trim()
+		const typeMatch = line.match(/^type:\s*(.+)$/)
+		if (typeMatch) {
+			const t = typeMatch[1].trim()
+			if ((VIEW_TYPES as readonly string[]).includes(t)) forcedType = t as ViewConfig['type']
+		}
+	}
+
+	return { folderPath, embedId, forcedType }
+}
+
 class DatabaseEmbedChild extends MarkdownRenderChild {
 	private root: Root | null = null
 
@@ -46,14 +74,17 @@ class DatabaseEmbedChild extends MarkdownRenderChild {
 			// Mode A — type declared in code block: single forced view, no tabs
 			const savedView = (savedData && typeof savedData === 'object' && !('activeViewId' in savedData)) ? savedData as ViewConfig : undefined
 			const dbFm = this.plugin.app.metadataCache.getFileCache(dbFile)?.frontmatter
-			const dbFirstView = (dbFm as Record<string, unknown[]> | undefined)?.views?.[0] as ViewConfig | undefined
+			const dbViews = (dbFm as Record<string, unknown[]> | undefined)?.views as ViewConfig[] | undefined
+			// Prefer the database view whose type matches the forced type, so
+			// type-specific config (board groupBy, calendar date column, …) carries over
+			const dbBaseView = dbViews?.find(v => v?.type === this.forcedType) ?? dbViews?.[0]
 
 			let externalView: ViewConfig
 			if (savedView) {
 				externalView = { ...savedView, id: this.embedId, type: this.forcedType }
 			} else {
-				externalView = dbFirstView
-					? { ...dbFirstView, id: this.embedId, type: this.forcedType }
+				externalView = dbBaseView
+					? { ...dbBaseView, id: this.embedId, type: this.forcedType }
 					: { ...DEFAULT_VIEW, id: this.embedId, type: this.forcedType }
 			}
 
@@ -104,22 +135,9 @@ class DatabaseEmbedChild extends MarkdownRenderChild {
 
 export function registerDatabaseEmbed(plugin: NotionBasesPlugin): void {
 	plugin.registerMarkdownCodeBlockProcessor('nb-database', (source, el, ctx) => {
-		const lines = source.trim().split('\n')
-		let folderPath = ''
-		let embedId = ''
-		let forcedType: ViewConfig['type'] | undefined
-
-		for (const line of lines) {
-			const pathMatch = line.match(/^path:\s*(.+)$/)
-			if (pathMatch) folderPath = pathMatch[1].trim()
-			const idMatch = line.match(/^id:\s*(.+)$/)
-			if (idMatch) embedId = idMatch[1].trim()
-			const typeMatch = line.match(/^type:\s*(.+)$/)
-			if (typeMatch) {
-				const t = typeMatch[1].trim()
-				if (t === 'table' || t === 'list') forcedType = t
-			}
-		}
+		const parsed = parseEmbedBlock(source)
+		const { folderPath, forcedType } = parsed
+		let embedId = parsed.embedId
 
 		// Generate and persist ID if missing
 		if (!embedId) {
