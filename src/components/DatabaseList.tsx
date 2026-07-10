@@ -96,7 +96,7 @@ function ListSortPanel({ sorts, schema, onSortChange, onClose, anchorRect, panel
 				</div>
 			)}
 		</div>,
-		document.body
+		activeDocument.body
 	)
 }
 
@@ -116,7 +116,7 @@ interface ListRowProps {
 	isMobile: boolean
 	onLongPress: (file: TFile) => void
 	onContextMenu: (file: TFile) => void
-	longPressRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>
+	longPressRef: React.MutableRefObject<number | null>
 	cardStyle?: React.CSSProperties
 }
 
@@ -135,9 +135,9 @@ const ListRow = React.memo(function ListRow({
 			style={{ ...(isHierarchical ? { paddingLeft: `${depth * 20 + 12}px` } : {}), ...cardStyle }}
 			onClick={() => onOpen(row._file)}
 			onContextMenu={!isMobile ? e => { e.preventDefault(); onContextMenu(row._file) } : undefined}
-			onTouchStart={isMobile ? () => { longPressRef.current = setTimeout(() => onLongPress(row._file), 500) } : undefined}
-			onTouchMove={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
-			onTouchEnd={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+			onTouchStart={isMobile ? () => { longPressRef.current = activeWindow.setTimeout(() => onLongPress(row._file), 500) } : undefined}
+			onTouchMove={isMobile ? () => { if (longPressRef.current) { activeWindow.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+			onTouchEnd={isMobile ? () => { if (longPressRef.current) { activeWindow.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
 		>
 			{hasChildren && (
 				<button className="nb-hierarchy-toggle" onClick={e => { e.stopPropagation(); onToggleExpand(row._file.path) }}>
@@ -199,7 +199,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [filterMenuOpen])
 
 	useEffect(() => {
@@ -207,7 +207,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 		const h = (e: MouseEvent) => {
 			if (cfPanelRef.current && !cfPanelRef.current.contains(e.target as Node)) setCfPanelOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [cfPanelOpen])
 
 	useEffect(() => {
@@ -216,7 +216,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) setFieldsMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [fieldsMenuOpen])
 
 	useEffect(() => {
@@ -226,7 +226,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 			if (sortButtonRef.current?.contains(e.target as Node)) return
 			if (sortPanelRef.current && !sortPanelRef.current.contains(e.target as Node)) setSortPanelOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [sortPanelOpen])
 
 	// ── Filter actions ───────────────────────────────────────────────────────
@@ -300,7 +300,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 	const dbFolderPath = dbFile?.parent?.path ?? ''
 	const openFile = useCallback((file: TFile) => { void app.workspace.getLeaf().openFile(file) }, [app])
 	const [contextMenuFile, setContextMenuFile] = useState<TFile | null>(null)
-	const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const longPressRef = useRef<number | null>(null)
 	const handleLongPress = useCallback((file: TFile) => { setContextMenuFile(file) }, [])
 	const handleContextMenu = useCallback((file: TFile) => { setContextMenuFile(file) }, [])
 

@@ -51,7 +51,7 @@ import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierar
 // ── Virtual row rendering (separate component to isolate hooks) ──────────
 function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHeight: number, disabled = false) {
 	const [range, setRange] = useState({ scrollTop: 0, viewportHeight: 800 })
-	const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const pendingRef = useRef<number | null>(null)
 
 	useEffect(() => {
 		if (disabled) return
@@ -62,7 +62,7 @@ function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHei
 		const onScroll = () => {
 			// Only re-render when scroll crosses a row boundary (reduces React updates)
 			if (pendingRef.current) return
-			pendingRef.current = setTimeout(() => {
+			pendingRef.current = activeWindow.setTimeout(() => {
 				pendingRef.current = null
 				flush()
 			}, 32) // ~30fps update rate — smooth enough, halves React work vs RAF
@@ -70,7 +70,7 @@ function useVirtualScroll(scrollRef: React.RefObject<HTMLElement | null>, rowHei
 		el.addEventListener('scroll', onScroll, { passive: true })
 		const ro = new ResizeObserver(flush)
 		ro.observe(el)
-		return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); if (pendingRef.current) clearTimeout(pendingRef.current) }
+		return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); if (pendingRef.current) activeWindow.clearTimeout(pendingRef.current) }
 	}, [scrollRef, disabled])
 
 	if (disabled) return { startIdx: 0, endIdx: Number.POSITIVE_INFINITY, topPad: 0 }
@@ -88,7 +88,7 @@ interface VirtualTbodyProps {
 	isMobile: boolean
 	setEditingCell: (cell: { rowIndex: number; columnId: string } | null) => void
 	setContextMenuFile: (file: TFile | null) => void
-	longPressRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>
+	longPressRef: React.MutableRefObject<number | null>
 	columns: unknown[]
 	onAddRow: () => void
 	hierarchyMap?: Map<string, HierarchyRow> | null
@@ -128,9 +128,9 @@ function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEdit
 							className={`nb-row${isDragOver ? ' nb-row--drag-over' : ''}`}
 							onClick={() => setEditingCell(null)}
 							onContextMenu={e => { e.preventDefault(); setContextMenuFile(row.original._file) }}
-							onTouchStart={isMobile ? () => { longPressRef.current = setTimeout(() => setContextMenuFile(row.original._file), 500) } : undefined}
-							onTouchMove={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
-							onTouchEnd={isMobile ? () => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+							onTouchStart={isMobile ? () => { longPressRef.current = activeWindow.setTimeout(() => setContextMenuFile(row.original._file), 500) } : undefined}
+							onTouchMove={isMobile ? () => { if (longPressRef.current) { activeWindow.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
+							onTouchEnd={isMobile ? () => { if (longPressRef.current) { activeWindow.clearTimeout(longPressRef.current); longPressRef.current = null } } : undefined}
 							onDragOver={rowDragEnabled ? e => { e.preventDefault(); onRowDragOver?.(filePath) } : undefined}
 							onDrop={rowDragEnabled ? e => { e.preventDefault(); onRowDrop?.(filePath) } : undefined}
 						>
@@ -529,7 +529,7 @@ function SortPanel({ sorts, schema, onSortChange, onClose, anchorRect, panelRef 
 				</div>
 			)}
 		</div>,
-		document.body
+		activeDocument.body
 	)
 }
 
@@ -786,7 +786,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 	const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
 	const [contextMenuFile, setContextMenuFile] = useState<TFile | null>(null)
-	const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const longPressRef = useRef<number | null>(null)
 	const [rowHeightMenuOpen, setRowHeightMenuOpen] = useState(false)
 	const [openAggCol, setOpenAggCol] = useState<string | null>(null)
 	const actionsMenuRef = useRef<HTMLDivElement>(null)
@@ -807,7 +807,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const operatorPickerRefs = useRef<Record<string, HTMLDivElement | null>>({})
 	const [searchExpanded, setSearchExpanded] = useState(false)
 	const searchInputRef = useRef<HTMLInputElement>(null)
-	const searchInactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const searchInactivityTimer = useRef<number | null>(null)
 	const [hierarchyExpandedSet, setHierarchyExpandedSet] = useState<Set<string>>(new Set())
 	const [hierarchyAllExpanded] = useState(true)
 	const [draggedRowPath, setDraggedRowPath] = useState<string | null>(null)
@@ -1260,8 +1260,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				setFieldsMenuOpen(false)
 			}
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [fieldsMenuOpen])
 
 	// ── Fechar menu de ações ao clicar fora ──────────────────────────────────
@@ -1274,8 +1274,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				setActionsMenuOpen(false)
 			}
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [actionsMenuOpen])
 
 	// ── Fechar menu de altura ao clicar fora ─────────────────────────────────
@@ -1288,8 +1288,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				setRowHeightMenuOpen(false)
 			}
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [rowHeightMenuOpen])
 
 	// ── Fechar dropdown de agregação ao clicar fora ──────────────────────────
@@ -1298,12 +1298,12 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		if (!openAggCol) return
 		const handler = (e: MouseEvent) => {
 			const target = e.target as Node
-			const open = document.querySelector('.nb-agg-dropdown')
-			const btn = document.querySelector(`[data-agg-col="${openAggCol}"]`)
+			const open = activeDocument.querySelector('.nb-agg-dropdown')
+			const btn = activeDocument.querySelector(`[data-agg-col="${openAggCol}"]`)
 			if (!open?.contains(target) && !btn?.contains(target)) setOpenAggCol(null)
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [openAggCol])
 
 	// ── Fechar painel de ordenação ao clicar fora ────────────────────
@@ -1316,8 +1316,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				setSortPanelOpen(false)
 			}
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [sortPanelOpen])
 
 	// ── Ações em lote ────────────────────────────────────────────────────────
@@ -1375,7 +1375,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		const csv = [headers.join(','), ...rowLines].join('\n')
 		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
 		const url = URL.createObjectURL(blob)
-		const a = document.createElement('a')
+		const a = createEl('a')
 		a.href = url
 		a.download = (dbFile?.parent?.name || app.vault.getName() || 'database') + '.csv'
 		a.click()
@@ -1446,8 +1446,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				setFilterMenuOpen(false)
 			}
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [filterMenuOpen])
 
 	useEffect(() => {
@@ -1455,8 +1455,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		const handler = (e: MouseEvent) => {
 			if (cfPanelRef.current && !cfPanelRef.current.contains(e.target as Node)) setCfPanelOpen(false)
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [cfPanelOpen])
 
 	// ── Posição do dropdown de pill (portal) ──────────────────────────────────
@@ -1480,8 +1480,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			const clickedDropdown = dropdown && dropdown.contains(e.target as Node)
 			if (!clickedBtn && !clickedDropdown) setOpenFilterPill(null)
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [openFilterPill])
 
 	// ── Fechar operator picker ao clicar fora ────────────────────────────
@@ -1492,8 +1492,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			const el = operatorPickerRefs.current[openOperatorPicker]
 			if (el && !el.contains(e.target as Node)) setOpenOperatorPicker(null)
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [openOperatorPicker])
 
 		// ── Filtros ───────────────────────────────────────────────────────────────
@@ -1594,24 +1594,24 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	useEffect(() => {
 		if (!shouldCollapse) {
 			setSearchExpanded(false)
-			if (searchInactivityTimer.current) clearTimeout(searchInactivityTimer.current)
+			if (searchInactivityTimer.current) activeWindow.clearTimeout(searchInactivityTimer.current)
 		}
 	}, [shouldCollapse])
 
 	useEffect(() => {
-		return () => { if (searchInactivityTimer.current) clearTimeout(searchInactivityTimer.current) }
+		return () => { if (searchInactivityTimer.current) activeWindow.clearTimeout(searchInactivityTimer.current) }
 	}, [])
 
 	const clearSearchTimer = () => {
 		if (searchInactivityTimer.current) {
-			clearTimeout(searchInactivityTimer.current)
+			activeWindow.clearTimeout(searchInactivityTimer.current)
 			searchInactivityTimer.current = null
 		}
 	}
 
 	const startSearchTimer = () => {
 		clearSearchTimer()
-		searchInactivityTimer.current = setTimeout(() => setSearchExpanded(false), 6000)
+		searchInactivityTimer.current = activeWindow.setTimeout(() => setSearchExpanded(false), 6000)
 	}
 
 	const expandSearch = () => {
@@ -2212,7 +2212,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						)
 					)}
 				</div>,
-				document.body
+				activeDocument.body
 			)
 		})()}
 		</>)}
@@ -2383,9 +2383,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 											colType={config.schema.find(s => s.id === col.id)?.type ?? 'text'}
 											current={aggType}
 											onSelect={t => { void setAggregation(col.id, t) }}
-											anchorEl={document.querySelector(`[data-agg-col="${col.id}"]`) as HTMLElement}
+											anchorEl={activeDocument.querySelector(`[data-agg-col="${col.id}"]`) as HTMLElement}
 										/>,
-										document.body
+										activeDocument.body
 									)}
 								</td>
 							)

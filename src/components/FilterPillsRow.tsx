@@ -47,8 +47,8 @@ export function FilterPillsRow({
 			const clickedDropdown = pillDropdownRef.current?.contains(target)
 			if (!clickedBtn && !clickedDropdown) setOpenFilterPill(null)
 		}
-		document.addEventListener('mousedown', h)
-		return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h)
+		return () => activeDocument.removeEventListener('mousedown', h)
 	}, [openFilterPill])
 
 	useEffect(() => {
@@ -57,8 +57,8 @@ export function FilterPillsRow({
 			const el = operatorPickerRefs.current[openOperatorPicker]
 			if (el && !el.contains(e.target as Node)) setOpenOperatorPicker(null)
 		}
-		document.addEventListener('mousedown', h)
-		return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h)
+		return () => activeDocument.removeEventListener('mousedown', h)
 	}, [openOperatorPicker])
 
 	useEffect(() => {
@@ -195,7 +195,7 @@ export function FilterPillsRow({
 						)
 					)}
 				</div>,
-				document.body
+				activeDocument.body
 			)}
 		</>
 	)

@@ -142,8 +142,8 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				setEditingNumberFmt(false)
 			}
 		}
-		document.addEventListener('mousedown', handler)
-		return () => document.removeEventListener('mousedown', handler)
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [menuOpen])
 
 	// Sincronizar nameValue com col.name
@@ -178,7 +178,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			if (y + panelHeight > window.innerHeight) y = rect.top - panelHeight - 4
 			setPanelPos({ x, y })
 		}
-		setTimeout(() => formulaRef.current?.focus(), 50)
+		activeWindow.setTimeout(() => formulaRef.current?.focus(), 50)
 	}, [editingFormula])
 
 	// Drag logic para o painel de fórmula
@@ -192,11 +192,11 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			})
 		}
 		const onUp = () => { dragOffset.current = null }
-		document.addEventListener('mousemove', onMove)
-		document.addEventListener('mouseup', onUp)
+		activeDocument.addEventListener('mousemove', onMove)
+		activeDocument.addEventListener('mouseup', onUp)
 		return () => {
-			document.removeEventListener('mousemove', onMove)
-			document.removeEventListener('mouseup', onUp)
+			activeDocument.removeEventListener('mousemove', onMove)
+			activeDocument.removeEventListener('mouseup', onUp)
 		}
 	}, [editingFormula])
 
@@ -248,9 +248,9 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			setLookupPanelPos({ x: e.clientX - lookupDragOffset.current.x, y: e.clientY - lookupDragOffset.current.y })
 		}
 		const onUp = () => { lookupDragOffset.current = null }
-		document.addEventListener('mousemove', onMove)
-		document.addEventListener('mouseup', onUp)
-		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+		activeDocument.addEventListener('mousemove', onMove)
+		activeDocument.addEventListener('mouseup', onUp)
+		return () => { activeDocument.removeEventListener('mousemove', onMove); activeDocument.removeEventListener('mouseup', onUp) }
 	}, [editingLookup])
 
 	// Rollup: load target schema when relation column changes
@@ -288,9 +288,9 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			setRollupPanelPos({ x: e.clientX - rollupDragOffset.current.x, y: e.clientY - rollupDragOffset.current.y })
 		}
 		const onUp = () => { rollupDragOffset.current = null }
-		document.addEventListener('mousemove', onMove)
-		document.addEventListener('mouseup', onUp)
-		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+		activeDocument.addEventListener('mousemove', onMove)
+		activeDocument.addEventListener('mouseup', onUp)
+		return () => { activeDocument.removeEventListener('mousemove', onMove); activeDocument.removeEventListener('mouseup', onUp) }
 	}, [editingRollup])
 
 	// Position panel when number format opens
@@ -343,9 +343,9 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			setImagePanelPos({ x: e.clientX - imgDragOffset.current.x, y: e.clientY - imgDragOffset.current.y })
 		}
 		const onUp = () => { imgDragOffset.current = null }
-		document.addEventListener('mousemove', onMove)
-		document.addEventListener('mouseup', onUp)
-		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+		activeDocument.addEventListener('mousemove', onMove)
+		activeDocument.addEventListener('mouseup', onUp)
+		return () => { activeDocument.removeEventListener('mousemove', onMove); activeDocument.removeEventListener('mouseup', onUp) }
 	}, [editingImageConfig])
 
 	// Sync audio folder input with col
@@ -375,9 +375,9 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			setAudioPanelPos({ x: e.clientX - audioDragOffset.current.x, y: e.clientY - audioDragOffset.current.y })
 		}
 		const onUp = () => { audioDragOffset.current = null }
-		document.addEventListener('mousemove', onMove)
-		document.addEventListener('mouseup', onUp)
-		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+		activeDocument.addEventListener('mousemove', onMove)
+		activeDocument.addEventListener('mouseup', onUp)
+		return () => { activeDocument.removeEventListener('mousemove', onMove); activeDocument.removeEventListener('mouseup', onUp) }
 	}, [editingAudioConfig])
 
 	// Sync video folder input with col
@@ -407,9 +407,9 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			setVideoPanelPos({ x: e.clientX - videoDragOffset.current.x, y: e.clientY - videoDragOffset.current.y })
 		}
 		const onUp = () => { videoDragOffset.current = null }
-		document.addEventListener('mousemove', onMove)
-		document.addEventListener('mouseup', onUp)
-		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+		activeDocument.addEventListener('mousemove', onMove)
+		activeDocument.addEventListener('mouseup', onUp)
+		return () => { activeDocument.removeEventListener('mousemove', onMove); activeDocument.removeEventListener('mouseup', onUp) }
 	}, [editingVideoConfig])
 
 	// Drag for number format panel
@@ -420,9 +420,9 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			setFmtPanelPos({ x: e.clientX - fmtDragOffset.current.x, y: e.clientY - fmtDragOffset.current.y })
 		}
 		const onUp = () => { fmtDragOffset.current = null }
-		document.addEventListener('mousemove', onMove)
-		document.addEventListener('mouseup', onUp)
-		return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+		activeDocument.addEventListener('mousemove', onMove)
+		activeDocument.addEventListener('mouseup', onUp)
+		return () => { activeDocument.removeEventListener('mousemove', onMove); activeDocument.removeEventListener('mouseup', onUp) }
 	}, [editingNumberFmt])
 
 	const handleSaveImageConfig = async () => {
@@ -814,7 +814,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				</div>
 			</div>
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	const numberFmtPanel = editingNumberFmt && fmtPanelPos ? createPortal(
@@ -877,7 +877,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				)}
 			</div>
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	const rollupPanel = editingRollup && rollupPanelPos ? createPortal(
@@ -922,7 +922,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				)}
 			</div>
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	const lookupPanel = editingLookup && lookupPanelPos ? createPortal(
@@ -988,7 +988,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				</div>
 			</div>
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	const imageCfgPanel = editingImageConfig && imagePanelPos ? createPortal(
@@ -1015,7 +1015,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				</div>
 			</div>
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	const audioCfgPanel = editingAudioConfig && audioPanelPos ? createPortal(
@@ -1042,7 +1042,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				</div>
 			</div>
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	const videoCfgPanel = editingVideoConfig && videoPanelPos ? createPortal(
@@ -1069,7 +1069,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				</div>
 			</div>
 		</div>,
-		document.body
+		activeDocument.body
 	) : null
 
 	return (

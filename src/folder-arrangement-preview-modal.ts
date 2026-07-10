@@ -30,16 +30,16 @@ export class FolderArrangementPreviewModal extends Modal {
 			contentEl.createEl('p', { text: t('arr_preview_empty') })
 		} else {
 			contentEl.createEl('p', { text: t('arr_preview_desc').replace('$count', String(moves.length)) })
-			const list = contentEl.createEl('div', { cls: 'nb-arr-preview-list' })
+			const list = contentEl.createDiv({ cls: 'nb-arr-preview-list' })
 			for (const m of moves) {
-				const row = list.createEl('div', { cls: 'nb-arr-preview-row' })
+				const row = list.createDiv({ cls: 'nb-arr-preview-row' })
 				row.createSpan({ cls: 'nb-arr-preview-from', text: m.from })
 				row.createSpan({ cls: 'nb-arr-preview-arrow', text: '→' })
 				row.createSpan({ cls: 'nb-arr-preview-to', text: m.to ?? '' })
 			}
 		}
 
-		const buttons = contentEl.createEl('div', { cls: 'nb-arr-preview-actions' })
+		const buttons = contentEl.createDiv({ cls: 'nb-arr-preview-actions' })
 		const cancelBtn = buttons.createEl('button', { text: t('arr_preview_cancel') })
 		cancelBtn.onclick = () => this.close()
 

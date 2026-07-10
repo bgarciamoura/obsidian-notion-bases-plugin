@@ -165,7 +165,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(e.target as Node)) setFieldsMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [fieldsMenuOpen])
 
 	useEffect(() => {
@@ -174,7 +174,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (groupByMenuRef.current && !groupByMenuRef.current.contains(e.target as Node)) setGroupByMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [groupByMenuOpen])
 
 	useEffect(() => {
@@ -183,7 +183,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
 			if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) setFilterMenuOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [filterMenuOpen])
 
 	useEffect(() => {
@@ -191,7 +191,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		const h = (e: MouseEvent) => {
 			if (cfPanelRef.current && !cfPanelRef.current.contains(e.target as Node)) setCfPanelOpen(false)
 		}
-		document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [cfPanelOpen])
 
 	// ── Groupable columns ─────────────────────────────────────────────────────
@@ -304,7 +304,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		ghost.style.cssText = `position:fixed;z-index:9999;pointer-events:none;opacity:0.85;width:${rect.width}px;transform:rotate(2deg);box-shadow:0 8px 24px rgba(0,0,0,0.2);`
 		ghost.style.left = `${x - rect.width / 2}px`
 		ghost.style.top = `${y - 20}px`
-		document.body.appendChild(ghost)
+		activeDocument.body.appendChild(ghost)
 		return ghost
 	}
 
@@ -312,10 +312,10 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		const touch = e.touches[0]
 		const el = e.currentTarget as HTMLElement
 		let active = false, overColKey: string | null = null, ghost: HTMLElement | null = null
-		let scrollInterval: ReturnType<typeof setInterval> | null = null
+		let scrollInterval: number | null = null
 		let longPressHandled = false
 
-		const longPressTimer = setTimeout(() => {
+		const longPressTimer = activeWindow.setTimeout(() => {
 			longPressHandled = true
 			cleanup()
 			setContextMenuFile(rowFile)
@@ -331,18 +331,18 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			const nearRight = boardRect.right - clientX < edgeZone
 
 			if (!nearLeft && !nearRight) {
-				if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null }
+				if (scrollInterval) { activeWindow.clearInterval(scrollInterval); scrollInterval = null }
 				return
 			}
 			if (scrollInterval) return
 			const dir = nearRight ? 1 : -1
-			scrollInterval = setInterval(() => {
+			scrollInterval = activeWindow.setInterval(() => {
 				board.scrollLeft += dir * speed
 			}, 16)
 		}
 
 		const stopEdgeScroll = () => {
-			if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null }
+			if (scrollInterval) { activeWindow.clearInterval(scrollInterval); scrollInterval = null }
 		}
 
 		const cleanup = () => {
@@ -354,7 +354,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		const onMove = (ev: TouchEvent) => {
 			const t = ev.touches[0]
 			if (!active && Math.abs(t.clientX - touch.clientX) < 12 && Math.abs(t.clientY - touch.clientY) < 12) return
-			clearTimeout(longPressTimer)
+			activeWindow.clearTimeout(longPressTimer)
 			ev.preventDefault()
 			ev.stopPropagation()
 			if (!active) {
@@ -368,7 +368,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 				ghost.style.top = `${t.clientY - 20}px`
 			}
 			el.classList.add('nb-touch-drag-hidden')
-			const target = document.elementFromPoint(t.clientX, t.clientY)
+			const target = activeDocument.elementFromPoint(t.clientX, t.clientY)
 			el.classList.remove('nb-touch-drag-hidden')
 			el.classList.add('nb-touch-drag-source')
 			const col = target?.closest('.nb-board-column') as HTMLElement | null
@@ -378,7 +378,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		}
 
 		const onEnd = () => {
-			clearTimeout(longPressTimer)
+			activeWindow.clearTimeout(longPressTimer)
 			stopEdgeScroll()
 			boardRef.current?.classList.remove('nb-board--dragging')
 			el.classList.remove('nb-touch-drag-source', 'nb-touch-drag-hidden')
@@ -400,7 +400,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		const el = e.currentTarget.closest('.nb-board-column') as HTMLElement
 		if (!el) return
 		let active = false, overColKey: string | null = null, ghost: HTMLElement | null = null
-		let scrollInterval: ReturnType<typeof setInterval> | null = null
+		let scrollInterval: number | null = null
 
 		const startEdgeScroll = (clientX: number) => {
 			const board = boardRef.current
@@ -412,18 +412,18 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			const nearRight = boardRect.right - clientX < edgeZone
 
 			if (!nearLeft && !nearRight) {
-				if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null }
+				if (scrollInterval) { activeWindow.clearInterval(scrollInterval); scrollInterval = null }
 				return
 			}
 			if (scrollInterval) return
 			const dir = nearRight ? 1 : -1
-			scrollInterval = setInterval(() => {
+			scrollInterval = activeWindow.setInterval(() => {
 				board.scrollLeft += dir * speed
 			}, 16)
 		}
 
 		const stopEdgeScroll = () => {
-			if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null }
+			if (scrollInterval) { activeWindow.clearInterval(scrollInterval); scrollInterval = null }
 		}
 
 		const onMove = (ev: TouchEvent) => {
@@ -442,7 +442,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 				ghost.style.top = `${t.clientY - 20}px`
 			}
 			el.classList.add('nb-touch-drag-hidden')
-			const target = document.elementFromPoint(t.clientX, t.clientY)
+			const target = activeDocument.elementFromPoint(t.clientX, t.clientY)
 			el.classList.remove('nb-touch-drag-hidden')
 			el.classList.add('nb-touch-drag-source')
 			const col = target?.closest('.nb-board-column') as HTMLElement | null
