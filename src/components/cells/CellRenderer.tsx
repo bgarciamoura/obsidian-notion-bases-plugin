@@ -657,7 +657,7 @@ function SelectCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 				{t('select_clear')}
 			</button>
 			{options.map(opt => (
-				<div key={opt.value} className="nb-select-option-row">
+				<div key={opt.value} className={`nb-select-option-row ${value === opt.value ? 'nb-select-option-row--active' : ''}`}>
 					<button
 						className={`nb-select-option ${value === opt.value ? 'nb-select-option--active' : ''}`}
 						onClick={() => onCommit(opt.value)}
@@ -847,10 +847,10 @@ function StatusCell({ value, col, isEditing, onStartEdit, onCommit, onCancel }: 
 			style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, minWidth: dropPos.width, zIndex: 9999 }}
 		>
 			<button className="nb-select-option nb-select-clear" onClick={() => onCommit(null)}>
-				Limpar
+				{t('select_clear')}
 			</button>
 			{options.map(opt => (
-				<div key={opt.value} className="nb-status-option-row">
+				<div key={opt.value} className={`nb-status-option-row ${value === opt.value ? 'nb-status-option-row--active' : ''}`}>
 					<button
 						className={`nb-select-option nb-status-option-btn ${value === opt.value ? 'nb-select-option--active' : ''}`}
 						onClick={() => onCommit(opt.value)}
@@ -1085,7 +1085,7 @@ function MultiSelectCell({ value, col, isEditing, onStartEdit, onCommit, onCance
 				onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void addNewOption(newOptionName) } }}
 			/>
 			{options.map(opt => (
-				<div key={opt.value} className="nb-select-option-row">
+				<div key={opt.value} className={`nb-select-option-row ${value.includes(opt.value) ? 'nb-select-option-row--active' : ''}`}>
 					<button
 						className={`nb-select-option ${value.includes(opt.value) ? 'nb-select-option--active' : ''}`}
 						onClick={() => toggle(opt.value)}
