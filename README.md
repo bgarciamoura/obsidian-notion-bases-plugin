@@ -8,8 +8,10 @@
 
 Turn any folder into a Notion-style database with Table, Board (Kanban), Gallery, List, Calendar, Timeline (Gantt), and Chart views — powered by plain Markdown and frontmatter. Your data stays yours, always.
 
+**Now available in Obsidian's Community Plugins directory** — [install it directly in the app](https://obsidian.md/plugins?id=notion-bases)
+
 [![GitHub release](https://img.shields.io/github/v/release/bgarciamoura/obsidian-notion-bases-plugin?style=for-the-badge&color=7c3aed)](https://github.com/bgarciamoura/obsidian-notion-bases-plugin/releases/latest)
-[![Obsidian](https://img.shields.io/badge/Obsidian-%E2%89%A5%201.4.0-7c3aed?style=for-the-badge&logo=obsidian&logoColor=white)](https://obsidian.md)
+[![Obsidian](https://img.shields.io/badge/Obsidian-%E2%89%A5%201.8.7-7c3aed?style=for-the-badge&logo=obsidian&logoColor=white)](https://obsidian.md)
 [![License](https://img.shields.io/github/license/bgarciamoura/obsidian-notion-bases-plugin?style=for-the-badge)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/bgarciamoura/obsidian-notion-bases-plugin/total?style=for-the-badge&color=44cc11)](https://github.com/bgarciamoura/obsidian-notion-bases-plugin/releases)
 
@@ -35,6 +37,9 @@ Turn any folder into a Notion-style database with Table, Board (Kanban), Gallery
 - **Formula engine** — Spreadsheet-style functions: `IF`, `SUM`, `AVG`, `CONCAT`, `LEFT`, `ROUND`, and [many more](docs/formulas.md)
 - **Relations & Lookups** — Link rows across databases and pull values from related notes
 - **Advanced filters** — Type-aware operators with AND/OR logic
+- **Live placeholders** — `{{column}}` tokens in a note body render the current cell value in reading view, updating as you edit the table
+- **Auto-arrange** — Optionally file rows into nested subfolders driven by property values (`status=Done, priority=High` → `Done/High/row.md`)
+- **7 languages** — English, Português (BR), Español, Français, Deutsch, 中文, 日本語
 - **100% local Markdown** — Every row is a `.md` file, every column is a frontmatter field. No lock-in, no cloud, no telemetry
 
 ---
@@ -169,8 +174,11 @@ Bar, line, and pie charts rendered as pure SVG. Pick a category column (X axis),
 | **CSV** | Import and export |
 | **Bulk actions** | Select rows to delete, duplicate or move |
 | **Schema inference** | Auto-detects column types from existing frontmatter |
-| **Embeds** | Embed any database inside a note via code block |
+| **Embeds** | Embed any database inside a note via code block — free multi-view or pinned to any view type |
 | **Multi-view** | Each view has independent filters, sorts and field visibility |
+| **Live placeholders** | `{{column}}` tokens in note bodies resolve to cell values in reading view |
+| **Folder arrangement** | Auto-file rows into subfolders by property values, with batch preview |
+| **i18n** | Full UI translation in 7 languages (en, pt-BR, es, fr, de, zh, ja) |
 | **100% Markdown** | Every row is a `.md` file. No lock-in, ever |
 
 ![Inline editing](docs/images/feature-inline-edit.gif)
@@ -208,14 +216,15 @@ Bar, line, and pie charts rendered as pure SVG. Pick a category column (X axis),
 
 ### Installation
 
-> **Note:** Notion Bases is not yet available in Obsidian's Community Plugins directory. For now, use one of the methods below.
+**Via Community Plugins (recommended)**
 
-**Via BRAT (recommended)**
+Notion Bases is available in Obsidian's Community Plugins directory:
 
-1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Community Plugins
-2. Open BRAT settings → **Add Beta plugin**
-3. Paste: `bgarciamoura/obsidian-notion-bases-plugin`
-4. Enable **Notion Bases** in **Settings → Community plugins**
+1. Open **Settings → Community plugins → Browse**
+2. Search for **"Notion Bases"**
+3. Click **Install**, then **Enable**
+
+Or install it in one click from your browser: [open in Obsidian](https://obsidian.md/plugins?id=notion-bases).
 
 **Manual installation**
 
@@ -242,14 +251,16 @@ path: Projects
 ```
 ````
 
-Pin a fixed view type (no tabs):
+Pin a fixed view type (no tabs) — any of `table`, `list`, `board`, `gallery`, `calendar`, `timeline` or `chart`:
 
 ````markdown
 ```nb-database
 path: Projects
-type: table
+type: board
 ```
 ````
+
+A pinned embed inherits its configuration (board grouping, calendar date column, …) from the matching view defined in the database, so different notes can show the same data as a board, a calendar or a chart.
 
 ![Embed in note](docs/images/feature-embed.png)
 
@@ -272,7 +283,7 @@ Open any file in any text editor and your data is right there.
 
 ## Requirements
 
-- Obsidian `1.4.0` or later
+- Obsidian `1.8.7` or later
 - Desktop and mobile supported
 
 ---
