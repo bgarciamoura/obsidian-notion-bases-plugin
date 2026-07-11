@@ -4,1178 +4,659 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notion Bases — The database plugin Obsidian is missing</title>
-  <meta name="description" content="7 views. 18 column types. Charts, subtasks, formulas and relations. Turn any folder into a full-featured database inside Obsidian.">
-  <meta name="theme-color" content="#7c3aed">
-  <meta property="og:title" content="Notion Bases — Obsidian Plugin">
-  <meta property="og:description" content="7 views. 18 column types. Charts, subtasks, formulas and relations. Zero code required.">
+  <meta name="description" content="Turn any Obsidian folder into a database: table, kanban, gallery, calendar, timeline and charts, with relations, rollups and formulas. Every row stays a plain Markdown file.">
+  <meta name="theme-color" content="#1a1712">
+  <meta property="og:title" content="Notion Bases — the database plugin Obsidian is missing">
+  <meta property="og:description" content="Seven views, relations, rollups and formulas over plain Markdown frontmatter. Now in Obsidian's Community Plugins.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://bgarciamoura.github.io/obsidian-notion-bases-plugin/">
+  <meta property="og:image" content="https://bgarciamoura.github.io/obsidian-notion-bases-plugin/docs/images/view-table.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a1712'/%3E%3Cpath d='M7 8h8v7H7zM17 8h8v3h-8zM17 13h8v3h-8zM7 17h8v7H7zM17 20h8v4h-8z' fill='%23edbe4b'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+  <script>document.documentElement.classList.add('js')</script>
   <style>
-    *, *::before, *::after {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg-primary: #1e1e2e;
-      --bg-secondary: #181825;
-      --bg-card: #262637;
-      --bg-card-hover: #2e2e42;
-      --text-primary: #e4e4f0;
-      --text-secondary: #a6a6be;
-      --text-muted: #6c6c8a;
-      --accent: #7c3aed;
-      --accent-hover: #6d28d9;
-      --accent-glow: rgba(124, 58, 237, 0.25);
-      --green: #34d399;
-      --red: #f87171;
-      --yellow: #fbbf24;
-      --border: #2e2e42;
-      --radius: 12px;
-      --radius-sm: 8px;
+      /* Warm near-black tinted to the amber hue — never navy */
+      --bg: oklch(0.16 0.01 95);
+      --surface: oklch(0.205 0.012 95);
+      --line: oklch(0.32 0.018 95);
+      --ink: oklch(0.955 0.012 95);
+      --ink-soft: oklch(0.80 0.022 95);
+      --amber: oklch(0.84 0.155 91);
+      --amber-bright: oklch(0.88 0.16 93);
+      --amber-deep: oklch(0.52 0.09 85);
+      --on-amber: oklch(0.18 0.02 91);
+
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --z-nav: 10;
+      --z-skip: 20;
+
+      /* Type scale, ratio ≈ 1.33 */
+      --text-sm: 0.875rem;
+      --text-body: 1.0625rem;
+      --text-lg: clamp(1.25rem, 1.05rem + 0.9vw, 1.5rem);
+      --text-h2: clamp(1.9rem, 1.4rem + 2.2vw, 3rem);
+      --text-h1: clamp(2.5rem, 1.7rem + 4vw, 4.75rem);
+      --measure: 62ch;
     }
 
-    html {
-      scroll-behavior: smooth;
+    html { scroll-padding-top: 84px; }
+    @media (prefers-reduced-motion: no-preference) {
+      html { scroll-behavior: smooth; }
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      line-height: 1.6;
-      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+      font-optical-sizing: auto;
+      font-size: var(--text-body);
+      line-height: 1.65;
+      letter-spacing: 0.01em;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Animations */
-    .fade-in {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    h1, h2, h3 { text-wrap: balance; line-height: 1.08; font-weight: 800; }
+    p { text-wrap: pretty; }
+    img { max-width: 100%; height: auto; display: block; }
+    a { color: var(--amber); }
+    code { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 0.92em; }
+
+    ::selection { background: var(--amber); color: var(--on-amber); }
+
+    :focus-visible {
+      outline: 2px solid var(--amber);
+      outline-offset: 3px;
+      border-radius: 2px;
     }
 
-    .fade-in.visible {
-      opacity: 1;
-      transform: translateY(0);
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
     }
-
-    .fade-in-delay-1 { transition-delay: 0.1s; }
-    .fade-in-delay-2 { transition-delay: 0.2s; }
-    .fade-in-delay-3 { transition-delay: 0.3s; }
-    .fade-in-delay-4 { transition-delay: 0.4s; }
-    .fade-in-delay-5 { transition-delay: 0.5s; }
-
-    /* Navigation */
-    nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      background: rgba(30, 30, 46, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
+    .skip-link {
+      position: fixed; top: -100px; left: 16px; z-index: var(--z-skip);
+      background: var(--amber); color: var(--on-amber);
+      padding: 10px 18px; border-radius: 6px; font-weight: 600; text-decoration: none;
+      transition: top 0.2s var(--ease);
     }
+    .skip-link:focus-visible { top: 12px; }
 
+    .container { max-width: 1140px; margin: 0 auto; padding: 0 clamp(20px, 4vw, 40px); }
+
+    /* ── Nav ─────────────────────────────────────────── */
+    .nav {
+      position: sticky; top: 0; z-index: var(--z-nav);
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+    }
     .nav-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between;
       height: 64px;
     }
-
     .nav-logo {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      display: flex; align-items: center; gap: 10px;
+      color: var(--ink); text-decoration: none;
+      font-weight: 800; font-size: 1.125rem; letter-spacing: -0.01em;
     }
-
-    .nav-logo svg {
-      width: 28px;
-      height: 28px;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 28px;
-      list-style: none;
-    }
-
+    .nav-logo svg { flex-shrink: 0; }
+    .nav-links { display: flex; gap: 4px; list-style: none; }
     .nav-links a {
-      color: var(--text-secondary);
-      text-decoration: none;
-      font-size: 0.9rem;
-      font-weight: 500;
-      transition: color 0.2s;
+      display: block; padding: 8px 14px; border-radius: 6px;
+      color: var(--ink-soft); text-decoration: none; font-weight: 600; font-size: var(--text-sm);
+      transition: color 0.2s var(--ease), background 0.2s var(--ease);
+    }
+    .nav-links a:hover { color: var(--ink); background: var(--surface); }
+    .nav-links a[aria-current="true"] { color: var(--amber); }
+    .nav-toggle {
+      display: none; background: none; border: 1px solid var(--line); border-radius: 6px;
+      color: var(--ink); padding: 8px 10px; cursor: pointer; font: inherit;
     }
 
-    .nav-links a:hover {
-      color: var(--accent);
-    }
-
-    .nav-mobile-toggle {
-      display: none;
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      cursor: pointer;
-      padding: 8px;
-    }
-
-    /* Container */
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-
-    /* Hero */
-    .hero {
-      padding: 160px 24px 100px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero::before {
-      content: "";
-      position: absolute;
-      top: -200px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 800px;
-      height: 800px;
-      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
-    .hero-content {
-      position: relative;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
-    .hero-badge {
-      display: inline-block;
-      background: rgba(124, 58, 237, 0.15);
-      border: 1px solid rgba(124, 58, 237, 0.3);
-      color: var(--accent);
-      padding: 6px 16px;
-      border-radius: 100px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 24px;
-      letter-spacing: 0.02em;
-    }
-
+    /* ── Hero ────────────────────────────────────────── */
+    .hero { padding: clamp(56px, 9vw, 120px) 0 0; }
+    .hero-grid { max-width: 880px; }
     .hero h1 {
-      font-size: 4rem;
-      font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 16px;
-      background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      font-size: var(--text-h1);
+      letter-spacing: -0.025em;
     }
-
-    .hero-subtitle {
-      font-size: 1.35rem;
-      color: var(--text-secondary);
-      margin-bottom: 16px;
-      font-weight: 500;
+    .hero h1 em {
+      font-style: normal;
+      color: var(--amber);
     }
-
-    .hero-description {
-      font-size: 1.1rem;
-      color: var(--text-muted);
-      max-width: 600px;
-      margin: 0 auto 40px;
-      line-height: 1.7;
+    .hero-sub {
+      margin-top: 24px;
+      max-width: var(--measure);
+      font-size: var(--text-lg);
+      line-height: 1.5;
+      color: var(--ink-soft);
     }
-
-    .hero-buttons {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
+    .hero-actions {
+      margin-top: 36px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
     }
-
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 28px;
-      border-radius: var(--radius);
-      font-size: 1rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.2s;
-      cursor: pointer;
-      border: none;
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 14px 26px; border-radius: 8px;
+      font-weight: 600; font-size: 1rem; text-decoration: none;
+      transition: transform 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease);
     }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-      box-shadow: 0 4px 20px var(--accent-glow);
+    .btn-primary { background: var(--amber); color: var(--on-amber); }
+    .btn-primary:hover { background: var(--amber-bright); transform: translateY(-1px); }
+    .btn-secondary { border: 1px solid var(--line); color: var(--ink); }
+    .btn-secondary:hover { border-color: var(--amber-deep); }
+    .hero-trust {
+      margin-top: 20px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
+      font-size: var(--text-sm); color: var(--ink-soft);
     }
+    .hero-trust img { height: 20px; width: auto; }
 
-    .btn-primary:hover {
-      background: var(--accent-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 30px var(--accent-glow);
-    }
-
-    .btn-secondary {
-      background: var(--bg-card);
-      color: var(--text-primary);
-      border: 1px solid var(--border);
-    }
-
-    .btn-secondary:hover {
-      background: var(--bg-card-hover);
-      transform: translateY(-2px);
-    }
-
-    .btn svg {
-      width: 20px;
-      height: 20px;
-    }
-
-    .hero-stats {
-      display: flex;
-      justify-content: center;
-      gap: 48px;
-      margin-top: 60px;
-      padding-top: 40px;
-      border-top: 1px solid var(--border);
-    }
-
-    .hero-stat {
-      text-align: center;
-    }
-
-    .hero-stat-value {
-      font-size: 2rem;
-      font-weight: 800;
-      color: var(--accent);
-    }
-
-    .hero-stat-label {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* Section */
-    section {
-      padding: 100px 24px;
-    }
-
-    .section-header {
-      text-align: center;
-      margin-bottom: 64px;
-    }
-
-    .section-header h2 {
-      font-size: 2.5rem;
-      font-weight: 800;
-      margin-bottom: 16px;
-    }
-
-    .section-header p {
-      font-size: 1.15rem;
-      color: var(--text-secondary);
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    /* Views Grid */
-    #views {
-      background: var(--bg-secondary);
-    }
-
-    .views-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .view-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
-    }
-
-    .view-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-      border-color: var(--accent);
-    }
-
-    .view-card-image {
+    .hero-shot { margin-top: clamp(44px, 7vw, 80px); }
+    .hero-shot img, .band-media img {
+      border: 1px solid var(--line);
+      border-radius: 10px;
       width: 100%;
-      aspect-ratio: 16 / 10;
-      background: var(--bg-secondary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
+    }
+    .hero-shot figcaption, .band-media figcaption {
+      margin-top: 10px; font-size: var(--text-sm); color: var(--ink-soft);
     }
 
-    .view-card-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    /* ── Sections ────────────────────────────────────── */
+    section { padding: clamp(72px, 11vw, 150px) 0 0; }
+    .section-head h2 { font-size: var(--text-h2); letter-spacing: -0.02em; max-width: 22ch; }
+    .section-head p { margin-top: 18px; max-width: var(--measure); color: var(--ink-soft); font-size: var(--text-lg); line-height: 1.5; }
 
-    .view-card-body {
+    /* ── Evidence ledger ─────────────────────────────── */
+    .ledger { margin-top: 48px; border-top: 1px solid var(--line); }
+    .ledger-row {
+      display: grid; grid-template-columns: 1fr auto auto;
+      gap: 16px; align-items: baseline;
+      padding: 22px 4px; border-bottom: 1px solid var(--line);
+      font-size: clamp(1.15rem, 1rem + 1vw, 1.6rem); font-weight: 600;
+    }
+    .ledger-row .have { color: var(--amber); white-space: nowrap; }
+    .ledger-row .lack { color: var(--ink-soft); white-space: nowrap; font-weight: 400; }
+    .ledger-note { margin-top: 16px; font-size: var(--text-sm); color: var(--ink-soft); }
+
+    details.compare-full { margin-top: 36px; border: 1px solid var(--line); border-radius: 10px; }
+    details.compare-full summary {
+      cursor: pointer; padding: 18px 22px; font-weight: 600; color: var(--ink);
+      list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      border-radius: 10px;
+    }
+    details.compare-full summary::-webkit-details-marker { display: none; }
+    details.compare-full summary::after { content: "+"; font-size: 1.4rem; color: var(--amber); }
+    details.compare-full[open] summary::after { content: "–"; }
+    .compare-scroll { overflow-x: auto; padding: 0 22px 22px; }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+    .compare-table th, .compare-table td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--line); }
+    .compare-table th { font-weight: 600; color: var(--ink-soft); border-top: none; white-space: nowrap; }
+    .compare-table td:nth-child(2) { color: var(--amber); font-weight: 600; }
+    .compare-table td:nth-child(3) { color: var(--ink-soft); }
+
+    /* ── View bands ──────────────────────────────────── */
+    .band {
+      margin-top: clamp(56px, 8vw, 96px);
+      display: grid; grid-template-columns: minmax(260px, 5fr) 12fr;
+      gap: clamp(24px, 4vw, 56px); align-items: start;
+    }
+    .band:nth-of-type(even) { grid-template-columns: 12fr minmax(260px, 5fr); }
+    .band:nth-of-type(even) .band-copy { order: 2; }
+    .band-copy h3 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.1rem); letter-spacing: -0.015em; }
+    .band-copy p { margin-top: 12px; color: var(--ink-soft); }
+    .band-copy { position: sticky; top: 96px; }
+    .band > *, .power-grid > * { min-width: 0; }
+
+    /* ── Power (relations) ───────────────────────────── */
+    .power-grid {
+      margin-top: 48px;
+      display: grid; grid-template-columns: minmax(0, 7fr) minmax(280px, 5fr);
+      gap: clamp(28px, 5vw, 64px); align-items: center;
+    }
+    .power-copy p + p { margin-top: 16px; }
+    .power-copy p { color: var(--ink-soft); max-width: var(--measure); }
+    .power-copy strong { color: var(--ink); }
+    .power-copy .kw { color: var(--amber); font-weight: 600; }
+    .frontmatter-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
       padding: 24px;
-    }
-
-    .view-card-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: var(--radius-sm);
-      background: rgba(124, 58, 237, 0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 12px;
-      color: var(--accent);
-    }
-
-    .view-card-icon svg {
-      width: 22px;
-      height: 22px;
-    }
-
-    .view-card h3 {
-      font-size: 1.2rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .view-card p {
-      font-size: 0.92rem;
-      color: var(--text-secondary);
-      line-height: 1.6;
-    }
-
-    /* Features */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .feature-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 32px;
-      transition: transform 0.3s, border-color 0.3s;
-    }
-
-    .feature-card:hover {
-      transform: translateY(-2px);
-      border-color: rgba(124, 58, 237, 0.4);
-    }
-
-    .feature-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: var(--radius-sm);
-      background: rgba(124, 58, 237, 0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 16px;
-      color: var(--accent);
-      font-size: 1.5rem;
-    }
-
-    .feature-card h3 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .feature-card p {
-      font-size: 0.92rem;
-      color: var(--text-secondary);
-      line-height: 1.6;
-    }
-
-    /* Comparison Table */
-    #comparison {
-      background: var(--bg-secondary);
-    }
-
-    .comparison-wrapper {
-      max-width: 900px;
-      margin: 0 auto;
+      font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+      font-size: 0.9rem; line-height: 1.8;
       overflow-x: auto;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
     }
+    .frontmatter-card .fm-key { color: var(--amber); }
+    .frontmatter-card .fm-comment { color: var(--ink-soft); }
 
-    .comparison-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.95rem;
-    }
-
-    .comparison-table thead {
-      background: var(--bg-card);
-    }
-
-    .comparison-table th {
-      padding: 16px 20px;
-      text-align: left;
-      font-weight: 700;
-      font-size: 0.95rem;
-      border-bottom: 2px solid var(--border);
-      white-space: nowrap;
-    }
-
-    .comparison-table th:not(:first-child) {
-      text-align: center;
-    }
-
-    .comparison-table td {
-      padding: 12px 20px;
-      border-bottom: 1px solid var(--border);
-      color: var(--text-secondary);
-    }
-
-    .comparison-table td:not(:first-child) {
-      text-align: center;
-    }
-
-    .comparison-table tr:last-child td {
-      border-bottom: none;
-    }
-
-    .comparison-table tr:hover {
-      background: rgba(124, 58, 237, 0.04);
-    }
-
-    .check {
-      color: var(--green);
-      font-weight: 700;
-      font-size: 1.1rem;
-    }
-
-    .cross {
-      color: var(--text-muted);
-      font-size: 1.1rem;
-    }
-
-    .highlight-cell {
-      color: var(--accent);
-      font-weight: 600;
-    }
-
-    .comparison-table .col-notion {
-      background: rgba(124, 58, 237, 0.06);
-    }
-
-    /* Installation */
-    .install-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 32px;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    .install-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 36px;
-    }
-
-    .install-card.primary {
-      border-color: var(--accent);
-      position: relative;
-    }
-
-    .install-card.primary::before {
-      content: "Recommended";
-      position: absolute;
-      top: -12px;
-      left: 24px;
-      background: var(--accent);
-      color: #fff;
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 100px;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
-
-    .install-card h3 {
-      font-size: 1.3rem;
-      font-weight: 700;
-      margin-bottom: 20px;
-    }
-
-    .install-steps {
+    /* ── Toolbox list ────────────────────────────────── */
+    .toolbox {
+      margin-top: 48px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 0 clamp(28px, 5vw, 72px);
       list-style: none;
-      counter-reset: step;
     }
+    .toolbox li {
+      padding: 14px 0; border-bottom: 1px solid var(--line);
+      color: var(--ink-soft); line-height: 1.5;
+    }
+    .toolbox b { color: var(--ink); font-weight: 600; }
 
+    /* ── Install ─────────────────────────────────────── */
+    .install-steps { margin: 40px 0 0; padding-left: 0; list-style: none; counter-reset: step; max-width: 560px; }
     .install-steps li {
       counter-increment: step;
-      padding: 10px 0;
-      padding-left: 36px;
-      position: relative;
-      color: var(--text-secondary);
-      font-size: 0.95rem;
-      line-height: 1.6;
+      display: grid; grid-template-columns: 44px 1fr; gap: 16px; align-items: baseline;
+      padding: 14px 0;
+      font-size: var(--text-lg);
     }
-
     .install-steps li::before {
       content: counter(step);
-      position: absolute;
-      left: 0;
-      top: 10px;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: rgba(124, 58, 237, 0.15);
-      color: var(--accent);
-      font-size: 0.8rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-weight: 800; font-size: 1.3rem; color: var(--amber);
+      border: 1px solid var(--line); border-radius: 8px;
+      width: 44px; height: 44px; display: grid; place-items: center;
     }
+    .install-alt { margin-top: 28px; max-width: 640px; }
+    .install-alt summary { cursor: pointer; color: var(--ink-soft); font-weight: 600; }
+    .install-alt ol { margin: 14px 0 0 22px; color: var(--ink-soft); }
+    .install-alt li { margin-top: 8px; }
+    .install-req { margin-top: 28px; font-size: var(--text-sm); color: var(--ink-soft); }
 
-    .install-steps code {
-      background: rgba(124, 58, 237, 0.1);
-      color: var(--accent);
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.85rem;
-      font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
-      word-break: break-all;
+    /* ── Closing ─────────────────────────────────────── */
+    .closing { text-align: left; padding-bottom: clamp(72px, 11vw, 150px); }
+    .closing h2 {
+      font-size: var(--text-h1); letter-spacing: -0.025em; max-width: 18ch;
     }
+    .closing h2 em { font-style: normal; color: var(--amber); }
+    .closing .btn { margin-top: 36px; }
 
-    .install-note {
-      text-align: center;
-      margin-top: 40px;
-      padding: 20px;
-      background: rgba(124, 58, 237, 0.08);
-      border: 1px solid rgba(124, 58, 237, 0.2);
-      border-radius: var(--radius);
-      max-width: 900px;
-      margin-left: auto;
-      margin-right: auto;
-      color: var(--text-secondary);
-      font-size: 0.95rem;
-    }
-
-    /* Support */
-    #support {
-      background: var(--bg-secondary);
-    }
-
-    .support-grid {
-      display: flex;
-      gap: 24px;
-      justify-content: center;
-      flex-wrap: wrap;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    .support-card {
-      flex: 1;
-      min-width: 240px;
-      max-width: 280px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 36px 28px;
-      text-align: center;
-      transition: transform 0.3s, border-color 0.3s;
-      text-decoration: none;
-      color: inherit;
-      display: block;
-    }
-
-    .support-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--accent);
-    }
-
-    .support-card-icon {
-      width: 56px;
-      height: 56px;
-      margin: 0 auto 16px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.8rem;
-    }
-
-    .support-card h3 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .support-card p {
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-    }
-
-    .ghsponsor-icon { background: rgba(219, 97, 162, 0.12); color: #db61a2; }
-    .bmac-icon { background: rgba(255, 221, 0, 0.12); color: #FFDD00; }
-
-    /* Footer */
+    /* ── Footer ──────────────────────────────────────── */
     footer {
-      padding: 40px 24px;
-      border-top: 1px solid var(--border);
-      text-align: center;
+      border-top: 1px solid var(--line);
+      margin-top: clamp(72px, 11vw, 150px);
+      padding: 36px 0 48px;
+      font-size: var(--text-sm); color: var(--ink-soft);
     }
+    .footer-inner { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; align-items: baseline; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 20px; list-style: none; }
+    .footer-links a { color: var(--ink-soft); text-decoration: none; display: inline-block; padding: 12px 4px; margin: -12px -4px; }
+    .footer-links a:hover { color: var(--amber); }
 
-    .footer-content {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-
-    .footer-links {
-      display: flex;
-      gap: 24px;
-      list-style: none;
-    }
-
-    .footer-links a {
-      color: var(--text-muted);
-      text-decoration: none;
-      font-size: 0.9rem;
-      transition: color 0.2s;
-    }
-
-    .footer-links a:hover {
-      color: var(--accent);
-    }
-
-    .footer-copy {
-      color: var(--text-muted);
-      font-size: 0.85rem;
-    }
-
-    /* Responsive */
-    @media (max-width: 900px) {
-      .hero h1 { font-size: 2.8rem; }
-      .views-grid { grid-template-columns: repeat(2, 1fr); }
-      .features-grid { grid-template-columns: repeat(2, 1fr); }
-      .section-header h2 { font-size: 2rem; }
-    }
-
-    @media (max-width: 640px) {
-      .nav-links { display: none; }
-      .nav-links.open {
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        top: 64px;
-        left: 0;
-        right: 0;
-        background: rgba(30, 30, 46, 0.98);
-        backdrop-filter: blur(12px);
-        padding: 16px 24px;
-        gap: 16px;
-        border-bottom: 1px solid var(--border);
+    /* ── Motion (progressive, JS-gated, reduced-motion aware) ── */
+    .reveal { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: no-preference) {
+      html.js .reveal {
+        opacity: 0; transform: translateY(18px);
+        transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
       }
-      .nav-mobile-toggle { display: block; }
-      .hero { padding: 120px 16px 60px; }
-      .hero h1 { font-size: 2.2rem; }
-      .hero-subtitle { font-size: 1.1rem; }
-      .hero-description { font-size: 1rem; }
-      .hero-stats { gap: 24px; flex-wrap: wrap; }
-      .hero-stat-value { font-size: 1.5rem; }
-      section { padding: 60px 16px; }
-      .views-grid { grid-template-columns: 1fr; }
-      .features-grid { grid-template-columns: 1fr; }
-      .install-grid { grid-template-columns: 1fr; }
-      .footer-content { flex-direction: column; text-align: center; }
-      .section-header h2 { font-size: 1.7rem; }
+      html.js .reveal.in { opacity: 1; transform: none; }
+      html.js .hero h1, html.js .hero-sub, html.js .hero-actions, html.js .hero-trust {
+        animation: rise 0.9s var(--ease) both;
+      }
+      html.js .hero-sub { animation-delay: 0.08s; }
+      html.js .hero-actions { animation-delay: 0.16s; }
+      html.js .hero-trust { animation-delay: 0.24s; }
+      html.js .hero-shot { animation: rise 1.1s var(--ease) 0.2s both; }
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: none; }
+      }
+    }
+
+    /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 860px) {
+      .band, .band:nth-of-type(even) { grid-template-columns: 1fr; }
+      .band:nth-of-type(even) .band-copy { order: 0; }
+      .band-copy { position: static; }
+      .power-grid { grid-template-columns: 1fr; }
+    }
+    html:not(.js) .nav-toggle { display: none !important; }
+    @media (max-width: 720px) {
+      html:not(.js) .nav-inner { flex-wrap: wrap; height: auto; padding: 10px 0; }
+      html:not(.js) .nav-links { position: static; display: flex; flex-wrap: wrap; border: none; padding: 0; }
+      html.js .nav-links {
+        display: none;
+        position: absolute; top: 64px; left: 0; right: 0;
+        flex-direction: column; gap: 0;
+        background: var(--bg); border-bottom: 1px solid var(--line);
+        padding: 8px clamp(20px, 4vw, 40px) 16px;
+      }
+      html.js .nav-links.open { display: flex; }
+      .nav-links a { padding: 12px 8px; }
+      .nav-toggle { display: block; }
+      .ledger-row { grid-template-columns: 1fr; gap: 4px; padding: 18px 0; }
+      .ledger-row .lack { font-size: var(--text-sm); }
     }
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- Navigation -->
-  <nav>
-    <div class="nav-inner">
-      <a href="#" class="nav-logo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="7" rx="1"/>
-          <rect x="14" y="3" width="7" height="7" rx="1"/>
-          <rect x="3" y="14" width="7" height="7" rx="1"/>
-          <rect x="14" y="14" width="7" height="7" rx="1"/>
-        </svg>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="nav-logo" href="#top" aria-label="Notion Bases — back to top">
+        <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="none" stroke="var(--line)"/><path d="M7 8h8v7H7zM17 8h8v3h-8zM17 13h8v3h-8zM7 17h8v7H7zM17 20h8v4h-8z" fill="var(--amber)"/></svg>
         Notion Bases
       </a>
-      <button class="nav-mobile-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle navigation">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-      <ul class="nav-links">
+      <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" onclick="toggleNav(this)">Menu</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#compare">Compare</a></li>
         <li><a href="#views">Views</a></li>
-        <li><a href="#features">Features</a></li>
-        <li><a href="#comparison">Comparison</a></li>
+        <li><a href="#power">Relations</a></li>
         <li><a href="#install">Install</a></li>
-        <li><a href="#support">Support</a></li>
         <li><a href="https://github.com/bgarciamoura/obsidian-notion-bases-plugin" target="_blank" rel="noopener">GitHub</a></li>
       </ul>
     </div>
-  </nav>
+  </header>
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="hero-content">
-      <div class="hero-badge fade-in">v1.8.5 &mdash; Now in Obsidian&rsquo;s Community Plugins</div>
-      <h1 class="fade-in fade-in-delay-1">Notion Bases</h1>
-      <p class="hero-subtitle fade-in fade-in-delay-2">The database plugin Obsidian is missing</p>
-      <p class="hero-description fade-in fade-in-delay-3">7 views. 18 column types. Charts, subtasks, formulas and relations. Turn any folder into a full-featured database &mdash; all powered by plain Markdown. Your data stays yours.</p>
-      <div class="hero-buttons fade-in fade-in-delay-4">
-        <a href="#install" class="btn btn-primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Install from Community Plugins
-        </a>
-        <a href="https://github.com/bgarciamoura/obsidian-notion-bases-plugin" target="_blank" rel="noopener" class="btn btn-secondary">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          View on GitHub
-        </a>
-      </div>
-      <div class="hero-stats fade-in fade-in-delay-5">
-        <div class="hero-stat">
-          <div class="hero-stat-value">7</div>
-          <div class="hero-stat-label">Views</div>
-        </div>
-        <div class="hero-stat">
-          <div class="hero-stat-value">18</div>
-          <div class="hero-stat-label">Column Types</div>
-        </div>
-        <div class="hero-stat">
-          <div class="hero-stat-value">100%</div>
-          <div class="hero-stat-label">Markdown</div>
-        </div>
-        <div class="hero-stat">
-          <div class="hero-stat-value">0</div>
-          <div class="hero-stat-label">Lock-in</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Views -->
-  <section id="views">
-    <div class="container">
-      <div class="section-header fade-in">
-        <h2>7 powerful views</h2>
-        <p>See your data the way you need it. Switch between views instantly &mdash; each with its own filters, sorts, and field visibility.</p>
-      </div>
-      <div class="views-grid">
-
-        <div class="view-card fade-in">
-          <div class="view-card-image">
-            <img src="docs/images/view-table.png" alt="Table view" loading="lazy" onerror="this.style.display='none'">
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero" id="top">
+      <div class="container">
+        <div class="hero-grid">
+          <h1>The database plugin Obsidian is <em>missing</em>.</h1>
+          <p class="hero-sub">Turn any folder of notes into a table, kanban board, gallery, calendar, timeline or chart, with relations, rollups and spreadsheet formulas. Every row stays a plain Markdown file in your vault.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://obsidian.md/plugins?id=notion-bases">Install from Community Plugins</a>
+            <a class="btn btn-secondary" href="https://github.com/bgarciamoura/obsidian-notion-bases-plugin" target="_blank" rel="noopener">View source on GitHub</a>
           </div>
-          <div class="view-card-body">
-            <div class="view-card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-            </div>
+          <p class="hero-trust">
+            <img src="https://img.shields.io/github/v/release/bgarciamoura/obsidian-notion-bases-plugin?label=latest&color=edbe4b&labelColor=26221b&style=flat-square" alt="Latest release version" width="90" height="20">
+            <span>Free &amp; open source · GPL-3.0</span>
+            <span>Desktop and mobile</span>
+            <span>No cloud, no telemetry. Your data stays yours</span>
+          </p>
+        </div>
+        <figure class="hero-shot">
+          <img src="docs/images/view-table.png" alt="The table view: an Obsidian folder rendered as a spreadsheet with colored status badges, dates and an aggregation footer" width="1871" height="845" fetchpriority="high">
+          <figcaption>A folder of Markdown notes, five seconds after installing.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Evidence -->
+    <section id="compare">
+      <div class="container">
+        <div class="section-head reveal">
+          <h2>Outgrown the built-in Bases?</h2>
+          <p>Obsidian ships with Core Bases, its built-in database feature. It's a solid table. Notion Bases starts where it stops:</p>
+        </div>
+        <div class="ledger reveal">
+          <div class="ledger-row"><span>Kanban board: drag cards between status columns</span> <span class="have"><span aria-hidden="true">✓</span><span class="sr-only">supported by</span> Notion Bases</span> <span class="lack"><span aria-hidden="true">—</span><span class="sr-only">not in</span> Core Bases</span></div>
+          <div class="ledger-row"><span>Bar, line &amp; pie charts from any column</span> <span class="have"><span aria-hidden="true">✓</span><span class="sr-only">supported by</span> Notion Bases</span> <span class="lack"><span aria-hidden="true">—</span><span class="sr-only">not in</span> Core Bases</span></div>
+          <div class="ledger-row"><span>Relations, lookups &amp; rollups across databases</span> <span class="have"><span aria-hidden="true">✓</span><span class="sr-only">supported by</span> Notion Bases</span> <span class="lack"><span aria-hidden="true">—</span><span class="sr-only">not in</span> Core Bases</span></div>
+          <div class="ledger-row"><span>Timeline / Gantt with draggable date bars</span> <span class="have"><span aria-hidden="true">✓</span><span class="sr-only">supported by</span> Notion Bases</span> <span class="lack"><span aria-hidden="true">—</span><span class="sr-only">not in</span> Core Bases</span></div>
+          <div class="ledger-row"><span>Subtasks: hierarchical rows, three levels deep</span> <span class="have"><span aria-hidden="true">✓</span><span class="sr-only">supported by</span> Notion Bases</span> <span class="lack"><span aria-hidden="true">—</span><span class="sr-only">not in</span> Core Bases</span></div>
+        </div>
+        <p class="ledger-note">Despite the name, this project isn't affiliated with Notion: it borrows the one thing Notion got famously right, and keeps your data in Markdown.</p>
+
+        <details class="compare-full reveal">
+          <summary>See the full comparison (29 rows)</summary>
+          <div class="compare-scroll">
+            <table class="compare-table">
+              <caption class="sr-only">Feature comparison between Notion Bases and Core Bases. A check mark means supported; a dash means not available.</caption>
+              <thead><tr><th>Feature</th><th>Notion Bases</th><th>Core Bases</th></tr></thead>
+              <tbody>
+                <tr><td>Table view</td><td>✓</td><td>✓</td></tr>
+                <tr><td>Board / Kanban view</td><td>✓</td><td>—</td></tr>
+                <tr><td>Gallery view</td><td>✓</td><td>—</td></tr>
+                <tr><td>List view</td><td>✓</td><td>✓</td></tr>
+                <tr><td>Calendar view</td><td>✓</td><td>—</td></tr>
+                <tr><td>Timeline / Gantt view</td><td>✓</td><td>—</td></tr>
+                <tr><td>Chart view (bar, line, pie)</td><td>✓</td><td>—</td></tr>
+                <tr><td>Column types</td><td>18</td><td>7</td></tr>
+                <tr><td>Formulas</td><td>Spreadsheet-style</td><td>Expression-based</td></tr>
+                <tr><td>Relation columns</td><td>✓</td><td>—</td></tr>
+                <tr><td>Lookup columns</td><td>✓</td><td>—</td></tr>
+                <tr><td>Rollup columns</td><td>✓</td><td>—</td></tr>
+                <tr><td>Subtasks / sub-rows</td><td>✓</td><td>—</td></tr>
+                <tr><td>Image columns (rendered)</td><td>✓</td><td>Text only</td></tr>
+                <tr><td>Audio / video columns</td><td>✓</td><td>—</td></tr>
+                <tr><td>Calendar time slots</td><td>✓</td><td>—</td></tr>
+                <tr><td>Mobile-optimized views</td><td>✓</td><td>—</td></tr>
+                <tr><td>Aggregation row</td><td>✓</td><td>—</td></tr>
+                <tr><td>Number formatting</td><td>✓</td><td>—</td></tr>
+                <tr><td>Column pinning</td><td>✓</td><td>—</td></tr>
+                <tr><td>Column reordering (drag)</td><td>✓</td><td>✓</td></tr>
+                <tr><td>Column resizing (drag)</td><td>✓</td><td>✓</td></tr>
+                <tr><td>Row height options</td><td>✓</td><td>✓</td></tr>
+                <tr><td>Text wrap toggle</td><td>✓</td><td>—</td></tr>
+                <tr><td>CSV import / export</td><td>✓</td><td>—</td></tr>
+                <tr><td>Bulk actions</td><td>✓</td><td>—</td></tr>
+                <tr><td>Embed database in any note</td><td>✓</td><td>✓</td></tr>
+                <tr><td>Multiple views per database</td><td>✓</td><td>✓</td></tr>
+                <tr><td>AND/OR filter logic</td><td>✓</td><td>✓</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- Views -->
+    <section id="views">
+      <div class="container">
+        <div class="section-head reveal">
+          <h2>Seven ways to see the same folder.</h2>
+          <p>Each view is a lens over the same Markdown files, each with its own filters, sorts and visible fields. Change a cell anywhere, and the frontmatter changes everywhere.</p>
+        </div>
+
+        <div class="band reveal">
+          <div class="band-copy">
             <h3>Table</h3>
-            <p>A fully interactive spreadsheet with inline editing, resizable and reorderable columns, aggregation footer, row height options, and bulk actions.</p>
+            <p>A real spreadsheet feel: inline editing, pinned columns, multi-column sort, text wrap, bulk actions and a live aggregation footer.</p>
           </div>
+          <figure class="band-media">
+            <img src="docs/images/feature-inline-edit.gif" alt="Editing cells inline in the table view; values commit straight to frontmatter" width="1200" height="675" loading="lazy">
+            <figcaption>Inline editing, straight into frontmatter.</figcaption>
+          </figure>
         </div>
 
-        <div class="view-card fade-in fade-in-delay-1">
-          <div class="view-card-image">
-            <img src="docs/images/view-board.png" alt="Board view" loading="lazy" onerror="this.style.display='none'">
+        <div class="band reveal">
+          <div class="band-copy">
+            <h3>Board</h3>
+            <p>Group by any select or status field and drag cards between columns. Add cards in place, and set a card limit per column when work-in-progress needs a ceiling.</p>
           </div>
-          <div class="view-card-body">
-            <div class="view-card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="6" height="18" rx="1"/><rect x="9" y="3" width="6" height="12" rx="1"/><rect x="16" y="3" width="6" height="15" rx="1"/></svg>
-            </div>
-            <h3>Board (Kanban)</h3>
-            <p>Drag cards between columns grouped by any select or status field. Add cards directly to a column and configure visible properties.</p>
-          </div>
+          <figure class="band-media">
+            <img src="docs/images/feature-board-drag.gif" alt="Dragging a card between kanban columns in the board view" width="1200" height="675" loading="lazy">
+            <figcaption>Dragging a card updates its status field.</figcaption>
+          </figure>
         </div>
 
-        <div class="view-card fade-in fade-in-delay-2">
-          <div class="view-card-image">
-            <img src="docs/images/view-gallery.png" alt="Gallery view" loading="lazy" onerror="this.style.display='none'">
+        <div class="band reveal">
+          <div class="band-copy">
+            <h3>Timeline</h3>
+            <p>A Gantt over your frontmatter. Drag a bar's edges and the start and end dates change in the file.</p>
           </div>
-          <div class="view-card-body">
-            <div class="view-card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="8" height="8" rx="1"/></svg>
-            </div>
-            <h3>Gallery</h3>
-            <p>A responsive card grid. Pick a cover field, choose card size (small, medium, large), and display any properties below the title.</p>
-          </div>
+          <figure class="band-media">
+            <img src="docs/images/feature-timeline-resize.gif" alt="Resizing a timeline bar by dragging its edge, updating the end date" width="1200" height="675" loading="lazy">
+            <figcaption>Three zoom levels: days, weeks, months.</figcaption>
+          </figure>
         </div>
 
-        <div class="view-card fade-in fade-in-delay-3">
-          <div class="view-card-image">
-            <img src="docs/images/view-list.png" alt="List view" loading="lazy" onerror="this.style.display='none'">
-          </div>
-          <div class="view-card-body">
-            <div class="view-card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg>
-            </div>
-            <h3>List</h3>
-            <p>A minimal, single-line view with title and property chips. Great for quick overviews and task-oriented databases.</p>
-          </div>
-        </div>
-
-        <div class="view-card fade-in fade-in-delay-4">
-          <div class="view-card-image">
-            <img src="docs/images/view-calendar.png" alt="Calendar view" loading="lazy" onerror="this.style.display='none'">
-          </div>
-          <div class="view-card-body">
-            <div class="view-card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            </div>
+        <div class="band reveal">
+          <div class="band-copy">
             <h3>Calendar</h3>
-            <p>Monthly and weekly views with time slot support. The weekly view shows a Google Calendar-style time grid with positioned events, a current-time indicator, and an all-day row.</p>
+            <p>Notes on a month grid, positioned by any date field. Click a day to create a note with the date pre-filled.</p>
           </div>
+          <figure class="band-media">
+            <img src="docs/images/view-calendar.png" alt="Monthly calendar view with notes placed on their dates" width="1870" height="901" loading="lazy">
+          </figure>
         </div>
 
-        <div class="view-card fade-in fade-in-delay-5">
-          <div class="view-card-image">
-            <img src="docs/images/view-timeline.png" alt="Timeline view" loading="lazy" onerror="this.style.display='none'">
-          </div>
-          <div class="view-card-body">
-            <div class="view-card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="6" x2="22" y2="6"/><rect x="4" y="10" width="10" height="3" rx="1.5" fill="currentColor" opacity="0.5"/><rect x="8" y="15" width="12" height="3" rx="1.5" fill="currentColor" opacity="0.5"/><rect x="3" y="20" width="7" height="3" rx="1.5" fill="currentColor" opacity="0.5"/></svg>
-            </div>
-            <h3>Timeline (Gantt)</h3>
-            <p>Horizontal bar chart with three zoom levels. Drag bar edges to resize start or end dates. Group rows by any field.</p>
-          </div>
-        </div>
-
-        <div class="view-card fade-in">
-          <div class="view-card-image">
-            <img src="docs/images/view-chart.png" alt="Chart view" loading="lazy" onerror="this.style.display='none'">
-          </div>
-          <div class="view-card-body">
-            <div class="view-card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="5" width="4" height="16"/><rect x="17" y="9" width="4" height="12"/></svg>
-            </div>
+        <div class="band reveal">
+          <div class="band-copy">
             <h3>Chart</h3>
-            <p>Bar, line, and pie charts rendered as pure SVG. Pick a category column, choose an aggregation, and visualize your data instantly. Smart axis formatting with k/M suffixes.</p>
+            <p>Bar, line and pie, aggregated from any column: count, sum, average, min or max. Pure SVG, zero dependencies.</p>
           </div>
+          <figure class="band-media">
+            <img src="docs/images/view-chart.png" alt="Bar chart view aggregating 27 tasks by status" width="1871" height="845" loading="lazy">
+          </figure>
         </div>
 
+        <div class="band reveal">
+          <div class="band-copy">
+            <h3>Gallery</h3>
+            <p>A responsive card grid with cover images, built for visual collections, recipes and references.</p>
+          </div>
+          <figure class="band-media">
+            <img src="docs/images/view-gallery.png" alt="Gallery view showing a card grid with cover images and properties" width="1871" height="893" loading="lazy">
+          </figure>
+        </div>
+
+        <div class="band reveal">
+          <div class="band-copy">
+            <h3>List</h3>
+            <p>One line per note, with property chips. The fast lane for task runs and quick overviews.</p>
+          </div>
+          <figure class="band-media">
+            <img src="docs/images/view-list.png" alt="List view: one compact line per note with property chips" width="1875" height="902" loading="lazy">
+          </figure>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Features -->
-  <section id="features">
-    <div class="container">
-      <div class="section-header fade-in">
-        <h2>Powerful features, zero learning curve</h2>
-        <p>Everything you loved about Notion databases, built natively for Obsidian with no lock-in.</p>
+    <!-- Power: relations -->
+    <section id="power">
+      <div class="container">
+        <div class="section-head reveal">
+          <h2>Databases that talk to each other.</h2>
+        </div>
+        <div class="power-grid reveal">
+          <div class="power-copy">
+            <p>Link a <strong>Tasks</strong> database to a <strong>Projects</strong> database with a <span class="kw">relation</span> column. Pull each project's deadline into its tasks with a <span class="kw">lookup</span>. Sum every task's points back onto the project with a <span class="kw">rollup</span>: sum, count, average, min, max, or a joined list.</p>
+            <p>It's the trick that made Notion databases feel alive, and here it runs on plain frontmatter, in files you can open with any text editor, forever.</p>
+            <p>Then go further: spreadsheet <span class="kw">formulas</span> (<code>IF</code>, <code>SUM</code>, <code>CONCAT</code>, <code>ROUND</code>…) compute columns from other columns, in a syntax you already know from Excel.</p>
+          </div>
+          <figure class="frontmatter-card" aria-label="Example frontmatter of a task note using relation, lookup and rollup columns">
+<pre><span class="fm-comment"># Tasks/Redesign hero.md</span>
+<span class="fm-comment">---</span>
+<span class="fm-key">project:</span> "[[Apollo]]"
+<span class="fm-key">deadline:</span> 2026-08-01
+<span class="fm-key">points:</span> 5
+<span class="fm-comment">---</span>
+<span class="fm-comment"># relation → lookup → rollup:</span>
+<span class="fm-comment"># Apollo sums the points of its tasks</span></pre>
+          </figure>
+        </div>
       </div>
-      <div class="features-grid">
+    </section>
 
-        <div class="feature-card fade-in">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
-          </div>
-          <h3>18 Column Types</h3>
-          <p>Title, Text, Number, Select, Multi-select, Checkbox, Date, URL, Email, Phone, Status, Formula, Relation, Lookup, Rollup, Image, Audio, and Video.</p>
+    <!-- Toolbox -->
+    <section id="toolbox" aria-label="All other features">
+      <div class="container">
+        <div class="section-head reveal">
+          <h2>And the rest of the toolbox.</h2>
         </div>
-
-        <div class="feature-card fade-in fade-in-delay-1">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-          </div>
-          <h3>Formula Engine</h3>
-          <p>Compute values with built-in functions: IF, SUM, AVG, CONCAT, LEFT, ROUND, and many more. Spreadsheet-style syntax.</p>
-        </div>
-
-        <div class="feature-card fade-in fade-in-delay-2">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          </div>
-          <h3>Relations &amp; Lookups</h3>
-          <p>Link rows across databases and pull values from related notes, just like Notion. Build interconnected knowledge bases.</p>
-        </div>
-
-        <div class="feature-card fade-in fade-in-delay-3">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-          </div>
-          <h3>AND/OR Filters</h3>
-          <p>Type-aware operators with toggleable conjunction between filter pills. Filter your data exactly the way you need.</p>
-        </div>
-
-        <div class="feature-card fade-in fade-in-delay-4">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          </div>
-          <h3>CSV Import / Export</h3>
-          <p>Bring data in from spreadsheets or take it out. Seamless interoperability with your existing workflows.</p>
-        </div>
-
-        <div class="feature-card fade-in fade-in-delay-5">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          </div>
-          <h3>Multiple Views</h3>
-          <p>Each database supports unlimited views. Every view has its own filters, sorts, and field visibility settings.</p>
-        </div>
-
-        <div class="feature-card fade-in">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          </div>
-          <h3>100% Markdown</h3>
-          <p>Every row is a .md file, every column is a frontmatter field. Open in any editor. No proprietary format, no lock-in, ever.</p>
-        </div>
-
-        <div class="feature-card fade-in fade-in-delay-1">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          </div>
-          <h3>Number Formatting</h3>
-          <p>Excel-style number formatting with prefix ($, R$), suffix (%, kg), decimal places, and thousands separator.</p>
-        </div>
-
-        <div class="feature-card fade-in fade-in-delay-2">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>
-          </div>
-          <h3>Subtasks</h3>
-          <p>Hierarchical rows with expand/collapse up to 3 levels deep. Mark any self-relation as hierarchical and your table becomes a tree.</p>
-        </div>
-
-        <div class="feature-card fade-in">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="5" width="4" height="16"/><rect x="17" y="9" width="4" height="12"/></svg>
-          </div>
-          <h3>Rollup Columns</h3>
-          <p>Aggregate values across related databases with 7 functions: sum, count, avg, min, max, count unique, and list all.</p>
-        </div>
-
-        <div class="feature-card fade-in fade-in-delay-1">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-          </div>
-          <h3>Mobile Optimized</h3>
-          <p>Touch-friendly across all 7 views. Scroll-snap on boards, long-press context menus, bottom sheets, and responsive layouts for phones and tablets.</p>
-        </div>
-
-        <div class="feature-card fade-in">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-          </div>
-          <h3>Live Placeholders</h3>
-          <p>Write <code>{{column}}</code> in any note body and it renders the current cell value in reading view &mdash; updating instantly as you edit the table, without rewriting the file.</p>
-        </div>
-
-        <div class="feature-card fade-in fade-in-delay-1">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          </div>
-          <h3>Auto-Arrange Folders</h3>
-          <p>File rows into nested subfolders driven by property values: <code>status=Done, priority=High</code> &rarr; <code>Done/High/row.md</code>. Preview every move before applying.</p>
-        </div>
-
-        <div class="feature-card fade-in fade-in-delay-2">
-          <div class="feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          </div>
-          <h3>7 Languages</h3>
-          <p>Fully translated UI: English, Portugu&ecirc;s (BR), Espa&ntilde;ol, Fran&ccedil;ais, Deutsch, &#20013;&#25991; and &#26085;&#26412;&#35486; &mdash; picked automatically from your Obsidian language.</p>
-        </div>
-
+        <ul class="toolbox reveal">
+          <li><b>18 column types</b>: from text and dates to status, media and formulas</li>
+          <li><b>Live placeholders</b>: <code>{{column}}</code> in a note body renders the cell's value</li>
+          <li><b>Auto-arrange</b>: file rows into subfolders by property values, with preview</li>
+          <li><b>Filters</b>: type-aware operators with AND/OR groups</li>
+          <li><b>Multi-column sort</b>: with drag-to-reorder priority</li>
+          <li><b>Aggregation footer</b>: sum, average, min, max, count, always live</li>
+          <li><b>Number formatting</b>: prefixes, suffixes, decimals, thousands separators</li>
+          <li><b>CSV</b>: import and export</li>
+          <li><b>Bulk actions</b>: select rows to delete, duplicate or move</li>
+          <li><b>Media columns</b>: images, audio and video rendered in-cell</li>
+          <li><b>Schema inference</b>: column types detected from your existing frontmatter</li>
+          <li><b>Embeds</b>: drop any view into any note with a code block</li>
+          <li><b>7 languages</b>: English, Português, Español, Français, Deutsch, 中文, 日本語</li>
+          <li><b>100% local</b>: no cloud, no account, no telemetry</li>
+        </ul>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Comparison -->
-  <section id="comparison">
-    <div class="container">
-      <div class="section-header fade-in">
-        <h2>Notion Bases vs Core Bases</h2>
-        <p>Obsidian's built-in Bases plugin is great for tables. Notion Bases focuses on more views, more column types, and a spreadsheet-style formula syntax.</p>
-      </div>
-      <div class="comparison-wrapper fade-in">
-        <table class="comparison-table">
-          <thead>
-            <tr>
-              <th>Feature</th>
-              <th class="col-notion">Notion Bases</th>
-              <th>Core Bases</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Table view</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td></tr>
-            <tr><td>Board / Kanban view</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Gallery view</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>List view</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td></tr>
-            <tr><td>Calendar view</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Timeline / Gantt view</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Chart view (bar, line, pie)</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Column types</td><td class="col-notion"><span class="highlight-cell">18</span></td><td>7</td></tr>
-            <tr><td>Formulas</td><td class="col-notion"><span class="highlight-cell">Spreadsheet-style</span></td><td>Expression-based</td></tr>
-            <tr><td>Relation columns</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Lookup columns</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Rollup columns</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Subtasks / Sub-rows</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Image columns (rendered)</td><td class="col-notion"><span class="check">&#10003;</span></td><td>Text only</td></tr>
-            <tr><td>Audio / Video columns</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Calendar time slots</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Mobile-optimized views</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Aggregation row</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Number formatting</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Column pinning</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Column reordering (drag)</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Column resizing (drag)</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Row height options</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Text wrap toggle</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>CSV import / export</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Bulk actions</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="cross">&mdash;</span></td></tr>
-            <tr><td>Embed database in any note</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td></tr>
-            <tr><td>Multiple views per database</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td></tr>
-            <tr><td>AND/OR filter logic</td><td class="col-notion"><span class="check">&#10003;</span></td><td><span class="check">&#10003;</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <!-- Installation -->
-  <section id="install">
-    <div class="container">
-      <div class="section-header fade-in">
-        <h2>Get started in minutes</h2>
-        <p>Install Notion Bases and turn your vault into a powerful database system.</p>
-      </div>
-      <div class="install-grid">
-
-        <div class="install-card primary fade-in">
-          <h3>Via Community Plugins</h3>
-          <ol class="install-steps">
-            <li>Open <strong>Settings &gt; Community plugins &gt; Browse</strong></li>
-            <li>Search for <strong>&ldquo;Notion Bases&rdquo;</strong></li>
-            <li>Click <strong>Install</strong>, then <strong>Enable</strong></li>
-            <li>Or install in one click: <a href="https://obsidian.md/plugins?id=notion-bases" target="_blank" rel="noopener" style="color:var(--accent)">open in Obsidian</a></li>
+    <!-- Install -->
+    <section id="install">
+      <div class="container">
+        <div class="section-head reveal">
+          <h2>Installed in under a minute.</h2>
+        </div>
+        <ol class="install-steps reveal">
+          <li><span>Open <b>Settings → Community plugins → Browse</b></span></li>
+          <li><span>Search for <b>“Notion Bases”</b></span></li>
+          <li><span><b>Install</b>, then <b>Enable</b> (or skip all three with the <a href="https://obsidian.md/plugins?id=notion-bases">one-click install link</a>, which opens Obsidian for you)</span></li>
+        </ol>
+        <details class="install-alt reveal">
+          <summary>Prefer to install manually?</summary>
+          <ol>
+            <li>Download <code>main.js</code>, <code>manifest.json</code> and <code>styles.css</code> from the <a href="https://github.com/bgarciamoura/obsidian-notion-bases-plugin/releases/latest" target="_blank" rel="noopener">latest release</a></li>
+            <li>Create <code>&lt;vault&gt;/.obsidian/plugins/notion-bases/</code> and copy the three files in</li>
+            <li>Reload Obsidian and enable the plugin in Settings → Community plugins</li>
           </ol>
-        </div>
-
-        <div class="install-card fade-in fade-in-delay-1">
-          <h3>Manual Installation</h3>
-          <ol class="install-steps">
-            <li>Download <code>main.js</code>, <code>manifest.json</code> and <code>styles.css</code> from the <a href="https://github.com/bgarciamoura/obsidian-notion-bases-plugin/releases/latest" target="_blank" rel="noopener" style="color:var(--accent)">latest release</a></li>
-            <li>Create a folder <code>&lt;vault&gt;/.obsidian/plugins/notion-bases/</code></li>
-            <li>Copy the three files into it</li>
-            <li>Reload Obsidian and enable the plugin in Settings &gt; Community plugins</li>
-          </ol>
-        </div>
-
+        </details>
+        <p class="install-req reveal">Requires Obsidian 1.8.7 or later · desktop and mobile.</p>
       </div>
-      <div class="install-note fade-in">
-        Notion Bases is officially available in Obsidian&rsquo;s Community Plugins directory. Requires Obsidian 1.8.7 or later &mdash; desktop and mobile.
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Support -->
-  <section id="support">
-    <div class="container">
-      <div class="section-header fade-in">
-        <h2>Support the project</h2>
-        <p>If Notion Bases makes your vault more powerful, consider supporting its development.</p>
+    <!-- Closing -->
+    <section class="closing">
+      <div class="container reveal">
+        <h2>Your vault already has the folders. <em>Give them views.</em></h2>
+        <a class="btn btn-primary" href="https://obsidian.md/plugins?id=notion-bases">Install Notion Bases</a>
       </div>
-      <div class="support-grid">
-        <a href="https://github.com/sponsors/bgarciamoura" target="_blank" rel="noopener" class="support-card fade-in">
-          <div class="support-card-icon ghsponsor-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          </div>
-          <h3>GitHub Sponsors</h3>
-          <p>Sponsor on GitHub</p>
-        </a>
-        <a href="https://buymeacoffee.com/bgarciamoura" target="_blank" rel="noopener" class="support-card fade-in fade-in-delay-1">
-          <div class="support-card-icon bmac-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M20.216 6.415l-.132-.666c-.119-.598-.388-1.163-1.001-1.379-.197-.069-.42-.098-.57-.241-.152-.143-.196-.366-.231-.572-.065-.378-.125-.756-.192-1.133-.057-.325-.102-.69-.25-.987-.195-.4-.597-.634-.996-.788a5.723 5.723 0 00-.626-.194c-1-.263-2.05-.36-3.077-.416a25.834 25.834 0 00-3.7.062c-.915.083-1.88.184-2.75.5-.318.116-.646.256-.888.501-.297.302-.393.77-.177 1.146.154.267.415.456.692.58.36.162.737.284 1.123.366 1.075.238 2.189.331 3.287.37 1.218.05 2.437.01 3.65-.118.299-.033.598-.073.896-.119.352-.054.578-.513.474-.834-.124-.383-.457-.531-.834-.473-.466.074-.96.108-1.382.146-1.177.08-2.358.082-3.536.006a22.228 22.228 0 01-1.157-.107c-.086-.01-.18-.025-.258-.036-.243-.036-.484-.08-.724-.13-.111-.027-.111-.185 0-.212h.005c.277-.06.557-.108.838-.147h.002c.131-.009.263-.032.394-.048a25.076 25.076 0 013.426-.12c.674.019 1.347.067 2.017.144l.228.031c.267.04.533.088.798.145.392.085.895.113 1.07.542.055.137.08.288.111.431l.319 1.484a.237.237 0 01-.199.284h-.003c-.037.006-.075.01-.112.015a36.704 36.704 0 01-4.743.295 37.059 37.059 0 01-4.699-.304c-.14-.017-.293-.042-.417-.06-.326-.048-.649-.108-.973-.161-.393-.065-.768-.032-1.123.161-.29.16-.502.451-.399.792.045.15.15.27.27.36l.344.263c.225.164.488.284.752.382.266.099.544.175.824.232.543.112 1.096.185 1.651.236 1.189.11 2.386.126 3.577.063 1.237-.064 2.471-.198 3.686-.404.186-.031.37-.068.553-.103.082-.015.163-.024.244-.044.325-.08.65-.175.966-.286a3.19 3.19 0 001.247-.873c.292-.33.463-.749.456-1.2-.006-.42-.2-.816-.518-1.083-.346-.291-.768-.441-1.177-.534zM6.24 20.333c.006 1.174.965 2.121 2.14 2.129h7.24c1.174-.008 2.133-.955 2.14-2.129v-6.07H6.24v6.07z"/></svg>
-          </div>
-          <h3>Buy Me a Coffee</h3>
-          <p>Support on Buy Me a Coffee</p>
-        </a>
-      </div>
-    </div>
-  </section>
+    </section>
+  </main>
 
-  <!-- Footer -->
   <footer>
-    <div class="footer-content">
-      <span class="footer-copy">Notion Bases &mdash; GPL v3 License</span>
+    <div class="container footer-inner">
+      <p>Built by <a href="https://github.com/bgarciamoura" target="_blank" rel="noopener">Bruno Garcia Moura</a> · GPL-3.0</p>
       <ul class="footer-links">
         <li><a href="https://github.com/bgarciamoura/obsidian-notion-bases-plugin" target="_blank" rel="noopener">GitHub</a></li>
         <li><a href="https://github.com/bgarciamoura/obsidian-notion-bases-plugin/issues" target="_blank" rel="noopener">Issues</a></li>
-        <li><a href="https://github.com/bgarciamoura/obsidian-notion-bases-plugin/releases/latest" target="_blank" rel="noopener">Releases</a></li>
+        <li><a href="https://github.com/bgarciamoura/obsidian-notion-bases-plugin/releases" target="_blank" rel="noopener">Releases</a></li>
+        <li><a href="https://github.com/sponsors/bgarciamoura" target="_blank" rel="noopener">Sponsor</a></li>
       </ul>
     </div>
   </footer>
 
-  <!-- Scroll Animation Script -->
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var observer = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-          }
-        });
-      }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    function toggleNav(btn) {
+      const links = document.getElementById('nav-links')
+      const open = links.classList.toggle('open')
+      btn.setAttribute('aria-expanded', String(open))
+    }
 
-      document.querySelectorAll('.fade-in').forEach(function(el) {
-        observer.observe(el);
-      });
+    // Scroll reveals — enhancement only; content is visible without JS
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) }
+        }
+      }, { rootMargin: '0px 0px -8% 0px' })
+      document.querySelectorAll('.reveal').forEach(el => io.observe(el))
+    } else {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'))
+    }
 
-      // Close mobile nav on link click
-      document.querySelectorAll('.nav-links a').forEach(function(link) {
-        link.addEventListener('click', function() {
-          document.querySelector('.nav-links').classList.remove('open');
-        });
-      });
-    });
+    // Active section in nav
+    const navMap = new Map(
+      [...document.querySelectorAll('.nav-links a[href^="#"]')].map(a => [a.getAttribute('href').slice(1), a])
+    )
+    const spy = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        const link = navMap.get(e.target.id)
+        if (link && e.isIntersecting) {
+          navMap.forEach(a => a.removeAttribute('aria-current'))
+          link.setAttribute('aria-current', 'true')
+        }
+      }
+    }, { rootMargin: '-30% 0px -60% 0px' })
+    navMap.forEach((_, id) => { const s = document.getElementById(id); if (s) spy.observe(s) })
+
+    // Close mobile nav on link tap
+    document.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click', () => {
+      const links = document.getElementById('nav-links')
+      links.classList.remove('open')
+      document.querySelector('.nav-toggle')?.setAttribute('aria-expanded', 'false')
+    }))
   </script>
-
 </body>
 </html>
