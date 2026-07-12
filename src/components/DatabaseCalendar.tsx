@@ -491,7 +491,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 				{/* Campos */}
 				<div className="nb-fields-menu-wrapper" ref={fieldsMenuRef}>
 					<button className={`nb-toolbar-btn${fieldsMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setFieldsMenuOpen(v => !v)}>
-						Campos
+						{t('fields')}
 					</button>
 					{fieldsMenuOpen && (
 						<div className="nb-fields-dropdown">
