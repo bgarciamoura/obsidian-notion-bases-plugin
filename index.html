@@ -150,6 +150,7 @@
     .btn-primary:hover { background: var(--amber-bright); transform: translateY(-1px); }
     .btn-secondary { border: 1px solid var(--line); color: var(--ink); }
     .btn-secondary:hover { border-color: var(--amber-deep); }
+    .hero-cta-note { margin-top: 14px; font-size: var(--text-sm); color: var(--ink-soft); }
     .hero-trust {
       margin-top: 20px;
       display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
@@ -158,12 +159,12 @@
     .hero-trust img { height: 20px; width: auto; }
 
     .hero-shot { margin-top: clamp(44px, 7vw, 80px); }
-    .hero-shot img, .band-media img {
+    .hero-shot img, .band-media img, .showcase img, .duo img {
       border: 1px solid var(--line);
       border-radius: 10px;
       width: 100%;
     }
-    .hero-shot figcaption, .band-media figcaption {
+    .hero-shot figcaption, .band-media figcaption, .showcase figcaption, .duo figcaption {
       margin-top: 10px; font-size: var(--text-sm); color: var(--ink-soft);
     }
 
@@ -201,17 +202,23 @@
     .compare-table td:nth-child(3) { color: var(--ink-soft); }
 
     /* ── View bands ──────────────────────────────────── */
-    .band {
-      margin-top: clamp(56px, 8vw, 96px);
-      display: grid; grid-template-columns: minmax(260px, 5fr) 12fr;
-      gap: clamp(24px, 4vw, 56px); align-items: start;
+    .showcase { margin-top: clamp(64px, 9vw, 110px); }
+    .showcase-head {
+      display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 28px;
+      max-width: 920px;
     }
-    .band:nth-of-type(even) { grid-template-columns: 12fr minmax(260px, 5fr); }
-    .band:nth-of-type(even) .band-copy { order: 2; }
-    .band-copy h3 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.1rem); letter-spacing: -0.015em; }
-    .band-copy p { margin-top: 12px; color: var(--ink-soft); }
-    .band-copy { position: sticky; top: 96px; }
-    .band > *, .power-grid > * { min-width: 0; }
+    .showcase-head h3 { font-size: clamp(1.6rem, 1.2rem + 1.8vw, 2.4rem); letter-spacing: -0.015em; }
+    .showcase-head p { color: var(--ink-soft); flex: 1 1 34ch; min-width: 0; }
+    .showcase figure { margin-top: 22px; }
+    .duo {
+      margin-top: clamp(64px, 9vw, 110px);
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+      gap: clamp(28px, 4vw, 48px) clamp(24px, 3vw, 40px);
+    }
+    .duo h3 { font-size: 1.3rem; letter-spacing: -0.01em; }
+    .duo p { color: var(--ink-soft); font-size: var(--text-sm); margin-top: 6px; max-width: 58ch; }
+    .duo figure { margin-top: 14px; }
+    .duo > *, .power-grid > * { min-width: 0; }
 
     /* ── Power (relations) ───────────────────────────── */
     .power-grid {
@@ -311,9 +318,6 @@
 
     /* ── Responsive ──────────────────────────────────── */
     @media (max-width: 860px) {
-      .band, .band:nth-of-type(even) { grid-template-columns: 1fr; }
-      .band:nth-of-type(even) .band-copy { order: 0; }
-      .band-copy { position: static; }
       .power-grid { grid-template-columns: 1fr; }
     }
     html:not(.js) .nav-toggle { display: none !important; }
@@ -366,6 +370,7 @@
             <a class="btn btn-primary" href="https://obsidian.md/plugins?id=notion-bases">Install from Community Plugins</a>
             <a class="btn btn-secondary" href="https://github.com/bgarciamoura/obsidian-notion-bases-plugin" target="_blank" rel="noopener">View source on GitHub</a>
           </div>
+          <p class="hero-cta-note">The install button opens Obsidian for you. No Obsidian on this device? Search “Notion Bases” in Settings → Community plugins instead.</p>
           <p class="hero-trust">
             <img src="https://img.shields.io/github/v/release/bgarciamoura/obsidian-notion-bases-plugin?label=latest&color=edbe4b&labelColor=26221b&style=flat-square" alt="Latest release version" width="90" height="20">
             <span>Free &amp; open source · GPL-3.0</span>
@@ -374,7 +379,7 @@
           </p>
         </div>
         <figure class="hero-shot">
-          <img src="docs/images/view-table.png" alt="The table view: an Obsidian folder rendered as a spreadsheet with colored status badges, dates and an aggregation footer" width="1871" height="845" fetchpriority="high">
+          <img src="docs/images/view-table.png" alt="The table view: an Obsidian folder rendered as a spreadsheet with colored status badges, dates, formatted budgets and notes" width="1760" height="806" fetchpriority="high">
           <figcaption>A folder of Markdown notes, five seconds after installing.</figcaption>
         </figure>
       </div>
@@ -447,77 +452,68 @@
           <p>Each view is a lens over the same Markdown files, each with its own filters, sorts and visible fields. Change a cell anywhere, and the frontmatter changes everywhere.</p>
         </div>
 
-        <div class="band reveal">
-          <div class="band-copy">
+        <div class="showcase reveal">
+          <div class="showcase-head">
             <h3>Table</h3>
-            <p>A real spreadsheet feel: inline editing, pinned columns, multi-column sort, text wrap, bulk actions and a live aggregation footer.</p>
+            <p>A real spreadsheet feel: inline editing, pinned columns, multi-column sort, bulk actions and a live aggregation footer.</p>
           </div>
-          <figure class="band-media">
-            <img src="docs/images/feature-inline-edit.gif" alt="Editing cells inline in the table view; values commit straight to frontmatter" width="1200" height="675" loading="lazy">
-            <figcaption>Inline editing, straight into frontmatter.</figcaption>
+          <figure>
+            <img src="docs/images/feature-inline-edit.gif" alt="Typing into a notes cell in the table view; the value commits straight to the note's frontmatter" width="1200" height="550" loading="lazy">
+            <figcaption>Type in a cell, and the Markdown file changes.</figcaption>
           </figure>
         </div>
 
-        <div class="band reveal">
-          <div class="band-copy">
+        <div class="showcase reveal">
+          <div class="showcase-head">
             <h3>Board</h3>
             <p>Group by any select or status field and drag cards between columns. Add cards in place, and set a card limit per column when work-in-progress needs a ceiling.</p>
           </div>
-          <figure class="band-media">
-            <img src="docs/images/feature-board-drag.gif" alt="Dragging a card between kanban columns in the board view" width="1200" height="675" loading="lazy">
-            <figcaption>Dragging a card updates its status field.</figcaption>
+          <figure>
+            <img src="docs/images/view-board.png" alt="Kanban board grouped by status with five columns of cards, from Backlog to Done" width="1760" height="806" loading="lazy">
+            <figcaption>Dragging a card updates its status field in the file.</figcaption>
           </figure>
         </div>
 
-        <div class="band reveal">
-          <div class="band-copy">
+        <div class="showcase reveal">
+          <div class="showcase-head">
             <h3>Timeline</h3>
-            <p>A Gantt over your frontmatter. Drag a bar's edges and the start and end dates change in the file.</p>
+            <p>A Gantt over your frontmatter, with three zoom levels: days, weeks, months.</p>
           </div>
-          <figure class="band-media">
-            <img src="docs/images/feature-timeline-resize.gif" alt="Resizing a timeline bar by dragging its edge, updating the end date" width="1200" height="675" loading="lazy">
-            <figcaption>Three zoom levels: days, weeks, months.</figcaption>
+          <figure>
+            <img src="docs/images/feature-timeline-resize.gif" alt="Dragging the edge of a timeline bar to extend a task's end date" width="1200" height="550" loading="lazy">
+            <figcaption>Drag a bar's edge, and the end date changes in the file.</figcaption>
           </figure>
         </div>
 
-        <div class="band reveal">
-          <div class="band-copy">
+        <div class="duo reveal">
+          <div>
             <h3>Calendar</h3>
             <p>Notes on a month grid, positioned by any date field. Click a day to create a note with the date pre-filled.</p>
+            <figure>
+              <img src="docs/images/view-calendar.png" alt="Monthly calendar view with amber task cards placed on their due dates" width="1760" height="806" loading="lazy">
+            </figure>
           </div>
-          <figure class="band-media">
-            <img src="docs/images/view-calendar.png" alt="Monthly calendar view with notes placed on their dates" width="1870" height="901" loading="lazy">
-          </figure>
-        </div>
-
-        <div class="band reveal">
-          <div class="band-copy">
+          <div>
             <h3>Chart</h3>
             <p>Bar, line and pie, aggregated from any column: count, sum, average, min or max. Pure SVG, zero dependencies.</p>
+            <figure>
+              <img src="docs/images/view-chart.png" alt="Bar chart view aggregating 18 tasks by status" width="1760" height="806" loading="lazy">
+            </figure>
           </div>
-          <figure class="band-media">
-            <img src="docs/images/view-chart.png" alt="Bar chart view aggregating 27 tasks by status" width="1871" height="845" loading="lazy">
-          </figure>
-        </div>
-
-        <div class="band reveal">
-          <div class="band-copy">
+          <div>
             <h3>Gallery</h3>
             <p>A responsive card grid with cover images, built for visual collections, recipes and references.</p>
+            <figure>
+              <img src="docs/images/view-gallery.png" alt="Gallery view with cover images and properties on each card" width="1760" height="806" loading="lazy">
+            </figure>
           </div>
-          <figure class="band-media">
-            <img src="docs/images/view-gallery.png" alt="Gallery view showing a card grid with cover images and properties" width="1871" height="893" loading="lazy">
-          </figure>
-        </div>
-
-        <div class="band reveal">
-          <div class="band-copy">
+          <div>
             <h3>List</h3>
             <p>One line per note, with property chips. The fast lane for task runs and quick overviews.</p>
+            <figure>
+              <img src="docs/images/view-list.png" alt="List view: one compact line per note with property chips" width="1760" height="806" loading="lazy">
+            </figure>
           </div>
-          <figure class="band-media">
-            <img src="docs/images/view-list.png" alt="List view: one compact line per note with property chips" width="1875" height="902" loading="lazy">
-          </figure>
         </div>
       </div>
     </section>
@@ -535,13 +531,13 @@
             <p>Then go further: spreadsheet <span class="kw">formulas</span> (<code>IF</code>, <code>SUM</code>, <code>CONCAT</code>, <code>ROUND</code>…) compute columns from other columns, in a syntax you already know from Excel.</p>
           </div>
           <figure class="frontmatter-card" aria-label="Example frontmatter of a task note using relation, lookup and rollup columns">
-<pre><span class="fm-comment"># Tasks/Redesign hero.md</span>
-<span class="fm-comment">---</span>
+<figcaption class="sr-only">Tasks/Redesign hero.md</figcaption>
+<pre><span class="fm-comment">---</span>
 <span class="fm-key">project:</span> "[[Apollo]]"
 <span class="fm-key">deadline:</span> 2026-08-01
 <span class="fm-key">points:</span> 5
 <span class="fm-comment">---</span>
-<span class="fm-comment"># relation → lookup → rollup:</span>
+<span class="fm-comment"># relation, lookup, rollup:</span>
 <span class="fm-comment"># Apollo sums the points of its tasks</span></pre>
           </figure>
         </div>
