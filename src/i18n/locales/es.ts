@@ -172,6 +172,7 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	formula_group_aggregators: 'Agregadores',
 	formula_group_text: 'Texto',
 	formula_group_math: 'Matemáticas',
+	formula_group_date: 'Fecha y hora',
 	formula_group_utils: 'Utilidades',
 
 	// Formula reference descriptions
@@ -200,6 +201,15 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	formula_desc_mod: 'Resto de la división',
 	formula_desc_power: 'Base elevada al exponente',
 	formula_desc_sqrt: 'Raíz cuadrada',
+	formula_desc_now: 'Fecha y hora actuales',
+	formula_desc_today: 'Fecha actual a medianoche',
+	formula_desc_date: 'Crea una fecha a partir de año, mes y día',
+	formula_desc_date_parts: 'Año / mes / día de una fecha',
+	formula_desc_time_parts: 'Hora / minuto de una fecha',
+	formula_desc_weekday: 'Día de la semana (1 = domingo … 7 = sábado)',
+	formula_desc_datedif: 'Diferencia entre dos fechas en la unidad indicada',
+	formula_desc_dateadd: 'Añade n unidades a una fecha (días, meses, años…)',
+	formula_desc_formatdate: 'Formatea una fecha usando un patrón',
 	formula_desc_isnull: 'Verdadero si v está vacío o es nulo',
 	formula_desc_coalesce: 'Primer valor no vacío',
 	formula_desc_text: 'Convierte a texto',

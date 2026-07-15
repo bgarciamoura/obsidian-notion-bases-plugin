@@ -172,6 +172,7 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	formula_group_aggregators: 'Aggregatoren',
 	formula_group_text: 'Text',
 	formula_group_math: 'Mathematik',
+	formula_group_date: 'Datum und Uhrzeit',
 	formula_group_utils: 'Hilfsfunktionen',
 
 	// Formula reference descriptions
@@ -200,6 +201,15 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	formula_desc_mod: 'Rest der Division',
 	formula_desc_power: 'Basis hoch Exponent',
 	formula_desc_sqrt: 'Quadratwurzel',
+	formula_desc_now: 'Aktuelles Datum und aktuelle Uhrzeit',
+	formula_desc_today: 'Aktuelles Datum um Mitternacht',
+	formula_desc_date: 'Erstellt ein Datum aus Jahr, Monat und Tag',
+	formula_desc_date_parts: 'Jahr / Monat / Tag eines Datums',
+	formula_desc_time_parts: 'Stunde / Minute eines Datums',
+	formula_desc_weekday: 'Wochentag (1 = Sonntag … 7 = Samstag)',
+	formula_desc_datedif: 'Differenz zwischen zwei Daten in der angegebenen Einheit',
+	formula_desc_dateadd: 'Addiert n Einheiten zu einem Datum (Tage, Monate, Jahre…)',
+	formula_desc_formatdate: 'Formatiert ein Datum mit einem Muster',
 	formula_desc_isnull: 'Wahr wenn v leer oder null ist',
 	formula_desc_coalesce: 'Erster nicht leerer Wert',
 	formula_desc_text: 'Konvertiert in Text',

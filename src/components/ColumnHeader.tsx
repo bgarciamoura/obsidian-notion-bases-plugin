@@ -690,6 +690,17 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			{ fn: 'POWER(b, e)',  desc: t('formula_desc_power') },
 			{ fn: 'SQRT(n)',      desc: t('formula_desc_sqrt') },
 		]},
+		{ group: t('formula_group_date'), items: [
+			{ fn: 'NOW()',                       desc: t('formula_desc_now') },
+			{ fn: 'TODAY()',                     desc: t('formula_desc_today') },
+			{ fn: 'DATE(y, m, d)',               desc: t('formula_desc_date') },
+			{ fn: 'YEAR / MONTH / DAY(date)',    desc: t('formula_desc_date_parts') },
+			{ fn: 'HOUR / MINUTE(date)',         desc: t('formula_desc_time_parts') },
+			{ fn: 'WEEKDAY(date)',               desc: t('formula_desc_weekday') },
+			{ fn: 'DATEDIF(start, end, unit)',   desc: t('formula_desc_datedif') },
+			{ fn: 'DATEADD(date, n, unit)',      desc: t('formula_desc_dateadd') },
+			{ fn: 'FORMATDATE(d, "DD/MM/YYYY")', desc: t('formula_desc_formatdate') },
+		]},
 		{ group: t('formula_group_utils'), items: [
 			{ fn: 'ISNULL(v)',         desc: t('formula_desc_isnull') },
 			{ fn: 'COALESCE(a, b, …)', desc: t('formula_desc_coalesce') },
