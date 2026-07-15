@@ -172,6 +172,7 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	formula_group_aggregators: '集計',
 	formula_group_text: 'テキスト',
 	formula_group_math: '数学',
+	formula_group_date: '日付と時刻',
 	formula_group_utils: 'ユーティリティ',
 
 	// Formula reference descriptions
@@ -200,6 +201,15 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	formula_desc_mod: '除算の余り',
 	formula_desc_power: '底の指数乗',
 	formula_desc_sqrt: '平方根',
+	formula_desc_now: '現在の日付と時刻',
+	formula_desc_today: '当日の午前 0 時の日付',
+	formula_desc_date: '年・月・日から日付を作成する',
+	formula_desc_date_parts: '日付の年 / 月 / 日',
+	formula_desc_time_parts: '日付の時 / 分',
+	formula_desc_weekday: '曜日（1 = 日曜 … 7 = 土曜）',
+	formula_desc_datedif: '指定した単位での 2 つの日付の差',
+	formula_desc_dateadd: '日付に n 単位を加算する（日、月、年など）',
+	formula_desc_formatdate: 'パターンで日付をフォーマットする',
 	formula_desc_isnull: 'v が空または null のとき真',
 	formula_desc_coalesce: '最初の空でない値',
 	formula_desc_text: 'テキストに変換する',

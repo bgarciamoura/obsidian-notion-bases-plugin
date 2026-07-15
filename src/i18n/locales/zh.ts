@@ -172,6 +172,7 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	formula_group_aggregators: '聚合',
 	formula_group_text: '文本',
 	formula_group_math: '数学',
+	formula_group_date: '日期和时间',
 	formula_group_utils: '工具',
 
 	// Formula reference descriptions
@@ -200,6 +201,15 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	formula_desc_mod: '除法余数',
 	formula_desc_power: '底数的指数次幂',
 	formula_desc_sqrt: '平方根',
+	formula_desc_now: '当前日期和时间',
+	formula_desc_today: '当天零点的日期',
+	formula_desc_date: '根据年、月、日创建日期',
+	formula_desc_date_parts: '日期的年 / 月 / 日',
+	formula_desc_time_parts: '日期的时 / 分',
+	formula_desc_weekday: '星期几（1 = 星期日 … 7 = 星期六）',
+	formula_desc_datedif: '两个日期在指定单位下的差值',
+	formula_desc_dateadd: '为日期加上 n 个单位（天、月、年……）',
+	formula_desc_formatdate: '按指定模式格式化日期',
 	formula_desc_isnull: '若 v 为空或 null 则为真',
 	formula_desc_coalesce: '第一个非空值',
 	formula_desc_text: '转换为文本',

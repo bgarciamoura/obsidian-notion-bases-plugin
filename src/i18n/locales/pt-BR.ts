@@ -172,6 +172,7 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	formula_group_aggregators: 'Agregadores',
 	formula_group_text: 'Texto',
 	formula_group_math: 'Matemática',
+	formula_group_date: 'Data e hora',
 	formula_group_utils: 'Utilitários',
 
 	// Formula reference descriptions
@@ -200,6 +201,15 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	formula_desc_mod: 'Resto da divisão',
 	formula_desc_power: 'Base elevada ao expoente',
 	formula_desc_sqrt: 'Raiz quadrada',
+	formula_desc_now: 'Data e hora atuais',
+	formula_desc_today: 'Data atual à meia-noite',
+	formula_desc_date: 'Cria uma data a partir de ano, mês e dia',
+	formula_desc_date_parts: 'Ano / mês / dia de uma data',
+	formula_desc_time_parts: 'Hora / minuto de uma data',
+	formula_desc_weekday: 'Dia da semana (1 = domingo … 7 = sábado)',
+	formula_desc_datedif: 'Diferença entre duas datas na unidade indicada',
+	formula_desc_dateadd: 'Adiciona n unidades a uma data (dias, meses, anos…)',
+	formula_desc_formatdate: 'Formata uma data usando um padrão',
 	formula_desc_isnull: 'Verdadeiro se v estiver vazio ou nulo',
 	formula_desc_coalesce: 'Primeiro valor não vazio',
 	formula_desc_text: 'Converte para texto',

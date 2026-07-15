@@ -197,13 +197,78 @@ function toNum(v: unknown): number {
 	if (typeof v === 'number') return isNaN(v) ? 0 : v
 	if (typeof v === 'string') { const n = parseFloat(v); return isNaN(n) ? 0 : n }
 	if (typeof v === 'boolean') return v ? 1 : 0
+	if (v instanceof Date) return v.getTime()
 	return 0
 }
 
 function toStr(v: unknown): string {
 	if (v === null || v === undefined) return ''
 	if (Array.isArray(v)) return (v as unknown[]).map(toStr).join(', ')
+	if (v instanceof Date) return formatDateValue(v)
 	return stringifyScalar(v)
+}
+
+// ── Datas ─────────────────────────────────────────────────────────────────────
+
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/
+
+/**
+ * Converte um valor em Date. Strings "YYYY-MM-DD" são interpretadas como data
+ * LOCAL (new Date("YYYY-MM-DD") usaria UTC e erraria o dia em fusos negativos).
+ */
+function toDate(v: unknown): Date | null {
+	if (v instanceof Date) return isNaN(v.getTime()) ? null : v
+	if (typeof v === 'number') { const d = new Date(v); return isNaN(d.getTime()) ? null : d }
+	if (typeof v === 'string') {
+		const s = v.trim()
+		if (!s) return null
+		if (DATE_ONLY_RE.test(s)) {
+			const [y, m, d] = s.split('-').map(Number)
+			return new Date(y, m - 1, d)
+		}
+		const t = Date.parse(s.includes(' ') ? s.replace(' ', 'T') : s)
+		return isNaN(t) ? null : new Date(t)
+	}
+	return null
+}
+
+function pad2(n: number): string { return String(n).padStart(2, '0') }
+
+/** "YYYY-MM-DD" para datas à meia-noite, "YYYY-MM-DD HH:mm" quando há horário. */
+function formatDateValue(d: Date): string {
+	const datePart = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+	if (d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0) return datePart
+	return `${datePart} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+}
+
+function formatDatePattern(d: Date, fmt: string): string {
+	return fmt.replace(/YYYY|YY|MM|DD|HH|mm|ss/g, tok => {
+		switch (tok) {
+			case 'YYYY': return String(d.getFullYear())
+			case 'YY': return String(d.getFullYear() % 100).padStart(2, '0')
+			case 'MM': return pad2(d.getMonth() + 1)
+			case 'DD': return pad2(d.getDate())
+			case 'HH': return pad2(d.getHours())
+			case 'mm': return pad2(d.getMinutes())
+			case 'ss': return pad2(d.getSeconds())
+			default: return tok
+		}
+	})
+}
+
+type DateUnit = 'years' | 'months' | 'weeks' | 'days' | 'hours' | 'minutes'
+
+function toDateUnit(v: unknown): DateUnit | null {
+	const s = toStr(v).trim().toLowerCase()
+	switch (s) {
+		case 'y': case 'year': case 'years': return 'years'
+		case 'm': case 'month': case 'months': return 'months'
+		case 'w': case 'week': case 'weeks': return 'weeks'
+		case '': case 'd': case 'day': case 'days': return 'days'
+		case 'h': case 'hour': case 'hours': return 'hours'
+		case 'min': case 'minute': case 'minutes': return 'minutes'
+		default: return null
+	}
 }
 
 function truthy(v: unknown): boolean {
@@ -211,9 +276,26 @@ function truthy(v: unknown): boolean {
 }
 
 function eqVal(a: unknown, b: unknown): boolean {
+	if (a instanceof Date || b instanceof Date) {
+		const da = toDate(a), db = toDate(b)
+		if (da && db) return da.getTime() === db.getTime()
+	}
 	const as = typeof a === 'string' ? a.toLowerCase() : a
 	const bs = typeof b === 'string' ? b.toLowerCase() : b
 	return as == bs
+}
+
+/**
+ * Valor numérico para comparações ordenadas. Quando um dos lados é Date,
+ * ambos são coeridos via toDate para que `[due] < TODAY()` funcione com a
+ * coluna vinda do frontmatter como string ISO.
+ */
+function cmpPair(a: unknown, b: unknown): [number, number] {
+	if (a instanceof Date || b instanceof Date) {
+		const da = toDate(a), db = toDate(b)
+		if (da && db) return [da.getTime(), db.getTime()]
+	}
+	return [toNum(a), toNum(b)]
 }
 
 // ── Resolução de colunas ──────────────────────────────────────────────────────
@@ -260,6 +342,8 @@ const KNOWN_FNS = new Set([
 	'ROUND', 'FLOOR', 'CEIL', 'ABS', 'MOD', 'POWER', 'SQRT',
 	'ISNULL', 'ISEMPTY', 'COALESCE',
 	'TEXT', 'VALUE',
+	'NOW', 'TODAY', 'DATE', 'YEAR', 'MONTH', 'DAY', 'HOUR', 'MINUTE',
+	'WEEKDAY', 'DATEDIF', 'DATEDIFF', 'DATEADD', 'FORMATDATE',
 ])
 
 // ── Avaliador ─────────────────────────────────────────────────────────────────
@@ -284,10 +368,10 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 				case '&': return toStr(lv) + toStr(rv)
 				case '=': case '==': return eqVal(lv, rv)
 				case '<>': case '!=': return !eqVal(lv, rv)
-				case '>':  return toNum(lv) > toNum(rv)
-				case '<':  return toNum(lv) < toNum(rv)
-				case '>=': return toNum(lv) >= toNum(rv)
-				case '<=': return toNum(lv) <= toNum(rv)
+				case '>':  { const [a, b] = cmpPair(lv, rv); return a > b }
+				case '<':  { const [a, b] = cmpPair(lv, rv); return a < b }
+				case '>=': { const [a, b] = cmpPair(lv, rv); return a >= b }
+				case '<=': { const [a, b] = cmpPair(lv, rv); return a <= b }
 				default: throw new FormulaError(`Operador desconhecido: ${op}`)
 			}
 		}
@@ -462,6 +546,87 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
 			case_VALUE: if (fn === 'VALUE') { return args.length === 1 ? toNum(evalNode(args[0], ctx)) : null }
 
+			// ── Datas ──
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
+			case_NOW: if (fn === 'NOW') {
+				if (args.length !== 0) throw new FormulaError('NOW()')
+				return new Date()
+			}
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
+			case_TODAY: if (fn === 'TODAY') {
+				if (args.length !== 0) throw new FormulaError('TODAY()')
+				const d = new Date()
+				return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+			}
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
+			case_DATE: if (fn === 'DATE') {
+				if (args.length !== 3) throw new FormulaError('DATE(ano, mes, dia)')
+				return new Date(toNum(evalNode(args[0], ctx)), toNum(evalNode(args[1], ctx)) - 1, toNum(evalNode(args[2], ctx)))
+			}
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
+			case_DATEPART: if (fn === 'YEAR' || fn === 'MONTH' || fn === 'DAY' || fn === 'HOUR' || fn === 'MINUTE' || fn === 'WEEKDAY') {
+				if (args.length !== 1) throw new FormulaError(`${fn}(data)`)
+				const d = toDate(evalNode(args[0], ctx))
+				if (!d) return null
+				switch (fn) {
+					case 'YEAR': return d.getFullYear()
+					case 'MONTH': return d.getMonth() + 1
+					case 'DAY': return d.getDate()
+					case 'HOUR': return d.getHours()
+					case 'MINUTE': return d.getMinutes()
+					default: return d.getDay() + 1 // WEEKDAY: 1 = domingo … 7 = sábado
+				}
+			}
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
+			case_DATEDIF: if (fn === 'DATEDIF' || fn === 'DATEDIFF') {
+				if (args.length < 2 || args.length > 3) throw new FormulaError('DATEDIF(inicio, fim, unidade?)')
+				const a = toDate(evalNode(args[0], ctx))
+				const b = toDate(evalNode(args[1], ctx))
+				if (!a || !b) return null
+				const unit = toDateUnit(args[2] ? evalNode(args[2], ctx) : '')
+				if (!unit) throw new FormulaError('DATEDIF: unidade deve ser years, months, weeks, days, hours ou minutes')
+				// Dias por componentes de calendário (imune a DST), tempo por diferença bruta
+				const calDays = Math.round((Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / 86400000)
+				switch (unit) {
+					case 'days': return calDays
+					case 'weeks': return Math.trunc(calDays / 7)
+					case 'hours': return Math.trunc((b.getTime() - a.getTime()) / 3600000)
+					case 'minutes': return Math.trunc((b.getTime() - a.getTime()) / 60000)
+					case 'months': case 'years': {
+						let months = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())
+						if (months > 0 && b.getDate() < a.getDate()) months--
+						else if (months < 0 && b.getDate() > a.getDate()) months++
+						return unit === 'months' ? months : Math.trunc(months / 12)
+					}
+				}
+			}
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
+			case_DATEADD: if (fn === 'DATEADD') {
+				if (args.length < 2 || args.length > 3) throw new FormulaError('DATEADD(data, n, unidade?)')
+				const d = toDate(evalNode(args[0], ctx))
+				if (!d) return null
+				const n = Math.trunc(toNum(evalNode(args[1], ctx)))
+				const unit = toDateUnit(args[2] ? evalNode(args[2], ctx) : '')
+				if (!unit) throw new FormulaError('DATEADD: unidade deve ser years, months, weeks, days, hours ou minutes')
+				const r = new Date(d.getTime())
+				switch (unit) {
+					case 'years': r.setFullYear(r.getFullYear() + n); break
+					case 'months': r.setMonth(r.getMonth() + n); break
+					case 'weeks': r.setDate(r.getDate() + n * 7); break
+					case 'days': r.setDate(r.getDate() + n); break
+					case 'hours': r.setHours(r.getHours() + n); break
+					case 'minutes': r.setMinutes(r.getMinutes() + n); break
+				}
+				return r
+			}
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
+			case_FORMATDATE: if (fn === 'FORMATDATE') {
+				if (args.length !== 2) throw new FormulaError('FORMATDATE(data, formato)')
+				const d = toDate(evalNode(args[0], ctx))
+				if (!d) return null
+				return formatDatePattern(d, toStr(evalNode(args[1], ctx)))
+			}
+
 			throw new FormulaError(i18n('formula_err_not_implemented').replace('$fn', fn))
 		}
 	}
@@ -519,7 +684,9 @@ export function evaluateFormula(
 	try {
 		const ast = new Parser(tokenize(formula)).parse()
 		const formulaColIds = new Set(schema.filter(c => c.type === 'formula').map(c => c.id))
-		return evalNode(ast, { row, allRows, schema, formulaColIds })
+		const result = evalNode(ast, { row, allRows, schema, formulaColIds })
+		// Date só existe como valor intermediário — a célula recebe string formatada
+		return result instanceof Date ? formatDateValue(result) : result
 	} catch {
 		return '#ERRO'
 	}

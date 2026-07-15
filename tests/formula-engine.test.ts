@@ -270,6 +270,101 @@ describe('conversion functions', () => {
 	})
 })
 
+// ── Date functions ───────────────────────────────────────────────────────────
+
+describe('date functions', () => {
+	it('NOW returns current date and time', () => {
+		const before = new Date()
+		const result = evalF('NOW()') as string
+		expect(typeof result).toBe('string')
+		expect(result).toMatch(/^\d{4}-\d{2}-\d{2}/)
+		expect(new Date(result.replace(' ', 'T')).getFullYear()).toBe(before.getFullYear())
+	})
+
+	it('TODAY returns current date without time', () => {
+		const now = new Date()
+		const expected = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+		expect(evalF('TODAY()')).toBe(expected)
+	})
+
+	it('DATE builds a date', () => {
+		expect(evalF('DATE(2026, 7, 15)')).toBe('2026-07-15')
+	})
+
+	it('YEAR / MONTH / DAY extract date parts', () => {
+		expect(evalF('YEAR("2026-07-15")')).toBe(2026)
+		expect(evalF('MONTH("2026-07-15")')).toBe(7)
+		expect(evalF('DAY("2026-07-15")')).toBe(15)
+	})
+
+	it('date parts parse "YYYY-MM-DD" as local date (no UTC off-by-one)', () => {
+		// In negative timezones new Date("2026-01-01") would be Dec 31 local
+		expect(evalF('DAY("2026-01-01")')).toBe(1)
+		expect(evalF('MONTH("2026-01-01")')).toBe(1)
+	})
+
+	it('HOUR / MINUTE extract time parts', () => {
+		expect(evalF('HOUR("2026-07-15 14:30")')).toBe(14)
+		expect(evalF('MINUTE("2026-07-15 14:30")')).toBe(30)
+	})
+
+	it('WEEKDAY returns 1 for Sunday through 7 for Saturday', () => {
+		expect(evalF('WEEKDAY("2026-07-12")')).toBe(1) // Sunday
+		expect(evalF('WEEKDAY("2026-07-15")')).toBe(4) // Wednesday
+		expect(evalF('WEEKDAY("2026-07-18")')).toBe(7) // Saturday
+	})
+
+	it('date part functions return null for empty or invalid dates', () => {
+		expect(evalF('YEAR(name)', { name: null })).toBeNull()
+		expect(evalF('YEAR("not a date")')).toBeNull()
+	})
+
+	it('DATEDIF in days by default', () => {
+		expect(evalF('DATEDIF("2026-07-01", "2026-07-15")')).toBe(14)
+		expect(evalF('DATEDIF("2026-07-15", "2026-07-01")')).toBe(-14)
+	})
+
+	it('DATEDIF with explicit units', () => {
+		expect(evalF('DATEDIF("2026-01-01", "2026-07-15", "days")')).toBe(195)
+		expect(evalF('DATEDIF("2026-07-01", "2026-07-15", "weeks")')).toBe(2)
+		expect(evalF('DATEDIF("2026-01-31", "2026-03-01", "months")')).toBe(1)
+		expect(evalF('DATEDIF("2020-07-15", "2026-07-14", "years")')).toBe(5)
+		expect(evalF('DATEDIF("2020-07-15", "2026-07-15", "years")')).toBe(6)
+		expect(evalF('DATEDIF("2026-07-15 10:00", "2026-07-15 14:30", "hours")')).toBe(4)
+		expect(evalF('DATEDIF("2026-07-15 10:00", "2026-07-15 10:45", "minutes")')).toBe(45)
+	})
+
+	it('DATEDIF accepts DATEDIFF alias and column values', () => {
+		expect(evalF('DATEDIFF(name, "2026-07-15")', { name: '2026-07-10' })).toBe(5)
+	})
+
+	it('DATEADD adds units to a date', () => {
+		expect(evalF('DATEADD("2026-07-15", 10)')).toBe('2026-07-25')
+		expect(evalF('DATEADD("2026-07-15", 2, "weeks")')).toBe('2026-07-29')
+		expect(evalF('DATEADD("2026-07-15", 3, "months")')).toBe('2026-10-15')
+		expect(evalF('DATEADD("2026-07-15", 1, "years")')).toBe('2027-07-15')
+		expect(evalF('DATEADD("2026-07-15", -15, "days")')).toBe('2026-06-30')
+		expect(evalF('DATEADD("2026-07-15 10:00", 5, "hours")')).toBe('2026-07-15 15:00')
+	})
+
+	it('FORMATDATE formats with pattern tokens', () => {
+		expect(evalF('FORMATDATE("2026-07-15", "DD/MM/YYYY")')).toBe('15/07/2026')
+		expect(evalF('FORMATDATE("2026-07-15 09:05", "YYYY-MM-DD HH:mm")')).toBe('2026-07-15 09:05')
+		expect(evalF('FORMATDATE("2026-07-15", "MM/DD/YY")')).toBe('07/15/26')
+	})
+
+	it('dates compare against date columns', () => {
+		expect(evalF('name < TODAY()', { name: '2020-01-01' })).toBe(true)
+		expect(evalF('name > TODAY()', { name: '2999-01-01' })).toBe(true)
+		expect(evalF('TODAY() = TODAY()')).toBe(true)
+	})
+
+	it('date functions compose', () => {
+		expect(evalF('IF(DATEDIF(name, "2026-07-15") > 7, "old", "recent")', { name: '2026-07-01' })).toBe('old')
+		expect(evalF('FORMATDATE(DATEADD("2026-12-30", 5), "DD/MM")')).toBe('04/01')
+	})
+})
+
 // ── Error handling ───────────────────────────────────────────────────────────
 
 describe('error handling', () => {

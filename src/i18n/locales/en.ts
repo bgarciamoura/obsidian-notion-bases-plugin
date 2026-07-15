@@ -170,6 +170,7 @@ const en = {
 	formula_group_aggregators: 'Aggregators',
 	formula_group_text: 'Text',
 	formula_group_math: 'Math',
+	formula_group_date: 'Date and time',
 	formula_group_utils: 'Utilities',
 
 	// Formula reference descriptions
@@ -198,6 +199,15 @@ const en = {
 	formula_desc_mod: 'Remainder of division',
 	formula_desc_power: 'Base raised to exponent',
 	formula_desc_sqrt: 'Square root',
+	formula_desc_now: 'Current date and time',
+	formula_desc_today: 'Current date at midnight',
+	formula_desc_date: 'Builds a date from year, month and day',
+	formula_desc_date_parts: 'Year / month / day of a date',
+	formula_desc_time_parts: 'Hour / minute of a date',
+	formula_desc_weekday: 'Day of the week (1 = sun … 7 = sat)',
+	formula_desc_datedif: 'Difference between two dates in the given unit',
+	formula_desc_dateadd: 'Adds n units to a date (days, months, years…)',
+	formula_desc_formatdate: 'Formats a date using a pattern',
 	formula_desc_isnull: 'True if v is empty or null',
 	formula_desc_coalesce: 'First non-empty value',
 	formula_desc_text: 'Converts to text',
