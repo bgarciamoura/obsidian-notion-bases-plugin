@@ -72,6 +72,7 @@ export class DatabaseManager {
 			schema,
 			views: Array.isArray(fm['views']) && (fm['views'] as unknown[]).length > 0 ? fm['views'] as ViewConfig[] : [DEFAULT_VIEW],
 			templatePath: typeof fm['templatePath'] === 'string' && fm['templatePath'] ? fm['templatePath'] : undefined,
+			templateFolder: typeof fm['templateFolder'] === 'string' && fm['templateFolder'] ? fm['templateFolder'] : undefined,
 			askTemplateOnCreate: fm['askTemplateOnCreate'] === true,
 			folderArrangement,
 		}
@@ -84,6 +85,8 @@ export class DatabaseManager {
 			fm['views'] = config.views
 			if (config.templatePath) fm['templatePath'] = config.templatePath
 			else delete fm['templatePath']
+			if (config.templateFolder) fm['templateFolder'] = config.templateFolder
+			else delete fm['templateFolder']
 			if (config.askTemplateOnCreate) fm['askTemplateOnCreate'] = true
 			else delete fm['askTemplateOnCreate']
 			if (config.folderArrangement && config.folderArrangement.propertyIds.length > 0) {
@@ -354,7 +357,12 @@ export class DatabaseManager {
 		const config = this.readConfig(dbFile)
 		if (config.askTemplateOnCreate) {
 			const templatePath = await new Promise<string | null>(resolve => {
-				new TemplatePickerModal(this.app, (path) => resolve(path), config.templatePath ? this.folderOf(config.templatePath) : null).open()
+				new TemplatePickerModal(
+					this.app,
+					(path) => resolve(path),
+					config.templatePath ? this.folderOf(config.templatePath) : null,
+					config.templateFolder ?? null,
+				).open()
 			})
 			return this.createNote(dbFile, initialFrontmatter, templatePath)
 		}

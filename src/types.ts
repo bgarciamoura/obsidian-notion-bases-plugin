@@ -157,6 +157,7 @@ export interface DatabaseConfig {
 	schema: ColumnSchema[]
 	views: ViewConfig[]
 	templatePath?: string
+	templateFolder?: string            // restricts the template picker to this folder (issue #42)
 	askTemplateOnCreate?: boolean
 	folderArrangement?: FolderArrangementConfig
 }

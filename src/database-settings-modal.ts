@@ -1,6 +1,7 @@
 import { App, Modal, Setting, TFile } from 'obsidian'
 import { ColumnType, DatabaseConfig, FolderArrangementConfig } from './types'
 import { TemplatePickerModal } from './template-picker-modal'
+import { FolderPickerModal } from './folder-picker-modal'
 import { DatabaseManager } from './database-manager'
 import { FolderArrangementPreviewModal } from './folder-arrangement-preview-modal'
 import { t } from './i18n'
@@ -9,6 +10,7 @@ const ARRANGEMENT_SUPPORTED_TYPES: ColumnType[] = ['text', 'select', 'status', '
 
 type SettingsUpdate = {
 	templatePath?: string
+	templateFolder?: string
 	askTemplateOnCreate?: boolean
 	folderArrangement?: FolderArrangementConfig
 }
@@ -60,7 +62,7 @@ export class DatabaseSettingsModal extends Modal {
 					this.config = { ...this.config, templatePath: path ?? undefined }
 					renderPath()
 					void this.onSave({ templatePath: this.config.templatePath })
-				}).open()
+				}, null, this.config.templateFolder ?? null).open()
 			}))
 
 		if (this.config.templatePath) {
@@ -71,6 +73,40 @@ export class DatabaseSettingsModal extends Modal {
 					this.config = { ...this.config, templatePath: undefined }
 					renderPath()
 					await this.onSave({ templatePath: undefined })
+					this.onOpen()
+				}))
+		}
+
+		// ── Template folder (issue #42) ───────────────────────────────────
+		const tplFolderSetting = new Setting(contentEl)
+			.setName(t('db_settings_template_folder_name'))
+			.setDesc(t('db_settings_template_folder_desc'))
+
+		const folderEl = contentEl.createDiv({ cls: 'nb-db-settings-template-path' })
+		const renderFolder = () => {
+			folderEl.empty()
+			folderEl.setText(this.config.templateFolder ?? t('db_settings_template_folder_none'))
+		}
+		renderFolder()
+
+		tplFolderSetting.addButton(btn => btn
+			.setButtonText(t('db_settings_template_folder_choose'))
+			.onClick(() => {
+				new FolderPickerModal(this.app, (folder) => {
+					this.config = { ...this.config, templateFolder: folder.path || undefined }
+					renderFolder()
+					void this.onSave({ templateFolder: this.config.templateFolder })
+				}).open()
+			}))
+
+		if (this.config.templateFolder) {
+			tplFolderSetting.addExtraButton(btn => btn
+				.setIcon('x')
+				.setTooltip(t('db_settings_template_clear'))
+				.onClick(async () => {
+					this.config = { ...this.config, templateFolder: undefined }
+					renderFolder()
+					await this.onSave({ templateFolder: undefined })
 					this.onOpen()
 				}))
 		}
