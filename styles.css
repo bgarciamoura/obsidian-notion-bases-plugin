@@ -1893,6 +1893,41 @@
 	height: auto;
 }
 
+/* Per-column clip (issue #45) — declared after the wrap rules on purpose:
+   same specificity, so source order lets clip win when the view-wide wrap is on */
+.nb-td--clip {
+	/* Sob table-layout auto, conteúdo nowrap alargaria a coluna (o "auto-fit"
+	   da issue). max-width: 0 tira o conteúdo do cálculo de largura e faz a
+	   célula respeitar a largura configurada, ativando o ellipsis.
+	   height: 1px permite que o .nb-td-inner use height: 100% e preencha a
+	   altura real da linha (que pode ser maior por causa de colunas com wrap),
+	   mantendo toda a célula clicável; age como mínimo, a célula ainda estica. */
+	max-width: 0;
+	height: 1px;
+}
+
+.nb-td--clip .nb-td-inner {
+	height: 100%;
+	max-height: none;
+	min-height: var(--nb-row-height);
+	overflow: hidden;
+	align-items: stretch;
+	padding: 0;
+}
+
+.nb-td--clip .nb-cell-text,
+.nb-td--clip .nb-cell-clickable {
+	white-space: nowrap;
+	word-break: normal;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	align-items: center;
+	height: 100%;
+	min-height: var(--nb-row-height);
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
 /* ── Linha de agregação ─────────────────────────────────────────────────────── */
 
 .nb-tfoot {

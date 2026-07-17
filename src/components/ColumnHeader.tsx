@@ -1188,13 +1188,22 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 					))}
 
 					{(col.type === 'text' || col.type === 'title' || col.type === 'url' || col.type === 'email' || col.type === 'phone') && (
-						<button
-							className="nb-menu-item"
-							onClick={() => { void updateCol({ wrap: !col.wrap }); setMenuOpen(false) }}
-						>
-							<span className="nb-menu-item-icon">↵</span>
-							<span>{col.wrap ? t('disable_wrap_text') : t('enable_wrap_text')}</span>
-						</button>
+						<>
+							<button
+								className="nb-menu-item"
+								onClick={() => { void updateCol({ wrap: !col.wrap, clip: false }); setMenuOpen(false) }}
+							>
+								<span className="nb-menu-item-icon">↵</span>
+								<span>{col.wrap ? t('disable_wrap_text') : t('enable_wrap_text')}</span>
+							</button>
+							<button
+								className="nb-menu-item"
+								onClick={() => { void updateCol({ clip: !col.clip, wrap: false }); setMenuOpen(false) }}
+							>
+								<span className="nb-menu-item-icon">⋯</span>
+								<span>{col.clip ? t('disable_clip_text') : t('enable_clip_text')}</span>
+							</button>
+						</>
 					)}
 
 					<div className="nb-menu-separator" />

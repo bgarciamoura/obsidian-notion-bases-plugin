@@ -99,6 +99,8 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	hide_field: 'Feld ausblenden',
 	enable_wrap_text: 'Text umbrechen',
 	disable_wrap_text: 'Umbruch deaktivieren',
+	enable_clip_text: 'Text abschneiden',
+	disable_clip_text: 'Abschneiden deaktivieren',
 	delete_field: 'Feld löschen',
 
 	// Column types
