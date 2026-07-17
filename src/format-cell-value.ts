@@ -1,4 +1,16 @@
+import { getLanguage } from 'obsidian'
 import { ColumnSchema, NumberFormat, SelectOption } from './types'
+
+/** Locale de exibição para datas e números — segue o idioma da UI do Obsidian. */
+export function displayLocale(): string {
+	try {
+		const lang = getLanguage()
+		new Intl.NumberFormat(lang)
+		return lang
+	} catch {
+		return 'en'
+	}
+}
 
 const SELECT_COLORS = [
 	'#e0e7ff', '#fce7f3', '#fef3c7', '#dcfce7', '#dbeafe', '#e9d5ff',
@@ -29,14 +41,28 @@ function formatNumber(value: number, fmt: NumberFormat | undefined): string {
 		maximumFractionDigits: fmt.decimals,
 		useGrouping: fmt.thousandsSeparator,
 	}
-	let result = new Intl.NumberFormat('pt-BR', opts).format(value)
+	let result = new Intl.NumberFormat(displayLocale(), opts).format(value)
 	if (fmt.prefix) result = `${fmt.prefix} ${result}`
 	if (fmt.suffix) result = `${result} ${fmt.suffix}`
 	return result
 }
 
-function getMoment(): ((d?: Date | string) => { format: (fmt: string) => string }) | null {
+export function getMoment(): ((d?: Date | string) => { format: (fmt: string) => string }) | null {
 	return (window as unknown as { moment?: (d?: Date | string) => { format: (fmt: string) => string } }).moment ?? null
+}
+
+/**
+ * Formats a raw date value for display. Precedence: explicit hint (embed
+ * placeholder) → column dateFormat → locale-aware default without seconds
+ * (moment 'L' / 'L LT', which follow the Obsidian UI language).
+ */
+export function formatDateText(raw: string, dateFormat?: string, formatHint?: string): string {
+	if (!raw) return ''
+	const moment = getMoment()
+	if (!moment) return raw
+	const hasTime = raw.includes('T') || / \d{1,2}:\d{2}/.test(raw)
+	const fmt = formatHint || dateFormat || (hasTime ? 'L LT' : 'L')
+	try { return moment(raw).format(fmt) } catch { return raw }
 }
 
 function toStr(v: unknown): string {
@@ -62,13 +88,8 @@ export function formatCellValueText(value: unknown, col: ColumnSchema | undefine
 			if (Number.isNaN(n)) return toStr(value)
 			return formatNumber(n, col.numberFormat)
 		}
-		case 'date': {
-			const moment = getMoment()
-			const raw = toStr(value)
-			if (!moment) return raw
-			const fmt = formatHint || 'YYYY-MM-DD'
-			try { return moment(raw).format(fmt) } catch { return raw }
-		}
+		case 'date':
+			return formatDateText(toStr(value), col.dateFormat, formatHint)
 		case 'checkbox':
 			return value ? '✓' : '✗'
 		case 'multiselect':

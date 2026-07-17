@@ -48,6 +48,7 @@ export interface ColumnSchema {
 	refMatchColumnId?: string // lookup
 	pairedColumnId?: string   // two-way relation: column id in the target database
 	numberFormat?: NumberFormat
+	dateFormat?: string               // moment pattern for date display; unset = locale-aware default
 	imageSourceFolder?: string
 	audioSourceFolder?: string
 	videoSourceFolder?: string
