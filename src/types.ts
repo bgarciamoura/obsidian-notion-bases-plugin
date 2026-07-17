@@ -109,6 +109,8 @@ export interface ViewConfig {
 	groupByColumnId?: string
 	boardColumnOrder?: string[]
 	boardColumnLimits?: Record<string, number>
+	boardHideEmpty?: boolean
+	boardHideNoValue?: boolean
 	galleryCoverField?: string
 	galleryCardSize?: 'small' | 'medium' | 'large'
 	calendarDateField?: string

@@ -130,8 +130,9 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		app, dbFile, manager, includeSubfolders: externalView.includeSubfolders, externalView,
 	})
 	const [activeView, setActiveView] = useState<ViewConfig>(externalView)
-	const [hideEmpty, setHideEmpty] = useState(false)
-	const [hideNoValue, setHideNoValue] = useState(false)
+	// Persistidos na config da view (issue #43) — não usar useState local
+	const hideEmpty = activeView.boardHideEmpty ?? false
+	const hideNoValue = activeView.boardHideNoValue ?? false
 	const [editingLimit, setEditingLimit] = useState<string | null>(null)
 	const [expandedColumns, setExpandedColumns] = useState<Set<string>>(new Set())
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
@@ -584,11 +585,11 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			</BottomSheet>
 			<div className="nb-mobile-toggles-row">
 				<label className="nb-mobile-toggle">
-					<input type="checkbox" checked={hideEmpty} onChange={e => setHideEmpty(e.target.checked)} />
+					<input type="checkbox" checked={hideEmpty} onChange={e => { void saveView({ ...activeView, boardHideEmpty: e.target.checked }) }} />
 					<span>{t('hide_empty_cols')}</span>
 				</label>
 				<label className="nb-mobile-toggle">
-					<input type="checkbox" checked={hideNoValue} onChange={e => setHideNoValue(e.target.checked)} />
+					<input type="checkbox" checked={hideNoValue} onChange={e => { void saveView({ ...activeView, boardHideNoValue: e.target.checked }) }} />
 					<span>{t('hide_no_value_cols')}</span>
 				</label>
 			</div>
@@ -640,13 +641,13 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 
 				{/* Ocultar vazias */}
 				<label className="nb-toolbar-btn nb-toolbar-toggle">
-					<input type="checkbox" checked={hideEmpty} onChange={e => setHideEmpty(e.target.checked)} />
+					<input type="checkbox" checked={hideEmpty} onChange={e => { void saveView({ ...activeView, boardHideEmpty: e.target.checked }) }} />
 					{t('hide_empty_cols')}
 				</label>
 
 				{/* Ocultar sem valor */}
 				<label className="nb-toolbar-btn nb-toolbar-toggle">
-					<input type="checkbox" checked={hideNoValue} onChange={e => setHideNoValue(e.target.checked)} />
+					<input type="checkbox" checked={hideNoValue} onChange={e => { void saveView({ ...activeView, boardHideNoValue: e.target.checked }) }} />
 					{t('hide_no_value_cols')}
 				</label>
 
