@@ -6,11 +6,13 @@ type TemplateChoice = { file: TFile | null; label: string }
 export class TemplatePickerModal extends FuzzySuggestModal<TemplateChoice> {
 	private onChoose: (path: string | null) => void
 	private preferredFolder: string | null
+	private restrictFolder: string | null
 
-	constructor(app: App, onChoose: (path: string | null) => void, preferredFolder?: string | null) {
+	constructor(app: App, onChoose: (path: string | null) => void, preferredFolder?: string | null, restrictFolder?: string | null) {
 		super(app)
 		this.onChoose = onChoose
 		this.preferredFolder = preferredFolder ?? this.getCoreTemplatesFolder()
+		this.restrictFolder = restrictFolder ?? null
 		this.setPlaceholder(t('template_picker_placeholder'))
 	}
 
@@ -22,10 +24,14 @@ export class TemplatePickerModal extends FuzzySuggestModal<TemplateChoice> {
 
 	getItems(): TemplateChoice[] {
 		const clear: TemplateChoice = { file: null, label: t('template_picker_none') }
-		const files = this.app.vault.getMarkdownFiles().filter(f => {
+		let files = this.app.vault.getMarkdownFiles().filter(f => {
 			const cache = this.app.metadataCache.getFileCache(f)
 			return cache?.frontmatter?.['notion-bases'] !== true
 		})
+		// Restrição por database (issue #42): só arquivos da pasta configurada
+		if (this.restrictFolder) {
+			files = files.filter(f => f.path.startsWith(`${this.restrictFolder!}/`))
+		}
 		const preferred = this.preferredFolder
 			? files.filter(f => f.path.startsWith(`${this.preferredFolder!}/`))
 			: []
