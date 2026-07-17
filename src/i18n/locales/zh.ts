@@ -93,6 +93,8 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	edit_formula: '编辑公式',
 	configure_lookup: '配置 lookup',
 	configure_relation: '配置关联',
+	settings_clip_ellipsis_name: '截断文本时显示省略号',
+	settings_clip_ellipsis_desc: '关闭时，被截断的单元格会在单元格边缘直接截断文本，不显示省略号字符，类似电子表格的效果。',
 	format_number: '数字格式',
 	format_date: '日期格式',
 	date_format_title: '日期格式',

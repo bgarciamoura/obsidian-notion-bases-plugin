@@ -93,6 +93,8 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	edit_formula: 'Editar fórmula',
 	configure_lookup: 'Configurar lookup',
 	configure_relation: 'Configurar relação',
+	settings_clip_ellipsis_name: 'Mostrar reticências ao cortar o texto',
+	settings_clip_ellipsis_desc: 'Quando desativado, as células cortadas interrompem o texto na borda da célula sem o caractere de reticências, no estilo de planilha.',
 	format_number: 'Formatar número',
 	format_date: 'Formatar data',
 	date_format_title: 'Formato de data',

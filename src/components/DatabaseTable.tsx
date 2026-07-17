@@ -29,6 +29,7 @@ import { TFile, Notice } from 'obsidian'
 import React, { Fragment, ReactNode, useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
+import { runtimePrefs } from '../runtime-prefs'
 import { DatabaseManager } from '../database-manager'
 import { ColumnSchema, ColumnType, ConditionalFormatRule, DatabaseConfig, FilterOperator, NoteRow, SortConfig, ViewConfig, AggregationType, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW } from '../types'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
@@ -547,7 +548,8 @@ function ResizeHandle({ onResize, onAutoFit }: { onResize: (w: number) => void; 
 		let currentWidth = startWidth
 
 		const onMouseMove = (ev: MouseEvent) => {
-			currentWidth = Math.max(50, startWidth + (ev.clientX - startX))
+			// 24px: mínimo para o resizer continuar clicável (issue #51)
+			currentWidth = Math.max(24, startWidth + (ev.clientX - startX))
 			th.style.width = currentWidth + 'px'
 		}
 		const onMouseUp = () => {
@@ -569,7 +571,7 @@ function ResizeHandle({ onResize, onAutoFit }: { onResize: (w: number) => void; 
 	)
 }
 
-function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, onTogglePin, sorted, onToggleSort, onResize, onAutoFit }: {
+function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, onTogglePin, sorted, onToggleSort, onResize, onAutoFit, userSized }: {
 	id: string
 	size: number
 	children: ReactNode
@@ -581,6 +583,7 @@ function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, on
 	onToggleSort?: () => void
 	onResize?: (width: number) => void
 	onAutoFit?: () => void
+	userSized?: boolean
 }) {
 	const {
 		attributes,
@@ -603,6 +606,7 @@ function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, on
 				isDragging ? 'nb-th--dragging' : '',
 				isSticky ? 'nb-th--sticky' : '',
 				isLastPinned ? 'nb-th--sticky-last' : '',
+				userSized ? 'nb-th--fixed' : '',
 			].filter(Boolean).join(' ')}
 			style={{
 				width: size,
@@ -2222,7 +2226,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 		{/* Tabela */}
 			<CellContext.Provider value={{ editingCell, setEditingCell, updateCell, schema: config.schema, relationOptions, updateSchema }}>
-			<div ref={tableWrapperRef} className={`nb-table-wrapper${activeView.wrapText ? ' nb-table--wrap' : ''}`}
+			<div ref={tableWrapperRef} className={`nb-table-wrapper${activeView.wrapText ? ' nb-table--wrap' : ''}${runtimePrefs.clipEllipsis ? '' : ' nb-clip-hard'}`}
 				style={{ '--nb-row-height': activeView.rowHeight === 'compact' ? '28px' : activeView.rowHeight === 'tall' ? '64px' : '36px' } as React.CSSProperties}>
 				<table ref={tableRef} className="nb-table">
 					<thead className="nb-thead">
@@ -2278,6 +2282,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 																'nb-th',
 																sticky ? 'nb-th--sticky' : '',
 																sticky?.isLast ? 'nb-th--sticky-last' : '',
+																activeView.columnWidths['_title'] !== undefined ? 'nb-th--fixed' : '',
 															].filter(Boolean).join(' ')}
 															style={{
 																width: header.getSize(),
@@ -2311,6 +2316,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 					onToggleSort={header.column.getCanSort() ? () => handleColumnToggleSort(header.id) : undefined}
 					onResize={w => { void handleColumnResize(header.id, w) }}
 					onAutoFit={() => { void handleColumnAutoFit(header.id) }}
+					userSized={activeView.columnWidths[header.id] !== undefined}
 													>
 														{flexRender(header.column.columnDef.header, header.getContext())}
 													</SortableTh>

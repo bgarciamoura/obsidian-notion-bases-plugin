@@ -93,6 +93,8 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	edit_formula: 'Formel bearbeiten',
 	configure_lookup: 'Lookup konfigurieren',
 	configure_relation: 'Relation konfigurieren',
+	settings_clip_ellipsis_name: 'Auslassungspunkte beim Abschneiden von Text anzeigen',
+	settings_clip_ellipsis_desc: 'Wenn deaktiviert, schneiden abgeschnittene Zellen den Text am Zellenrand ohne Auslassungspunkte ab, wie in einer Tabellenkalkulation.',
 	format_number: 'Zahl formatieren',
 	format_date: 'Datum formatieren',
 	date_format_title: 'Datumsformat',

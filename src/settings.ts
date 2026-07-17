@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting } from 'obsidian'
 import NotionBasesPlugin from './main'
 import { ViewConfig } from './types'
+import { runtimePrefs } from './runtime-prefs'
 import { t } from './i18n'
 
 export interface NotionBasesSettings {
@@ -9,6 +10,7 @@ export interface NotionBasesSettings {
 	embedViews: Record<string, ViewConfig>
 	readInlineFields: boolean
 	pageSize: number
+	clipEllipsis: boolean
 }
 
 export const DEFAULT_SETTINGS: NotionBasesSettings = {
@@ -17,6 +19,7 @@ export const DEFAULT_SETTINGS: NotionBasesSettings = {
 	embedViews: {},
 	readInlineFields: false,
 	pageSize: 0,
+	clipEllipsis: true,
 }
 
 export class NotionBasesSettingTab extends PluginSettingTab {
@@ -53,6 +56,19 @@ export class NotionBasesSettingTab extends PluginSettingTab {
 					.onChange(async value => {
 						this.plugin.settings.readInlineFields = value
 						this.plugin.manager.readInlineFields = value
+						await this.plugin.saveSettings()
+					})
+			)
+
+		new Setting(containerEl)
+			.setName(t('settings_clip_ellipsis_name'))
+			.setDesc(t('settings_clip_ellipsis_desc'))
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.clipEllipsis)
+					.onChange(async value => {
+						this.plugin.settings.clipEllipsis = value
+						runtimePrefs.clipEllipsis = value
 						await this.plugin.saveSettings()
 					})
 			)

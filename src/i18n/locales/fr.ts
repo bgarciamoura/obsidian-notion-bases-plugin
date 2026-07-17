@@ -93,6 +93,8 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	edit_formula: 'Modifier la formule',
 	configure_lookup: 'Configurer le lookup',
 	configure_relation: 'Configurer la relation',
+	settings_clip_ellipsis_name: 'Afficher les points de suspension lors de la troncature du texte',
+	settings_clip_ellipsis_desc: 'Lorsque cette option est désactivée, les cellules tronquées coupent le texte au bord de la cellule sans le caractère de points de suspension, comme dans un tableur.',
 	format_number: 'Formater le nombre',
 	format_date: 'Formater la date',
 	date_format_title: 'Format de date',

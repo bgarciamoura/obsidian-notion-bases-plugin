@@ -3,6 +3,7 @@ import { t } from './i18n'
 import { DATABASE_VIEW_TYPE, DatabaseView } from './database-view'
 import { DatabaseManager } from './database-manager'
 import { DEFAULT_SETTINGS, NotionBasesSettings, NotionBasesSettingTab } from './settings'
+import { runtimePrefs } from './runtime-prefs'
 import { DatabasePickerModal } from './database-picker-modal'
 import { QuickAddModal } from './quick-add-modal'
 import { registerDatabaseEmbed } from './database-embed'
@@ -149,6 +150,7 @@ export default class NotionBasesPlugin extends Plugin {
 			DEFAULT_SETTINGS,
 			(await this.loadData()) as Partial<NotionBasesSettings>
 		)
+		runtimePrefs.clipEllipsis = this.settings.clipEllipsis
 	}
 
 	async saveSettings() {
