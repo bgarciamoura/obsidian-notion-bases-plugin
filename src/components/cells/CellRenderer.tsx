@@ -18,6 +18,7 @@ interface CellProps {
 // Usamos um contexto React separado para isso
 import { createContext, useContext } from 'react'
 import { stringifyScalar } from '../../value-utils'
+import { displayLocale, formatDateText } from '../../format-cell-value'
 
 interface CellContextType {
 	editingCell: { rowIndex: number; columnId: string } | null
@@ -45,7 +46,7 @@ function formatNumber(value: number, fmt: NumberFormat | undefined): string {
 		maximumFractionDigits: fmt.decimals,
 		useGrouping: fmt.thousandsSeparator,
 	}
-	let result = new Intl.NumberFormat('pt-BR', opts).format(value)
+	let result = new Intl.NumberFormat(displayLocale(), opts).format(value)
 	if (fmt.prefix) result = `${fmt.prefix} ${result}`
 	if (fmt.suffix) result = `${result} ${fmt.suffix}`
 	return result
@@ -201,6 +202,7 @@ export const CellRenderer = React.memo(function CellRenderer({ col, value, rowIn
 			return (
 				<DateCell
 					value={value as string | null}
+					format={col.dateFormat}
 					isEditing={isEditing}
 					onStartEdit={startEditing}
 					onSave={v => { void updateCell(rowIndex, columnId, v) }}
@@ -1223,8 +1225,9 @@ function TimeInput24h({ defaultValue, onChange, onEscape }: {
 
 // ── DateCell ─────────────────────────────────────────────────────────────────
 
-function DateCell({ value, isEditing, onStartEdit, onSave, onClose }: {
+function DateCell({ value, format, isEditing, onStartEdit, onSave, onClose }: {
 	value: string | null
+	format?: string
 	isEditing: boolean
 	onStartEdit: () => void
 	onSave: (v: string | null) => void
@@ -1250,13 +1253,7 @@ function DateCell({ value, isEditing, onStartEdit, onSave, onClose }: {
 		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [isEditing, onClose])
 
-	const formatted = (() => {
-		if (!datePart) return null
-		const [y, m, d] = datePart.split('-')
-		const dateStr = new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-		if (hasTime && timePart) return `${dateStr} ${timePart}`
-		return dateStr
-	})()
+	const formatted = value && datePart ? formatDateText(value, format) : null
 
 	if (!isEditing) {
 		return (

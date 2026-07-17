@@ -6,6 +6,7 @@ import { validateFormulaSyntax } from '../formula-engine'
 import { useApp } from '../context'
 import { t } from '../i18n'
 import { DatabaseManager } from '../database-manager'
+import { displayLocale, getMoment } from '../format-cell-value'
 
 const TYPE_ICONS: Record<ColumnType, string> = {
 	title:       '📄',
@@ -107,6 +108,13 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const fmtPanelRef = useRef<HTMLDivElement>(null)
 	const fmtDragOffset = useRef<{ x: number; y: number } | null>(null)
 
+	// Date format state
+	const [editingDateFmt, setEditingDateFmt] = useState(false)
+	const [dateFmtPanelPos, setDateFmtPanelPos] = useState<{ x: number; y: number } | null>(null)
+	const [dateFmtInput, setDateFmtInput] = useState(col.dateFormat ?? '')
+	const dateFmtPanelRef = useRef<HTMLDivElement>(null)
+	const dateFmtDragOffset = useRef<{ x: number; y: number } | null>(null)
+
 	// Image config state
 	const [editingImageConfig, setEditingImageConfig] = useState(false)
 	const [imagePanelPos, setImagePanelPos] = useState<{ x: number; y: number } | null>(null)
@@ -134,12 +142,13 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		const handler = (e: MouseEvent) => {
 			const target = e.target as Node
 			const inMenu = menuRef.current?.contains(target)
-			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target) || rollupPanelRef.current?.contains(target) || fmtPanelRef.current?.contains(target) || imgPanelRef.current?.contains(target) || audioPanelRef.current?.contains(target) || videoPanelRef.current?.contains(target)
+			const inPanel = panelRef.current?.contains(target) || lookupPanelRef.current?.contains(target) || rollupPanelRef.current?.contains(target) || fmtPanelRef.current?.contains(target) || dateFmtPanelRef.current?.contains(target) || imgPanelRef.current?.contains(target) || audioPanelRef.current?.contains(target) || videoPanelRef.current?.contains(target)
 			if (!inMenu && !inPanel) {
 				setMenuOpen(false)
 				setEditingFormula(false)
 				setEditingLookup(false)
 				setEditingNumberFmt(false)
+				setEditingDateFmt(false)
 			}
 		}
 		activeDocument.addEventListener('mousedown', handler)
@@ -315,6 +324,37 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			setFmtSuffix(col.numberFormat?.suffix ?? '')
 		}
 	}, [col.numberFormat, editingNumberFmt])
+
+	// Position panel when date format opens
+	useEffect(() => {
+		if (!editingDateFmt) return
+		if (menuRef.current) {
+			const rect = menuRef.current.getBoundingClientRect()
+			const panelWidth = 300; const panelHeight = 280
+			let x = rect.left; let y = rect.bottom + 4
+			if (x + panelWidth > window.innerWidth) x = window.innerWidth - panelWidth - 8
+			if (y + panelHeight > window.innerHeight) y = rect.top - panelHeight - 4
+			setDateFmtPanelPos({ x, y })
+		}
+	}, [editingDateFmt])
+
+	// Sync date format input with col when not editing
+	useEffect(() => {
+		if (!editingDateFmt) setDateFmtInput(col.dateFormat ?? '')
+	}, [col.dateFormat, editingDateFmt])
+
+	// Drag for date format panel
+	useEffect(() => {
+		if (!editingDateFmt) return
+		const onMove = (e: MouseEvent) => {
+			if (!dateFmtDragOffset.current) return
+			setDateFmtPanelPos({ x: e.clientX - dateFmtDragOffset.current.x, y: e.clientY - dateFmtDragOffset.current.y })
+		}
+		const onUp = () => { dateFmtDragOffset.current = null }
+		activeDocument.addEventListener('mousemove', onMove)
+		activeDocument.addEventListener('mouseup', onUp)
+		return () => { activeDocument.removeEventListener('mousemove', onMove); activeDocument.removeEventListener('mouseup', onUp) }
+	}, [editingDateFmt])
 
 	// Sync image folder input with col
 	useEffect(() => {
@@ -651,6 +691,29 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 		e.preventDefault()
 	}
 
+	const handleSaveDateFmt = async () => {
+		await updateCol({ dateFormat: dateFmtInput.trim() || undefined })
+		setEditingDateFmt(false)
+		setMenuOpen(false)
+	}
+
+	const handleCloseDateFmt = () => {
+		setEditingDateFmt(false)
+		setMenuOpen(false)
+	}
+
+	const handleRemoveDateFmt = async () => {
+		await updateCol({ dateFormat: undefined })
+		setEditingDateFmt(false)
+		setMenuOpen(false)
+	}
+
+	const handleDateFmtTitleBarMouseDown = (e: React.MouseEvent) => {
+		if (!dateFmtPanelPos) return
+		dateFmtDragOffset.current = { x: e.clientX - dateFmtPanelPos.x, y: e.clientY - dateFmtPanelPos.y }
+		e.preventDefault()
+	}
+
 	const [refOpen, setRefOpen] = useState(false)
 	const otherCols = schema.filter(c => c.id !== col.id && c.type !== 'formula')
 
@@ -716,10 +779,28 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			maximumFractionDigits: fmtDecimals,
 			useGrouping: fmtThousands,
 		}
-		let result = new Intl.NumberFormat('pt-BR', opts).format(sample)
+		let result = new Intl.NumberFormat(displayLocale(), opts).format(sample)
 		if (fmtPrefix.trim()) result = `${fmtPrefix.trim()} ${result}`
 		if (fmtSuffix.trim()) result = `${result} ${fmtSuffix.trim()}`
 		return result
+	})()
+
+	const DATE_FMT_PRESETS = [
+		'YYYY-MM-DD',
+		'YYYY-MM-DD HH:mm',
+		'DD/MM/YYYY',
+		'DD/MM/YYYY HH:mm',
+		'MM/DD/YYYY',
+		'MM/DD/YYYY HH:mm',
+		'DD.MM.YYYY',
+		'MMM D, YYYY',
+		'D MMM YYYY HH:mm',
+	]
+
+	const dateFmtPreview = (() => {
+		const moment = getMoment()
+		if (!moment) return ''
+		try { return moment(new Date()).format(dateFmtInput.trim() || 'L LT') } catch { return '' }
 	})()
 
 	const formulaPanel = editingFormula && panelPos ? createPortal(
@@ -882,6 +963,52 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 				{col.numberFormat && (
 					<div style={{ marginTop: '8px', textAlign: 'center' }}>
 						<button className="nb-formula-cancel" onClick={() => { void handleRemoveNumberFmt() }} style={{ color: 'var(--text-error)', width: '100%' }}>
+							{t('number_remove_format')}
+						</button>
+					</div>
+				)}
+			</div>
+		</div>,
+		activeDocument.body
+	) : null
+
+	const dateFmtPanel = editingDateFmt && dateFmtPanelPos ? createPortal(
+		<div ref={dateFmtPanelRef} className="nb-formula-floating-panel" style={{ top: dateFmtPanelPos.y, left: dateFmtPanelPos.x }}>
+			<div className="nb-formula-titlebar" onMouseDown={handleDateFmtTitleBarMouseDown}>
+				<span className="nb-formula-titlebar-icon">📅</span>
+				<span className="nb-formula-titlebar-title">{t('date_format_title')}: {col.name}</span>
+				<button className="nb-formula-close" onClick={handleCloseDateFmt} title={t('tooltip_close')}>×</button>
+			</div>
+			<div className="nb-formula-body">
+				<div className="nb-numfmt-preview">{dateFmtPreview}</div>
+				<div className="nb-lookup-section">
+					<label className="nb-lookup-label">{t('date_format_preset_label')}</label>
+					<select
+						className="nb-lookup-select"
+						value={DATE_FMT_PRESETS.includes(dateFmtInput) ? dateFmtInput : ''}
+						onChange={e => { if (e.target.value) setDateFmtInput(e.target.value) }}
+					>
+						<option value="">{t('date_format_custom')}</option>
+						{DATE_FMT_PRESETS.map(p => <option key={p} value={p}>{p}</option>)}
+					</select>
+				</div>
+				<div className="nb-lookup-section">
+					<label className="nb-lookup-label">{t('date_format_pattern_label')}</label>
+					<input
+						type="text"
+						className="nb-numfmt-text-input"
+						value={dateFmtInput}
+						onChange={e => setDateFmtInput(e.target.value)}
+						placeholder="YYYY-MM-DD HH:mm"
+					/>
+				</div>
+				<div className="nb-formula-actions">
+					<button className="nb-formula-save" onClick={() => { void handleSaveDateFmt() }}>{t('formula_save')}</button>
+					<button className="nb-formula-cancel" onClick={handleCloseDateFmt}>{t('formula_cancel')}</button>
+				</div>
+				{col.dateFormat && (
+					<div style={{ marginTop: '8px', textAlign: 'center' }}>
+						<button className="nb-formula-cancel" onClick={() => { void handleRemoveDateFmt() }} style={{ color: 'var(--text-error)', width: '100%' }}>
 							{t('number_remove_format')}
 						</button>
 					</div>
@@ -1102,7 +1229,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			) : (
 				<button
 					className="nb-header-label"
-					onClick={() => { setMenuOpen(v => !v); setEditingFormula(false); setEditingLookup(false); setEditingNumberFmt(false); setEditingImageConfig(false) }}
+					onClick={() => { setMenuOpen(v => !v); setEditingFormula(false); setEditingLookup(false); setEditingNumberFmt(false); setEditingDateFmt(false); setEditingImageConfig(false) }}
 					title={col.name}
 				>
 					<span className="nb-header-icon">{TYPE_ICONS[col.type]}</span>
@@ -1111,7 +1238,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			)}
 
 			{/* Menu dropdown */}
-			{menuOpen && !editingFormula && !editingLookup && !editingRollup && !editingNumberFmt && !editingImageConfig && (
+			{menuOpen && !editingFormula && !editingLookup && !editingRollup && !editingNumberFmt && !editingDateFmt && !editingImageConfig && (
 				<div className="nb-column-menu">
 					<button className="nb-menu-item" onClick={() => { setMenuOpen(false); setRenaming(true) }}>
 						<span className="nb-menu-item-icon">✏️</span>
@@ -1150,6 +1277,13 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						<button className="nb-menu-item" onClick={() => setEditingNumberFmt(true)}>
 							<span className="nb-menu-item-icon">#</span>
 							<span>{t('format_number')}</span>
+						</button>
+					)}
+
+					{col.type === 'date' && (
+						<button className="nb-menu-item" onClick={() => setEditingDateFmt(true)}>
+							<span className="nb-menu-item-icon">📅</span>
+							<span>{t('format_date')}</span>
 						</button>
 					)}
 
@@ -1223,6 +1357,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			{lookupPanel}
 			{rollupPanel}
 			{numberFmtPanel}
+			{dateFmtPanel}
 			{imageCfgPanel}
 			{audioCfgPanel}
 			{videoCfgPanel}
