@@ -384,6 +384,7 @@ function TextCell({ value, isEditing, onStartEdit, onCommit, onCancel, onOpen }:
 			<div
 				className="nb-cell-text nb-cell-clickable nb-cell-editable"
 				onDoubleClick={handleDoubleClick}
+				title={value || undefined}
 			>
 				{onOpen ? (
 					<span className="nb-cell-title-link" onClick={handleTextClick}>

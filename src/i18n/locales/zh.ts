@@ -99,6 +99,8 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	hide_field: '隐藏字段',
 	enable_wrap_text: '自动换行',
 	disable_wrap_text: '取消换行',
+	enable_clip_text: '截断文本',
+	disable_clip_text: '取消截断',
 	delete_field: '删除字段',
 
 	// Column types

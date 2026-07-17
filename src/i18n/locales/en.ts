@@ -97,6 +97,8 @@ const en = {
 	hide_field: 'Hide field',
 	enable_wrap_text: 'Wrap text',
 	disable_wrap_text: 'Unwrap text',
+	enable_clip_text: 'Clip text',
+	disable_clip_text: 'Disable clip',
 	delete_field: 'Delete field',
 
 	// Column types

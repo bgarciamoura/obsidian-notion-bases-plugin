@@ -56,6 +56,7 @@ export interface ColumnSchema {
 	rollupFunction?: RollupFunction   // rollup: aggregation function
 	isHierarchical?: boolean          // self-relation used as hierarchy parent column
 	wrap?: boolean                    // table view: wrap long text cells onto multiple lines
+	clip?: boolean                    // table view: truncate at the cell boundary even when the view-wide wrap is on
 }
 
 // ── View / filter / sort ────────────────────────────────────────────────────

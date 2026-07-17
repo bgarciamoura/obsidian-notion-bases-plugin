@@ -99,6 +99,8 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	hide_field: 'Ocultar campo',
 	enable_wrap_text: 'Ajustar texto',
 	disable_wrap_text: 'No ajustar texto',
+	enable_clip_text: 'Cortar texto',
+	disable_clip_text: 'Desactivar corte',
 	delete_field: 'Eliminar campo',
 
 	// Column types

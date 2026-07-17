@@ -99,6 +99,8 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	hide_field: 'Ocultar campo',
 	enable_wrap_text: 'Quebrar texto',
 	disable_wrap_text: 'Não quebrar texto',
+	enable_clip_text: 'Cortar texto',
+	disable_clip_text: 'Desativar corte',
 	delete_field: 'Excluir campo',
 
 	// Column types

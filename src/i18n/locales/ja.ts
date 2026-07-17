@@ -99,6 +99,8 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	hide_field: 'フィールドを非表示',
 	enable_wrap_text: 'テキストを折り返す',
 	disable_wrap_text: '折り返しを解除',
+	enable_clip_text: 'テキストを切り詰める',
+	disable_clip_text: '切り詰めを解除',
 	delete_field: 'フィールドを削除',
 
 	// Column types
