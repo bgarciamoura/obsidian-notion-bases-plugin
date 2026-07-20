@@ -93,6 +93,8 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	edit_formula: '数式を編集',
 	configure_lookup: 'Lookup を設定',
 	configure_relation: 'リレーションを設定',
+	settings_clip_ellipsis_name: 'テキストの切り詰め時に省略記号を表示',
+	settings_clip_ellipsis_desc: 'オフの場合、切り詰められたセルは省略記号を表示せず、スプレッドシートのようにセルの端でテキストを切り取ります。',
 	format_number: '数値の書式',
 	format_date: '日付の書式',
 	date_format_title: '日付の書式',

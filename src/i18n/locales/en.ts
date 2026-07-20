@@ -91,6 +91,8 @@ const en = {
 	edit_formula: 'Edit formula',
 	configure_lookup: 'Configure lookup',
 	configure_relation: 'Configure relation',
+	settings_clip_ellipsis_name: 'Show ellipsis when clipping text',
+	settings_clip_ellipsis_desc: 'When off, clipped cells cut the text at the cell edge without the ellipsis character, spreadsheet-style.',
 	format_number: 'Format number',
 	format_date: 'Format date',
 	date_format_title: 'Date format',

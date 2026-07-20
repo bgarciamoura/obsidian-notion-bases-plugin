@@ -93,6 +93,8 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	edit_formula: 'Editar fórmula',
 	configure_lookup: 'Configurar lookup',
 	configure_relation: 'Configurar relación',
+	settings_clip_ellipsis_name: 'Mostrar puntos suspensivos al cortar el texto',
+	settings_clip_ellipsis_desc: 'Cuando está desactivado, las celdas cortadas interrumpen el texto en el borde de la celda sin el carácter de puntos suspensivos, al estilo de hoja de cálculo.',
 	format_number: 'Formatear número',
 	format_date: 'Formatear fecha',
 	date_format_title: 'Formato de fecha',

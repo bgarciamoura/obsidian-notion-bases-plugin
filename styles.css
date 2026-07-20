@@ -1928,6 +1928,34 @@
 	padding-bottom: 0;
 }
 
+/* Ellipsis opcional (issue #51) — classe aplicada ao wrapper quando a
+   configuração "Show ellipsis when clipping text" está desligada */
+.nb-clip-hard .nb-td--clip .nb-cell-text,
+.nb-clip-hard .nb-td--clip .nb-cell-clickable {
+	text-overflow: clip;
+}
+
+/* Cabeçalho estreitável (issue #51): somente colunas com largura definida
+   pelo usuário param de impor min-content — o nome trunca quando faltar
+   espaço. Colunas nunca redimensionadas mantêm o auto-ajuste de sempre. */
+.nb-th--fixed {
+	max-width: 0;
+}
+
+.nb-th--fixed .nb-header-label {
+	min-width: 0;
+	overflow: hidden;
+}
+
+.nb-th--fixed .nb-header-name {
+	min-width: 0;
+	white-space: nowrap;
+}
+
+.nb-th--fixed .nb-th-inner-title > div {
+	min-width: 0;
+}
+
 /* ── Linha de agregação ─────────────────────────────────────────────────────── */
 
 .nb-tfoot {
