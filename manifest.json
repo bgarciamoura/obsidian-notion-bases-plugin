@@ -7,5 +7,8 @@
 	"author": "bgarciamoura",
 	"authorUrl": "https://github.com/bgarciamoura",
 	"isDesktopOnly": false,
-	"fundingUrl": "https://github.com/sponsors/bgarciamoura"
+	"fundingUrl": {
+		"GitHub Sponsors": "https://github.com/sponsors/bgarciamoura",
+		"PayPal": "https://www.paypal.com/donate/?business=JLSTWHFM8KD3G&no_recurring=0&item_name=Built+with+love%2C+powered+by+coffee.+Your+support+keeps+Notion+Bases+free+and+growing+for+everyone.+Thank+you%21&currency_code=BRL"
+	}
 }
