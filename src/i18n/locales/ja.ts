@@ -35,6 +35,7 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	filter_by: 'フィルター条件',
 	sort_by: '並べ替え条件',
 	group_by_label: 'グループ化条件',
+	group_none: 'なし',
 	date_field_label: '日付フィールド',
 	cover_field_label: 'カバーフィールド',
 	card_size_label: 'カードサイズ',

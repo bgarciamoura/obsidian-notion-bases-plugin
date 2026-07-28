@@ -5742,3 +5742,65 @@ body.nb-tl-resizing.nb-tl-resizing.nb-tl-resizing * {
 	white-space: nowrap;
 	vertical-align: baseline;
 }
+
+/* ── Collapsible groups (table / list / gallery) ─────────────────────────── */
+
+.nb-group-header {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 8px;
+	cursor: pointer;
+	user-select: none;
+	background: var(--background-secondary);
+	border-top: 1px solid var(--background-modifier-border);
+	font-size: 0.85em;
+}
+
+.nb-group-header:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nb-group-header-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.nb-group-header-label {
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.nb-group-header-count {
+	color: var(--text-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.nb-group-header-add {
+	margin-left: auto;
+	background: none;
+	border: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 0 6px;
+	font-size: 1.1em;
+	line-height: 1;
+}
+
+.nb-group-header-add:hover {
+	color: var(--text-normal);
+}
+
+.nb-group-header-td {
+	padding: 0;
+}
+
+.nb-group-header-row .nb-group-header {
+	border-top: none;
+}
+
+.nb-gallery-group {
+	grid-column: 1 / -1;
+}

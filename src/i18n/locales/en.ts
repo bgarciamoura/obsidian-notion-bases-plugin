@@ -33,6 +33,7 @@ const en = {
 	filter_by: 'Filter by',
 	sort_by: 'Sort by',
 	group_by_label: 'Group by',
+	group_none: 'None',
 	date_field_label: 'Date field',
 	cover_field_label: 'Cover field',
 	card_size_label: 'Card size',
