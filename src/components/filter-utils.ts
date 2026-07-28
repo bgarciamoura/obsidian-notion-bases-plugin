@@ -83,6 +83,50 @@ export function getColumnIconStatic(type: string): string {
 	return icons[type] ?? '·'
 }
 
+/** Local calendar day ("YYYY-MM-DD") of a date value, or null if unparseable. */
+function toDayString(raw: string): string | null {
+	if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10)
+	const d = new Date(raw)
+	if (isNaN(d.getTime())) return null
+	const pad = (n: number) => String(n).padStart(2, '0')
+	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/**
+ * Date filter matching. A filter value without a time component compares at
+ * day granularity, so datetime cells (e.g. system columns) still match "is".
+ */
+export function matchesDateFilter(raw: unknown, operator: FilterOperator, filterValue: string): boolean {
+	const rawStr = String((raw as string | number | boolean | null | undefined) ?? '')
+	const filterHasTime = filterValue.includes('T') || / \d{1,2}:\d{2}/.test(filterValue)
+	if (!filterHasTime) {
+		const cellDay = toDayString(rawStr)
+		const filterDay = toDayString(filterValue)
+		if (!cellDay || !filterDay) return false
+		switch (operator) {
+			case 'is': return cellDay === filterDay
+			case 'is_not': return cellDay !== filterDay
+			case 'gt': return cellDay > filterDay
+			case 'gte': return cellDay >= filterDay
+			case 'lt': return cellDay < filterDay
+			case 'lte': return cellDay <= filterDay
+			default: return true
+		}
+	}
+	const d = new Date(rawStr).getTime()
+	const v = new Date(filterValue).getTime()
+	if (isNaN(d) || isNaN(v)) return false
+	switch (operator) {
+		case 'is': return d === v
+		case 'is_not': return d !== v
+		case 'gt': return d > v
+		case 'gte': return d >= v
+		case 'lt': return d < v
+		case 'lte': return d <= v
+		default: return true
+	}
+}
+
 export function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 	const noValue = NO_VALUE_OPERATORS.has(f.operator)
 	if (!noValue && f.value === '') return true
@@ -109,18 +153,7 @@ export function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 	}
 
 	if (f.columnType === 'date') {
-		const d = new Date(String((raw as string | number | boolean | null | undefined) ?? '')).getTime()
-		const v = new Date(f.value).getTime()
-		if (isNaN(d) || isNaN(v)) return false
-		switch (f.operator) {
-			case 'is': return d === v
-			case 'is_not': return d !== v
-			case 'gt': return d > v
-			case 'gte': return d >= v
-			case 'lt': return d < v
-			case 'lte': return d <= v
-			default: return true
-		}
+		return matchesDateFilter(raw, f.operator, f.value)
 	}
 
 	// For select/multiselect with is/is_not, support multiple selected values

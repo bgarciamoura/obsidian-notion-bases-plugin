@@ -23,6 +23,9 @@ export type ColumnType =
 	| 'audio'
 	| 'video'
 
+/** File-native metadata sources for read-only system columns */
+export type SystemField = 'ctime' | 'mtime'
+
 export interface SelectOption {
 	value: string
 	color?: string
@@ -58,6 +61,7 @@ export interface ColumnSchema {
 	isHierarchical?: boolean          // self-relation used as hierarchy parent column
 	wrap?: boolean                    // table view: wrap long text cells onto multiple lines
 	clip?: boolean                    // table view: truncate at the cell boundary even when the view-wide wrap is on
+	systemField?: SystemField         // date column fed by file.stat instead of frontmatter; read-only
 }
 
 // ── View / filter / sort ────────────────────────────────────────────────────

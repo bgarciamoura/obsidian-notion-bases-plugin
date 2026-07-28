@@ -211,6 +211,22 @@ describe('matchesFilter', () => {
 			expect(matchesFilter(row, dateFilter('gt', '2025-06-01'))).toBe(true)
 			expect(matchesFilter(row, dateFilter('lt', '2025-07-01'))).toBe(true)
 		})
+
+		it('datetime cells match a date-only filter at day granularity', () => {
+			const row = makeRow({ date: '2025-06-15T14:32' })
+			expect(matchesFilter(row, dateFilter('is', '2025-06-15'))).toBe(true)
+			expect(matchesFilter(row, dateFilter('is_not', '2025-06-16'))).toBe(true)
+			expect(matchesFilter(row, dateFilter('gt', '2025-06-15'))).toBe(false)
+			expect(matchesFilter(row, dateFilter('gte', '2025-06-15'))).toBe(true)
+			expect(matchesFilter(row, dateFilter('lt', '2025-06-16'))).toBe(true)
+		})
+
+		it('datetime filter values compare at exact timestamp', () => {
+			const row = makeRow({ date: '2025-06-15T14:32' })
+			expect(matchesFilter(row, dateFilter('is', '2025-06-15T14:32'))).toBe(true)
+			expect(matchesFilter(row, dateFilter('is', '2025-06-15T14:33'))).toBe(false)
+			expect(matchesFilter(row, dateFilter('gt', '2025-06-15T14:00'))).toBe(true)
+		})
 	})
 
 	describe('multi-value select filters', () => {

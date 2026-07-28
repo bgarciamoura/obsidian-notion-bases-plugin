@@ -51,7 +51,8 @@ export class QuickAddModal extends Modal {
 			col.visible &&
 			SUPPORTED_TYPES.has(col.type) &&
 			!col.formula &&
-			!col.isHierarchical
+			!col.isHierarchical &&
+			!col.systemField
 		)
 
 		if (editableFields.length === 0) {
