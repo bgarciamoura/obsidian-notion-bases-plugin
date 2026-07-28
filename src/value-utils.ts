@@ -14,3 +14,13 @@ export function stringifyScalar(v: unknown): string {
 	if (v instanceof Date) return v.toISOString()
 	return JSON.stringify(v) ?? ''
 }
+
+/**
+ * Epoch millis → local "YYYY-MM-DDTHH:mm" string, the storage format of date
+ * cells. Local (not UTC) so system columns display the user's wall-clock time.
+ */
+export function formatTimestampLocal(ts: number): string {
+	const d = new Date(ts)
+	const pad = (n: number) => String(n).padStart(2, '0')
+	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}

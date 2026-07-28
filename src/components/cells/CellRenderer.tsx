@@ -199,6 +199,13 @@ export const CellRenderer = React.memo(function CellRenderer({ col, value, rowIn
 			)
 
 		case 'date':
+			if (col.systemField) {
+				return (
+					<div className="nb-cell-text nb-cell-system" title={t('system_field_readonly')}>
+						{formatDateText(typeof value === 'string' ? value : '', col.dateFormat)}
+					</div>
+				)
+			}
 			return (
 				<DateCell
 					value={value as string | null}

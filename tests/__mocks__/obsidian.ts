@@ -3,6 +3,7 @@ export class TFile {
 	name = ''
 	basename = ''
 	extension = 'md'
+	stat = { ctime: 0, mtime: 0, size: 0 }
 }
 
 export class TFolder {

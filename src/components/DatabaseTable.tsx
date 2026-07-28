@@ -39,7 +39,7 @@ import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
-import { applyManualOrder, isMultiValueFilter, parseMultiValue, toggleMultiValue, getConditionalStyle } from './filter-utils'
+import { applyManualOrder, isMultiValueFilter, matchesDateFilter, parseMultiValue, toggleMultiValue, getConditionalStyle } from './filter-utils'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconActions, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
 import { SaveIndicator } from './SaveIndicator'
@@ -371,18 +371,7 @@ function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 	}
 
 	if (f.columnType === 'date') {
-		const d = new Date(String((raw as string | number | boolean | null | undefined) ?? '')).getTime()
-		const v = new Date(f.value).getTime()
-		if (isNaN(d) || isNaN(v)) return false
-		switch (f.operator) {
-			case 'is': return d === v
-			case 'is_not': return d !== v
-			case 'gt': return d > v
-			case 'gte': return d >= v
-			case 'lt': return d < v
-			case 'lte': return d <= v
-			default: return true
-		}
+		return matchesDateFilter(raw, f.operator, f.value)
 	}
 
 	// For select/multiselect with is/is_not, support multiple selected values
@@ -869,6 +858,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		// so we must look up the row from the filtered list, not the full rows array.
 		const row = filteredRowsRef.current[rowIndex]
 		if (!row) return
+
+		// System columns mirror file.stat — never written to frontmatter
+		if (config.schema.find(c => c.id === columnId)?.systemField) return
 
 		// Atualização otimista — match by file path to update the correct row in full array
 		setRows(prev => prev.map(r =>

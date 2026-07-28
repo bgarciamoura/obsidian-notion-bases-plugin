@@ -14,7 +14,7 @@ import {
 } from './types'
 import { parseInlineFields, frontmatterLineCount } from './inline-fields'
 import { TemplatePickerModal } from './template-picker-modal'
-import { isRecord, stringifyScalar } from './value-utils'
+import { formatTimestampLocal, isRecord, stringifyScalar } from './value-utils'
 
 export const DATABASE_MARKER = 'notion-bases'
 
@@ -142,6 +142,11 @@ export class DatabaseManager {
 
 		for (const col of schema) {
 			if (col.type === 'formula' || col.type === 'lookup' || col.type === 'rollup') continue
+			if (col.systemField) {
+				// System columns read the file's native timestamps, never frontmatter
+				row[col.id] = formatTimestampLocal(col.systemField === 'ctime' ? file.stat.ctime : file.stat.mtime)
+				continue
+			}
 			row[col.id] = fm[col.id] ?? null
 		}
 

@@ -978,6 +978,13 @@
 	outline-offset: -1px;
 }
 
+/* Read-only system columns (created / last edited time) */
+.nb-cell-system {
+	height: 100%;
+	color: var(--text-muted);
+	cursor: default;
+}
+
 .nb-cell-empty {
 	color: var(--text-faint);
 }
