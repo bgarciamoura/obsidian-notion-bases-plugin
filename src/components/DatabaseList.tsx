@@ -12,6 +12,7 @@ import {
 	getCardConditionalStyle,
 } from './filter-utils'
 import { FilterPillsRow } from './FilterPillsRow'
+import { GroupHeader, GroupByMenu } from './GroupHeader'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
@@ -19,10 +20,15 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
 import { Pagination } from './Pagination'
 import { usePagination } from '../hooks/usePagination'
+import { useGrouping } from '../hooks/useGrouping'
 import { BottomSheet } from './BottomSheet'
 import { ConditionalFormatPanel } from './ConditionalFormatPanel'
 import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
 import { stringifyScalar } from '../value-utils'
+
+
+/** Stable identity so the grouping memo is not invalidated on every render. */
+const readRowValue = (row: NoteRow, columnId: string): unknown => row[columnId]
 
 interface DatabaseListProps {
 	dbFile: TFile | null
@@ -178,8 +184,10 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 	const [sortPanelOpen, setSortPanelOpen] = useState(false)
 	const [sortAnchorRect, setSortAnchorRect] = useState<DOMRect | null>(null)
 	const [cfPanelOpen, setCfPanelOpen] = useState(false)
+	const [groupByMenuOpen, setGroupByMenuOpen] = useState(false)
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
+	const groupByMenuRef = useRef<HTMLDivElement>(null)
 	const sortPanelRef = useRef<HTMLDivElement>(null)
 	const sortButtonRef = useRef<HTMLButtonElement>(null)
 	const mobileActionBarRef = useRef<HTMLDivElement>(null)
@@ -230,6 +238,15 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
 	}, [sortPanelOpen])
 
+	useEffect(() => {
+		if (!groupByMenuOpen) return
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (groupByMenuRef.current && !groupByMenuRef.current.contains(e.target as Node)) setGroupByMenuOpen(false)
+		}
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
+	}, [groupByMenuOpen])
+
 	// ── Filter actions ───────────────────────────────────────────────────────
 
 	const saveActivePills = useCallback(async (filters: ActiveFilter[]) => {
@@ -257,6 +274,11 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 	}, [activeView, saveView])
 
 	const handleAddRow = async () => { if (dbFile) await manager.createNoteWithTemplate(dbFile) }
+
+	const handleAddRowToGroup = async (groupValue: string) => {
+		if (!dbFile || !groupByCol) return
+		await manager.createNoteWithTemplate(dbFile, groupValue ? { [groupByCol.id]: groupValue } : undefined)
+	}
 
 	// ── Hierarchy state ───────────────────────────────────────────────────────
 
@@ -288,7 +310,13 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 		return buildHierarchyTree(displayRows, hierarchyCol.id, activeView.sorts, hExpandedSet, hAllExpanded)
 	}, [displayRows, hierarchyCol, activeView.sorts, hExpandedSet, hAllExpanded])
 
-	const { pageItems: pagedRows, currentPage, totalPages, setPage } = usePagination(displayRows, hierarchyCol ? 0 : manager.pageSize)
+	// ── Grouping ──────────────────────────────────────────────────────────────
+
+	const { groupableColumns, groupByCol, groups, collapsedGroups, toggleGroup, collapseAll, expandAll } =
+		useGrouping(config.schema, activeView, displayRows, readRowValue)
+
+	// Grouping renders every row inside its group, so pagination is turned off
+	const { pageItems: pagedRows, currentPage, totalPages, setPage } = usePagination(displayRows, (hierarchyCol || groupByCol) ? 0 : manager.pageSize)
 
 	const visibleCols = useMemo(() =>
 		config.schema.filter(col => col.visible && !activeView.hiddenColumns.includes(col.id)),
@@ -312,6 +340,19 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 		if (except !== 'fields') setFieldsMenuOpen(false)
 		if (except !== 'filter') setFilterMenuOpen(false)
 		if (except !== 'sort') setSortPanelOpen(false)
+		if (except !== 'groupby') setGroupByMenuOpen(false)
+	}
+
+	const groupByMenuProps = {
+		groupableColumns,
+		activeColumnId: activeView.groupByColumnId,
+		hideEmpty: activeView.boardHideEmpty ?? false,
+		hideNoValue: activeView.boardHideNoValue ?? false,
+		onSelect: (id: string | undefined) => { void saveView({ ...activeView, groupByColumnId: id }); setGroupByMenuOpen(false) },
+		onToggleHideEmpty: (next: boolean) => { void saveView({ ...activeView, boardHideEmpty: next }) },
+		onToggleHideNoValue: (next: boolean) => { void saveView({ ...activeView, boardHideNoValue: next }) },
+		onCollapseAll: collapseAll,
+		onExpandAll: expandAll,
 	}
 
 	const toolbarContent = isMobile ? (
@@ -319,6 +360,7 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 			actionBarRef={mobileActionBarRef}
 			actions={[
 				{ id: 'fields', label: t('fields'), icon: <IconFields />, active: fieldsMenuOpen, onClick: () => { closeMobileMenus('fields'); setFieldsMenuOpen(v => !v) } },
+				...(groupableColumns.length > 0 ? [{ id: 'groupby', label: t('group_by'), icon: <IconSort />, active: groupByMenuOpen, onClick: () => { closeMobileMenus('groupby'); setGroupByMenuOpen(v => !v) } }] : []),
 				{ id: 'subfolders', label: t('tooltip_include_subfolders'), icon: <IconSubfolders />, active: !!activeView.includeSubfolders, onClick: () => { closeMobileMenus(); void saveView({ ...activeView, includeSubfolders: !activeView.includeSubfolders }) } },
 				{ id: 'sort', label: t('sort'), icon: <IconSort />, active: activeView.sorts.length > 0, badge: activeView.sorts.length || undefined, onClick: () => { closeMobileMenus('sort'); if (!sortPanelOpen && sortButtonRef.current) setSortAnchorRect(sortButtonRef.current.getBoundingClientRect()); setSortPanelOpen(v => !v) } },
 				{ id: 'filter', label: t('filter'), icon: <IconFilter />, active: filterMenuOpen, badge: activeFilters.length || undefined, onClick: () => { closeMobileMenus('filter'); setFilterMenuOpen(v => !v) } },
@@ -338,6 +380,9 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 						<span className="nb-field-name">{col.name}</span>
 					</label>
 				))}
+			</BottomSheet>
+			<BottomSheet open={groupByMenuOpen} onClose={() => setGroupByMenuOpen(false)} title={t('group_by')}>
+				<GroupByMenu {...groupByMenuProps} />
 			</BottomSheet>
 			<BottomSheet open={filterMenuOpen} onClose={() => setFilterMenuOpen(false)} title={t('filter')}>
 				<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), '📄', 'title')}>
@@ -417,6 +462,14 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 						</div>
 					)}
 				</div>
+				{groupableColumns.length > 0 && (
+					<div className="nb-fields-menu-wrapper" ref={groupByMenuRef}>
+						<button className={`nb-toolbar-btn${groupByMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setGroupByMenuOpen(v => !v)}>
+							{t('group_by')}: <strong>{groupByCol?.name ?? t('group_none')}</strong>
+						</button>
+						{groupByMenuOpen && <GroupByMenu {...groupByMenuProps} />}
+					</div>
+				)}
 				<button
 					className={`nb-toolbar-btn nb-toolbar-btn--icon nb-subfolder-toggle ${activeView.includeSubfolders ? 'nb-toolbar-btn--active' : ''}`}
 					onClick={() => { void saveView({ ...activeView, includeSubfolders: !activeView.includeSubfolders }) }}
@@ -493,35 +546,49 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 		</>
 	)
 
+	const renderRow = (row: NoteRow, depth: number, hasChildren: boolean) => (
+		<ListRow
+			key={row._file.path}
+			row={row}
+			depth={depth}
+			hasChildren={hasChildren}
+			isExpanded={hAllExpanded ? !hExpandedSet.has(row._file.path) : hExpandedSet.has(row._file.path)}
+			isHierarchical={hierarchicalRows !== null && !groupByCol}
+			visibleCols={visibleCols}
+			dbFolderPath={dbFolderPath}
+			includeSubfolders={activeView.includeSubfolders ?? false}
+			onOpen={openFile}
+			onToggleExpand={toggleHExpand}
+			isMobile={isMobile}
+			onLongPress={handleLongPress}
+			onContextMenu={handleContextMenu}
+			longPressRef={longPressRef}
+			cardStyle={activeView.conditionalFormats?.length ? getCardConditionalStyle(row, activeView.conditionalFormats, config.schema) : undefined}
+		/>
+	)
+
 	return (
 		<div className="nb-container">
 			{toolbarContent}
 
 			{/* List */}
 			<div className="nb-list">
-				{(hierarchicalRows ?? pagedRows.map(r => ({ row: r, depth: 0, hasChildren: false, parentTitle: null }))).map(({ row, depth, hasChildren }) => {
-					const isExp = hAllExpanded ? !hExpandedSet.has(row._file.path) : hExpandedSet.has(row._file.path)
-					return (
-						<ListRow
-							key={row._file.path}
-							row={row}
-							depth={depth}
-							hasChildren={hasChildren}
-							isExpanded={isExp}
-							isHierarchical={hierarchicalRows !== null}
-							visibleCols={visibleCols}
-							dbFolderPath={dbFolderPath}
-							includeSubfolders={activeView.includeSubfolders ?? false}
-							onOpen={openFile}
-							onToggleExpand={toggleHExpand}
-							isMobile={isMobile}
-							onLongPress={handleLongPress}
-							onContextMenu={handleContextMenu}
-							longPressRef={longPressRef}
-							cardStyle={activeView.conditionalFormats?.length ? getCardConditionalStyle(row, activeView.conditionalFormats, config.schema) : undefined}
+				{groups ? groups.map(group => (
+					<React.Fragment key={group.value}>
+						<GroupHeader
+							label={group.label}
+							color={group.color}
+							count={group.items.length}
+							collapsed={collapsedGroups.has(group.value)}
+							onToggle={() => toggleGroup(group.value)}
+							onAdd={() => { void handleAddRowToGroup(group.value) }}
 						/>
-					)
-				})}
+						{!collapsedGroups.has(group.value) && group.items.map(row => renderRow(row, 0, false))}
+					</React.Fragment>
+				)) : (
+					(hierarchicalRows ?? pagedRows.map(r => ({ row: r, depth: 0, hasChildren: false, parentTitle: null })))
+						.map(({ row, depth, hasChildren }) => renderRow(row, depth, hasChildren))
+				)}
 				<button className="nb-add-row nb-list-add-row" onClick={() => { void handleAddRow() }}>
 					{'+ ' + t('add_entry')}
 				</button>

@@ -35,6 +35,7 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	filter_by: 'Filtern nach',
 	sort_by: 'Sortieren nach',
 	group_by_label: 'Gruppieren nach',
+	group_none: 'Keine',
 	date_field_label: 'Datumsfeld',
 	cover_field_label: 'Titelbildfeld',
 	card_size_label: 'Kartengröße',

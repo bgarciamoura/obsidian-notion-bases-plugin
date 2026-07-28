@@ -47,7 +47,10 @@ import { ConditionalFormatPanel } from './ConditionalFormatPanel'
 import { Pagination } from './Pagination'
 import { useSaveTracker } from '../hooks/useSaveTracker'
 import { usePagination } from '../hooks/usePagination'
+import { useGrouping } from '../hooks/useGrouping'
 import { findHierarchyColumn, buildHierarchyTree, HierarchyRow } from '../hierarchy-utils'
+import { getGroupableColumns } from './group-utils'
+import { GroupHeader, GroupByMenu } from './GroupHeader'
 import { stringifyScalar } from '../value-utils'
 
 // ── Virtual row rendering (separate component to isolate hooks) ──────────
@@ -107,17 +110,33 @@ interface VirtualTbodyProps {
 	conditionalFormats?: ConditionalFormatRule[]
 	schema?: ColumnSchema[]
 	disableVirtual?: boolean
+	groupHeader?: {
+		label: string
+		color?: string
+		count: number
+		collapsed: boolean
+		onToggle: () => void
+		onAdd: () => void
+	}
 }
 
-function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEditingCell, setContextMenuFile, longPressRef, columns, onAddRow, hierarchyMap, onToggleExpand, onAddSubRow, expandedSet, allExpanded, rowDragEnabled, dragOverPath, onRowDragStart, onRowDragOver, onRowDragEnd, onRowDrop, conditionalFormats, schema, disableVirtual }: VirtualTbodyProps) {
+function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEditingCell, setContextMenuFile, longPressRef, columns, onAddRow, hierarchyMap, onToggleExpand, onAddSubRow, expandedSet, allExpanded, rowDragEnabled, dragOverPath, onRowDragStart, onRowDragOver, onRowDragEnd, onRowDrop, conditionalFormats, schema, disableVirtual, groupHeader }: VirtualTbodyProps) {
 	const { startIdx, endIdx, topPad } = useVirtualScroll(scrollRef, rowHeight, disableVirtual)
 	const visibleRows = rows.slice(startIdx, Math.min(rows.length, endIdx))
 	const bottomPad = Math.max(0, (rows.length - Math.min(rows.length, endIdx)) * rowHeight)
 
 	return (
 		<tbody className="nb-tbody">
+			{groupHeader && (
+				<tr className="nb-group-header-row">
+					<td className="nb-group-header-td" colSpan={(columns).length + 1}>
+						<GroupHeader {...groupHeader} />
+					</td>
+				</tr>
+			)}
+			{groupHeader?.collapsed ? null : <>
 			{rows.length === 0 ? (
-				<tr><td colSpan={(columns).length + 1} className="nb-empty-rows">{t('no_results')}</td></tr>
+				groupHeader ? null : <tr><td colSpan={(columns).length + 1} className="nb-empty-rows">{t('no_results')}</td></tr>
 			) : (
 				<>
 					{topPad > 0 && <tr style={{ height: topPad }} />}
@@ -200,9 +219,13 @@ function VirtualTbody({ scrollRef, rowHeight, rows, stickyMap, isMobile, setEdit
 					<button className="nb-add-row-btn" onClick={onAddRow}>{'+ ' + t('add_row')}</button>
 				</td>
 			</tr>
+			</>}
 		</tbody>
 	)
 }
+
+/** Stable identity so the grouping memo is not invalidated on every render. */
+const readTableRowValue = (row: { original: NoteRow }, columnId: string): unknown => row.original[columnId]
 
 // ── Validação de compatibilidade de tipos ────────────────────────────────────
 
@@ -790,6 +813,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const [editingCell, setEditingCell] = useState<{ rowIndex: number; columnId: string } | null>(null)
 	const [fieldsMenuOpen, setFieldsMenuOpen] = useState(false)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
+	const [groupByMenuOpen, setGroupByMenuOpen] = useState(false)
+	const groupByMenuRef = useRef<HTMLDivElement>(null)
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 	const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
 	const [contextMenuFile, setContextMenuFile] = useState<TFile | null>(null)
@@ -1138,6 +1163,15 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		[config.schema, dbFile?.path],
 	)
 
+	// ── Grouping ──────────────────────────────────────────────────────────────
+	// Groups are built from the TanStack rows further down, once they exist.
+
+	const groupableColumns = useMemo(() => getGroupableColumns(config.schema), [config.schema])
+	const groupByCol = useMemo(
+		() => config.schema.find(c => c.id === activeView.groupByColumnId) ?? null,
+		[config.schema, activeView.groupByColumnId],
+	)
+
 	const hierarchicalRows = useMemo(() => {
 		if (!hierarchyCol) return null
 		return buildHierarchyTree(filteredRows, hierarchyCol.id, activeView.sorts, hierarchyExpandedSet, hierarchyAllExpanded)
@@ -1158,8 +1192,10 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		return map
 	}, [hierarchicalRows])
 
+	// Grouping renders every row inside its group, so pagination is turned off
+	const effectivePageSize = groupByCol ? 0 : manager.pageSize
 	// When paginated, apply globalFilter before slicing so pagination knows the real count
-	const isPaginated = manager.pageSize > 0
+	const isPaginated = effectivePageSize > 0
 	const searchFilteredData = useMemo(() => {
 		if (!isPaginated || !debouncedGlobalFilter) return tableData
 		const q = debouncedGlobalFilter.toLowerCase()
@@ -1174,7 +1210,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		)
 	}, [tableData, debouncedGlobalFilter, isPaginated])
 
-	const { pageItems: pagedData, currentPage, totalPages, setPage } = usePagination(searchFilteredData, manager.pageSize)
+	const { pageItems: pagedData, currentPage, totalPages, setPage } = usePagination(searchFilteredData, effectivePageSize)
 
 	filteredRowsRef.current = pagedData
 
@@ -1248,6 +1284,12 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		lastCreatedPath.current = newFile.path
 	}, [dbFile, hierarchyCol, manager])
 
+	const handleAddRowToGroup = useCallback(async (groupValue: string) => {
+		if (!dbFile || !groupByCol) return
+		const newFile = await manager.createNoteWithTemplate(dbFile, groupValue ? { [groupByCol.id]: groupValue } : undefined)
+		lastCreatedPath.current = newFile.path
+	}, [dbFile, groupByCol, manager])
+
 	const toggleHierarchyExpand = useCallback((filePath: string) => {
 		setHierarchyExpandedSet(prev => {
 			const next = new Set(prev)
@@ -1270,6 +1312,18 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		activeDocument.addEventListener('mousedown', handler)
 		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [fieldsMenuOpen])
+
+	useEffect(() => {
+		if (!groupByMenuOpen) return
+		const handler = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (groupByMenuRef.current && !groupByMenuRef.current.contains(e.target as Node)) {
+				setGroupByMenuOpen(false)
+			}
+		}
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
+	}, [groupByMenuOpen])
 
 	// ── Fechar menu de ações ao clicar fora ──────────────────────────────────
 
@@ -1684,6 +1738,13 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	const isMobile = useIsMobile()
 
+	const tableRows = table.getRowModel().rows
+
+	// Must stay above the early returns below: a hook skipped on the loading
+	// render but called on the next one breaks React's hook ordering.
+	const { groups: rowGroups, collapsedGroups, toggleGroup, collapseAll, expandAll } =
+		useGrouping(config.schema, activeView, tableRows, readTableRowValue)
+
 	if (!dbFile) {
 		return (
 			<div className="nb-empty-state">
@@ -1697,10 +1758,21 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		return <div className="nb-loading">{t('loading')}</div>
 	}
 
-	const tableRows = table.getRowModel().rows
+	const groupByMenuProps = {
+		groupableColumns,
+		activeColumnId: activeView.groupByColumnId,
+		hideEmpty: activeView.boardHideEmpty ?? false,
+		hideNoValue: activeView.boardHideNoValue ?? false,
+		onSelect: (id: string | undefined) => { void saveView({ ...activeView, groupByColumnId: id }); setGroupByMenuOpen(false) },
+		onToggleHideEmpty: (next: boolean) => { void saveView({ ...activeView, boardHideEmpty: next }) },
+		onToggleHideNoValue: (next: boolean) => { void saveView({ ...activeView, boardHideNoValue: next }) },
+		onCollapseAll: collapseAll,
+		onExpandAll: expandAll,
+	}
 
 	const closeMobileMenus = (except?: string) => {
 		if (except !== 'fields') setFieldsMenuOpen(false)
+		if (except !== 'groupby') setGroupByMenuOpen(false)
 		if (except !== 'actions') setActionsMenuOpen(false)
 		if (except !== 'filter') setFilterMenuOpen(false)
 		if (except !== 'sort') setSortPanelOpen(false)
@@ -1713,6 +1785,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			actions={[
 				{ id: 'fields', label: t('fields'), icon: <IconFields />, active: fieldsMenuOpen, badge: config.schema.filter(c => !c.visible).length || undefined, onClick: () => { closeMobileMenus('fields'); setFieldsMenuOpen(v => !v) } },
 				{ id: 'actions', label: t('actions'), icon: <IconActions />, active: actionsMenuOpen, badge: table.getSelectedRowModel().rows.length || undefined, onClick: () => { closeMobileMenus('actions'); setActionsMenuOpen(v => !v) } },
+				...(groupableColumns.length > 0 ? [{ id: 'groupby', label: t('group_by'), icon: <IconSort />, active: groupByMenuOpen, onClick: () => { closeMobileMenus('groupby'); setGroupByMenuOpen(v => !v) } }] : []),
 				{ id: 'subfolders', label: t('tooltip_include_subfolders'), icon: <IconSubfolders />, active: !!activeView.includeSubfolders, onClick: () => { closeMobileMenus(); void toggleIncludeSubfolders() } },
 				{ id: 'sort', label: t('sort'), icon: <IconSort />, active: activeView.sorts.length > 0, badge: activeView.sorts.length || undefined, onClick: () => { closeMobileMenus('sort'); if (!sortPanelOpen && sortButtonRef.current) setSortAnchorRect(sortButtonRef.current.getBoundingClientRect()); setSortPanelOpen(v => !v) } },
 				{ id: 'filter', label: t('filter'), icon: <IconFilter />, active: filterMenuOpen, badge: activeFilters.length || undefined, onClick: () => { closeMobileMenus('filter'); setFilterMenuOpen(v => !v) } },
@@ -1732,6 +1805,9 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						<span className="nb-field-name">{col.name}</span>
 					</label>
 				))}
+			</BottomSheet>
+			<BottomSheet open={groupByMenuOpen} onClose={() => setGroupByMenuOpen(false)} title={t('group_by')}>
+				<GroupByMenu {...groupByMenuProps} />
 			</BottomSheet>
 			<BottomSheet open={actionsMenuOpen} onClose={() => setActionsMenuOpen(false)} title={t('actions')}>
 				<button className="nb-menu-item" onClick={() => { void handleDeleteSelected() }} disabled={table.getSelectedRowModel().rows.length === 0}>
@@ -1888,6 +1964,16 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						<line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
 					</svg>
 				</button>
+
+				{/* Agrupar por */}
+				{groupableColumns.length > 0 && (
+					<div className="nb-fields-menu-wrapper" ref={groupByMenuRef}>
+						<button className={`nb-toolbar-btn${groupByMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setGroupByMenuOpen(v => !v)}>
+							{t('group_by')}: <strong>{groupByCol?.name ?? t('group_none')}</strong>
+						</button>
+						{groupByMenuOpen && <GroupByMenu {...groupByMenuProps} />}
+					</div>
+				)}
 
 				{/* Botão Campos */}
 				<div className="nb-fields-menu-wrapper" ref={fieldsMenuRef}>
@@ -2334,32 +2420,59 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						})}
 					</thead>
 
-					<VirtualTbody
-						scrollRef={tableWrapperRef}
-						rowHeight={activeView.rowHeight === 'compact' ? 28 : activeView.rowHeight === 'tall' ? 64 : 36}
-						disableVirtual={config.schema.some(c => c.wrap && !activeView.hiddenColumns.includes(c.id))}
-						rows={tableRows as VirtualTbodyProps['rows']}
-						stickyMap={stickyMap}
-						isMobile={isMobile}
-						setEditingCell={setEditingCell}
-						setContextMenuFile={setContextMenuFile}
-						longPressRef={longPressRef}
-						columns={columns}
-						onAddRow={() => { void handleAddRow() }}
-						hierarchyMap={hierarchyMap}
-						onToggleExpand={toggleHierarchyExpand}
-						onAddSubRow={parentTitle => { void handleAddSubRow(parentTitle) }}
-						expandedSet={hierarchyExpandedSet}
-						allExpanded={hierarchyAllExpanded}
-						rowDragEnabled={rowDragEnabled}
-						dragOverPath={dragOverRowPath}
-						onRowDragStart={handleRowDragStart}
-						onRowDragOver={handleRowDragOver}
-						onRowDragEnd={handleRowDragEnd}
-						onRowDrop={handleRowDrop}
-						conditionalFormats={activeView.conditionalFormats}
-						schema={config.schema}
-					/>
+					{(() => {
+						const tbodyProps = {
+							scrollRef: tableWrapperRef,
+							rowHeight: activeView.rowHeight === 'compact' ? 28 : activeView.rowHeight === 'tall' ? 64 : 36,
+							stickyMap,
+							isMobile,
+							setEditingCell,
+							setContextMenuFile,
+							longPressRef,
+							columns,
+							// Grouping takes precedence over hierarchy nesting and manual row order
+							hierarchyMap: groupByCol ? null : hierarchyMap,
+							onToggleExpand: toggleHierarchyExpand,
+							onAddSubRow: (parentTitle: string) => { void handleAddSubRow(parentTitle) },
+							expandedSet: hierarchyExpandedSet,
+							allExpanded: hierarchyAllExpanded,
+							rowDragEnabled: rowDragEnabled && !groupByCol,
+							dragOverPath: dragOverRowPath,
+							onRowDragStart: handleRowDragStart,
+							onRowDragOver: handleRowDragOver,
+							onRowDragEnd: handleRowDragEnd,
+							onRowDrop: handleRowDrop,
+							conditionalFormats: activeView.conditionalFormats,
+							schema: config.schema,
+						}
+						if (!rowGroups) {
+							return (
+								<VirtualTbody
+									{...tbodyProps}
+									disableVirtual={config.schema.some(c => c.wrap && !activeView.hiddenColumns.includes(c.id))}
+									rows={tableRows as VirtualTbodyProps['rows']}
+									onAddRow={() => { void handleAddRow() }}
+								/>
+							)
+						}
+						return rowGroups.map(group => (
+							<VirtualTbody
+								key={group.value}
+								{...tbodyProps}
+								disableVirtual
+								rows={group.items as VirtualTbodyProps['rows']}
+								onAddRow={() => { void handleAddRowToGroup(group.value) }}
+								groupHeader={{
+									label: group.label,
+									color: group.color,
+									count: group.items.length,
+									collapsed: collapsedGroups.has(group.value),
+									onToggle: () => toggleGroup(group.value),
+									onAdd: () => { void handleAddRowToGroup(group.value) },
+								}}
+							/>
+						))
+					})()}
 					<tfoot className="nb-tfoot">
 					<tr>
 						<td className="nb-td nb-agg-td nb-td--sticky" style={{ left: 0, zIndex: 1, width: 40 }} />

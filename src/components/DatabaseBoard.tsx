@@ -3,13 +3,14 @@ import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } fr
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import {
-	ColumnSchema, FilterOperator, NoteRow, SelectOption, ViewConfig,
+	ColumnSchema, FilterOperator, NoteRow, ViewConfig,
 } from '../types'
 import {
 	ActiveFilter, applyFilters, applySorts,
 	getColumnIconStatic, getDefaultOperator,
 	getCardConditionalStyle,
 } from './filter-utils'
+import { buildGroups, getGroupableColumns } from './group-utils'
 import { FilterPillsRow } from './FilterPillsRow'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -199,7 +200,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 	// ── Groupable columns ─────────────────────────────────────────────────────
 
 	const groupableColumns = useMemo(
-		() => config.schema.filter(c => c.type === 'select' || c.type === 'status'),
+		() => getGroupableColumns(config.schema),
 		[config.schema]
 	)
 
@@ -224,46 +225,13 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		[config.schema, activeView.hiddenColumns, groupByCol]
 	)
 
-	const DEFAULT_STATUS_OPTIONS: SelectOption[] = [
-		{ value: t('status_not_started'), color: '#9E9E9E' },
-		{ value: t('status_in_progress'), color: '#2196F3' },
-		{ value: t('status_done'), color: '#4CAF50' },
-		{ value: t('status_cancelled'), color: '#F44336' },
-	]
-
 	const columns = useMemo(() => {
 		if (!groupByCol) return []
-		const options = (groupByCol.type === 'status' && !groupByCol.options?.length)
-			? DEFAULT_STATUS_OPTIONS
-			: (groupByCol.options ?? [])
-		const all = [
-			...options.map(opt => ({
-				value: opt.value,
-				label: opt.value,
-				color: opt.color,
-				rows: sortedRows.filter(r => r[groupByCol.id] === opt.value),
-			})),
-			{
-				value: '',
-				label: t('no_value'),
-				color: undefined,
-				rows: sortedRows.filter(r => {
-					const v = r[groupByCol.id]
-					return v === null || v === undefined || stringifyScalar(v).trim() === ''
-				}),
-			},
-		]
-		// Apply saved column order
-		const order = activeView.boardColumnOrder
-		let ordered = all
-		if (order && order.length > 0) {
-			const inOrder = order.flatMap(v => { const c = all.find(x => x.value === v); return c ? [c] : [] })
-			const rest = all.filter(x => !order.includes(x.value))
-			ordered = [...inOrder, ...rest]
-		}
-		let result = hideEmpty ? ordered.filter(c => c.rows.length > 0) : ordered
-		if (hideNoValue) result = result.filter(c => c.value !== '')
-		return result
+		return buildGroups(sortedRows, r => r[groupByCol.id], groupByCol, {
+			order: activeView.boardColumnOrder,
+			hideEmpty,
+			hideNoValue,
+		}).map(g => ({ value: g.value, label: g.label, color: g.color, rows: g.items }))
 	}, [groupByCol, sortedRows, hideEmpty, hideNoValue, activeView.boardColumnOrder])
 
 	// ── Actions ───────────────────────────────────────────────────────────────
