@@ -12,6 +12,7 @@ import {
 	getCardConditionalStyle,
 } from './filter-utils'
 import { FilterPillsRow } from './FilterPillsRow'
+import { GroupHeader, GroupByMenu } from './GroupHeader'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
@@ -19,9 +20,14 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconSubfolders } from './MobileToolbar'
 import { Pagination } from './Pagination'
 import { usePagination } from '../hooks/usePagination'
+import { useGrouping } from '../hooks/useGrouping'
 import { BottomSheet } from './BottomSheet'
 import { ConditionalFormatPanel } from './ConditionalFormatPanel'
 import { stringifyScalar } from '../value-utils'
+
+
+/** Stable identity so the grouping memo is not invalidated on every render. */
+const readRowValue = (row: NoteRow, columnId: string): unknown => row[columnId]
 
 interface DatabaseGalleryProps {
 	dbFile: TFile | null
@@ -187,6 +193,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 	const [sortPanelOpen, setSortPanelOpen] = useState(false)
 	const [sortAnchorRect, setSortAnchorRect] = useState<DOMRect | null>(null)
 	const [cfPanelOpen, setCfPanelOpen] = useState(false)
+	const [groupByMenuOpen, setGroupByMenuOpen] = useState(false)
 
 	const filterMenuRef = useRef<HTMLDivElement>(null)
 	const fieldsMenuRef = useRef<HTMLDivElement>(null)
@@ -196,6 +203,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 	const sortButtonRef = useRef<HTMLButtonElement>(null)
 	const mobileActionBarRef = useRef<HTMLDivElement>(null)
 	const cfPanelRef = useRef<HTMLDivElement>(null)
+	const groupByMenuRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => { setActiveView(externalView) }, [externalView.id])
 
@@ -242,6 +250,15 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 	}, [coverMenuOpen])
 
 	useEffect(() => {
+		if (!groupByMenuOpen) return
+		const h = (e: MouseEvent) => {
+			if (mobileActionBarRef.current?.contains(e.target as Node)) return
+			if (groupByMenuRef.current && !groupByMenuRef.current.contains(e.target as Node)) setGroupByMenuOpen(false)
+		}
+		activeDocument.addEventListener('mousedown', h); return () => activeDocument.removeEventListener('mousedown', h)
+	}, [groupByMenuOpen])
+
+	useEffect(() => {
 		if (!sizeMenuOpen) return
 		const h = (e: MouseEvent) => {
 			if (mobileActionBarRef.current?.contains(e.target as Node)) return
@@ -265,7 +282,14 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 	const debouncedFilters = useDebouncedValue(activeFilters, 200)
 	const filteredRows = useMemo(() => applyFilters(rows, debouncedFilters), [rows, debouncedFilters])
 	const displayRows = useMemo(() => applySorts(filteredRows, activeView.sorts), [filteredRows, activeView.sorts])
-	const { pageItems: pagedRows, currentPage, totalPages, setPage } = usePagination(displayRows, manager.pageSize)
+
+	// ── Grouping ──────────────────────────────────────────────────────────────
+
+	const { groupableColumns, groupByCol, groups, collapsedGroups, toggleGroup, collapseAll, expandAll } =
+		useGrouping(config.schema, activeView, displayRows, readRowValue)
+
+	// Grouping renders every row inside its group, so pagination is turned off
+	const { pageItems: pagedRows, currentPage, totalPages, setPage } = usePagination(displayRows, groupByCol ? 0 : manager.pageSize)
 
 	const visibleCols = useMemo(
 		() => config.schema.filter(col => col.visible && !activeView.hiddenColumns.includes(col.id)),
@@ -308,6 +332,11 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 
 	const handleAddRow = async () => { if (dbFile) await manager.createNoteWithTemplate(dbFile) }
 
+	const handleAddRowToGroup = async (groupValue: string) => {
+		if (!dbFile || !groupByCol) return
+		await manager.createNoteWithTemplate(dbFile, groupValue ? { [groupByCol.id]: groupValue } : undefined)
+	}
+
 	// ── Render ───────────────────────────────────────────────────────────────
 
 	const isMobile = useIsMobile()
@@ -322,6 +351,19 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 		if (except !== 'cover') setCoverMenuOpen(false)
 		if (except !== 'filter') setFilterMenuOpen(false)
 		if (except !== 'sort') setSortPanelOpen(false)
+		if (except !== 'groupby') setGroupByMenuOpen(false)
+	}
+
+	const groupByMenuProps = {
+		groupableColumns,
+		activeColumnId: activeView.groupByColumnId,
+		hideEmpty: activeView.boardHideEmpty ?? false,
+		hideNoValue: activeView.boardHideNoValue ?? false,
+		onSelect: (id: string | undefined) => { void saveView({ ...activeView, groupByColumnId: id }); setGroupByMenuOpen(false) },
+		onToggleHideEmpty: (next: boolean) => { void saveView({ ...activeView, boardHideEmpty: next }) },
+		onToggleHideNoValue: (next: boolean) => { void saveView({ ...activeView, boardHideNoValue: next }) },
+		onCollapseAll: collapseAll,
+		onExpandAll: expandAll,
 	}
 
 	const toolbarContent = isMobile ? (
@@ -330,6 +372,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 			actions={[
 				{ id: 'fields', label: t('fields'), icon: <IconFields />, active: fieldsMenuOpen, onClick: () => { closeMobileMenus('fields'); setFieldsMenuOpen(v => !v) } },
 				{ id: 'cover', label: t('cover'), icon: <IconFields />, active: coverMenuOpen, onClick: () => { closeMobileMenus('cover'); setCoverMenuOpen(v => !v) } },
+				...(groupableColumns.length > 0 ? [{ id: 'groupby', label: t('group_by'), icon: <IconSort />, active: groupByMenuOpen, onClick: () => { closeMobileMenus('groupby'); setGroupByMenuOpen(v => !v) } }] : []),
 				{ id: 'subfolders', label: t('tooltip_include_subfolders'), icon: <IconSubfolders />, active: !!activeView.includeSubfolders, onClick: () => { closeMobileMenus(); void saveView({ ...activeView, includeSubfolders: !activeView.includeSubfolders }) } },
 				{ id: 'sort', label: t('sort'), icon: <IconSort />, active: activeView.sorts.length > 0, badge: activeView.sorts.length || undefined, onClick: () => { closeMobileMenus('sort'); if (!sortPanelOpen && sortButtonRef.current) setSortAnchorRect(sortButtonRef.current.getBoundingClientRect()); setSortPanelOpen(v => !v) } },
 				{ id: 'filter', label: t('filter'), icon: <IconFilter />, active: filterMenuOpen, badge: activeFilters.length || undefined, onClick: () => { closeMobileMenus('filter'); setFilterMenuOpen(v => !v) } },
@@ -349,6 +392,9 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 						<span className="nb-field-name">{col.name}</span>
 					</label>
 				))}
+			</BottomSheet>
+			<BottomSheet open={groupByMenuOpen} onClose={() => setGroupByMenuOpen(false)} title={t('group_by')}>
+				<GroupByMenu {...groupByMenuProps} />
 			</BottomSheet>
 			<BottomSheet open={coverMenuOpen} onClose={() => setCoverMenuOpen(false)} title={t('cover')}>
 				<button
@@ -448,6 +494,16 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 						</div>
 					)}
 				</div>
+
+				{/* Agrupar por */}
+				{groupableColumns.length > 0 && (
+					<div className="nb-fields-menu-wrapper" ref={groupByMenuRef}>
+						<button className={`nb-toolbar-btn${groupByMenuOpen ? ' nb-toolbar-btn--active' : ''}`} onClick={() => setGroupByMenuOpen(v => !v)}>
+							{t('group_by')}: <strong>{groupByCol?.name ?? t('group_none')}</strong>
+						</button>
+						{groupByMenuOpen && <GroupByMenu {...groupByMenuProps} />}
+					</div>
+				)}
 
 				{/* Capa */}
 				<div className="nb-fields-menu-wrapper" ref={coverMenuRef}>
@@ -599,28 +655,41 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 		</>
 	)
 
+	const renderCard = (row: NoteRow) => (
+		<GalleryCard
+			key={row._file.path}
+			row={row}
+			cardSize={cardSize}
+			coverField={coverField}
+			visibleCols={visibleCols}
+			dbFolderPath={dbFolderPath}
+			includeSubfolders={activeView.includeSubfolders ?? false}
+			onOpen={openFile}
+			cardStyle={activeView.conditionalFormats?.length ? getCardConditionalStyle(row, activeView.conditionalFormats, config.schema) : undefined}
+		/>
+	)
+
 	return (
 		<div className="nb-container">
 			{toolbarContent}
 
 			{/* Gallery grid */}
 			<div className="nb-gallery" style={{ gridTemplateColumns: gridTemplate }}>
-				{pagedRows.map(row => {
-					const cfStyle = activeView.conditionalFormats?.length ? getCardConditionalStyle(row, activeView.conditionalFormats, config.schema) : undefined
-					return (
-						<GalleryCard
-							key={row._file.path}
-							row={row}
-							cardSize={cardSize}
-							coverField={coverField}
-							visibleCols={visibleCols}
-							dbFolderPath={dbFolderPath}
-							includeSubfolders={activeView.includeSubfolders ?? false}
-							onOpen={openFile}
-							cardStyle={cfStyle}
-						/>
-					)
-				})}
+				{groups ? groups.map(group => (
+					<React.Fragment key={group.value}>
+						<div className="nb-gallery-group">
+							<GroupHeader
+								label={group.label}
+								color={group.color}
+								count={group.items.length}
+								collapsed={collapsedGroups.has(group.value)}
+								onToggle={() => toggleGroup(group.value)}
+								onAdd={() => { void handleAddRowToGroup(group.value) }}
+							/>
+						</div>
+						{!collapsedGroups.has(group.value) && group.items.map(renderCard)}
+					</React.Fragment>
+				)) : pagedRows.map(renderCard)}
 
 				{/* Add card */}
 				<div className="nb-gallery-card nb-gallery-card--add" onClick={() => { void handleAddRow() }}>
