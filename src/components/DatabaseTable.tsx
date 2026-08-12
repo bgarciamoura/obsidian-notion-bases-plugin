@@ -34,6 +34,7 @@ import { DatabaseManager } from '../database-manager'
 import { ColumnSchema, ColumnType, ConditionalFormatRule, DatabaseConfig, FilterOperator, NoteRow, SortConfig, ViewConfig, AggregationType, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW } from '../types'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
 import { ColumnHeader } from './ColumnHeader'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
@@ -737,6 +738,11 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const [relationOptions, setRelationOptions] = useState<Map<string, string[]>>(new Map())
 	const [pinnedColumnId, setPinnedColumnId] = useState<string | null>(null)
 
+	// Ref keeps onLoaded stable: a dep on externalView would recreate the hook's
+	// loadData on every view config write and re-trigger reloads while typing (#60).
+	const externalViewRef = useRef(externalView)
+	externalViewRef.current = externalView
+
 	const onLoaded = useCallback((cfg: DatabaseConfig, noteRows: NoteRow[]) => {
 		// Reorder newly created row to end
 		if (lastCreatedPath.current) {
@@ -758,8 +764,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			relOpts.set(col.id, Array.from(values).sort())
 		}
 		setRelationOptions(relOpts)
-		setPinnedColumnId((externalView ?? cfg.views[0])?.pinnedColumnId ?? null)
-	}, [app, manager, externalView])
+		setPinnedColumnId((externalViewRef.current ?? cfg.views[0])?.pinnedColumnId ?? null)
+	}, [app, manager])
 
 	const { rows: hookRows, config: hookConfig, loading, activeFilters, setActiveFilters } = useDatabaseRows({
 		app, dbFile, manager, includeSubfolders: externalView?.includeSubfolders, externalView: externalView ?? DEFAULT_VIEW, onLoaded,
@@ -1499,10 +1505,12 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	const getColumnIcon = getColumnIconStatic
 
-	const saveActivePills = useCallback(async (filters: { columnId: string }[]) => {
+	const saveActivePillsNow = useCallback(async (filters: { columnId: string }[]) => {
 		const pills = (filters as ActiveFilter[]).map(f => ({ id: f.id, columnId: f.columnId, operator: f.operator, value: f.value, conjunction: f.conjunction }))
 		await saveView({ ...activeView, activePills: pills })
 	}, [saveView, activeView])
+	// Debounced: typing a filter value must not persist per keystroke (#60)
+	const saveActivePills = useDebouncedCallback(saveActivePillsNow, 400)
 
 	const handlePillDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event
