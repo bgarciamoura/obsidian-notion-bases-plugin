@@ -259,6 +259,7 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 
 	// Image picker
 	image_picker_title: '画像を選択',
+	image_url_placeholder: '画像のURLを貼り付け',
 	image_picker_clear: 'クリア',
 	image_picker_empty_vault: '保管庫に画像が見つかりません',
 	image_picker_empty_folder: '画像が見つかりません：',

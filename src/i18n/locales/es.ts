@@ -259,6 +259,7 @@ const es: Partial<Record<keyof typeof en, string>> = {
 
 	// Image picker
 	image_picker_title: 'Seleccionar imagen',
+	image_url_placeholder: 'Pega la URL de una imagen',
 	image_picker_clear: 'Limpiar',
 	image_picker_empty_vault: 'No se encontraron imágenes en el vault',
 	image_picker_empty_folder: 'No se encontraron imágenes en',

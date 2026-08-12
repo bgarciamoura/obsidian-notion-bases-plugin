@@ -17,7 +17,7 @@ interface CellProps {
 // Como não temos acesso ao `table` aqui, recebemos callbacks via prop do DatabaseTable
 // Usamos um contexto React separado para isso
 import { createContext, useContext } from 'react'
-import { stringifyScalar } from '../../value-utils'
+import { stringifyScalar, isHttpUrl } from '../../value-utils'
 import { displayLocale, formatDateText } from '../../format-cell-value'
 
 interface CellContextType {
@@ -1513,12 +1513,15 @@ function ImageCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 		return () => activeDocument.removeEventListener('mousedown', h)
 	}, [isEditing, onCancel])
 
-	const imageFile = value ? app.vault.getFileByPath(value) : null
-	const imageUrl = imageFile ? app.vault.getResourcePath(imageFile) : null
+	// External http(s) URLs are used as-is; anything else resolves as a vault path (#59)
+	const isExternal = !!value && isHttpUrl(value)
+	const imageFile = value && !isExternal ? app.vault.getFileByPath(value) : null
+	const imageUrl = isExternal ? value : (imageFile ? app.vault.getResourcePath(imageFile) : null)
 
 	const openImage = (e: React.MouseEvent) => {
 		e.stopPropagation()
-		if (imageFile) void app.workspace.getLeaf(true).openFile(imageFile)
+		if (isExternal && value) window.open(value)
+		else if (imageFile) void app.workspace.getLeaf(true).openFile(imageFile)
 	}
 
 	return (
@@ -1541,6 +1544,21 @@ function ImageCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 						<span>{t('image_picker_title')}</span>
 						{value && <button className="nb-image-picker-clear" onClick={e => { e.stopPropagation(); onCommit(null) }}>{t('image_picker_clear')}</button>}
 					</div>
+					<input
+						type="text"
+						className="nb-image-picker-url-input"
+						placeholder={t('image_url_placeholder')}
+						defaultValue={isExternal ? value ?? '' : ''}
+						onClick={e => e.stopPropagation()}
+						onKeyDown={e => {
+							if (e.key === 'Enter') {
+								const v = e.currentTarget.value.trim()
+								if (v === '') onCommit(null)
+								else if (isHttpUrl(v)) onCommit(v)
+							}
+							if (e.key === 'Escape') onCancel()
+						}}
+					/>
 					{images.length === 0 ? (
 						<div className="nb-image-picker-empty">
 							{col.imageSourceFolder ? `${t('image_picker_empty_folder')} "${col.imageSourceFolder}"` : t('image_picker_empty_vault')}
