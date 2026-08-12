@@ -1246,15 +1246,35 @@ function DateCell({ value, format, isEditing, onStartEdit, onSave, onClose }: {
 	const timePart = value && hasTime ? value.split('T')[1] : null
 	const [showTime, setShowTime] = useState(hasTime)
 
+	// Draft edits are held here and only saved when the editor closes. The native
+	// date input fires "change" on every keystroke once its segments form a
+	// complete date (a 2-digit year like "0020" is complete), so saving per
+	// change persisted garbage years and reloaded the row mid-typing (#57).
+	const draft = useRef<{ date: string | null; time: string | null }>({ date: datePart, time: timePart })
+
 	useEffect(() => {
-		if (isEditing) setShowTime(hasTime)
+		if (isEditing) {
+			setShowTime(hasTime)
+			draft.current = { date: datePart, time: timePart }
+		}
 	}, [isEditing])
 
-	// Close on outside click
+	const commit = () => {
+		const { date, time } = draft.current
+		const next = date ? (showTime ? `${date}T${time ?? '00:00'}` : date) : null
+		if (next !== value) onSave(next)
+	}
+	const commitRef = useRef(commit)
+	commitRef.current = commit
+
+	// Commit and close on outside click
 	useEffect(() => {
 		if (!isEditing) return
 		const handler = (e: MouseEvent) => {
-			if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) onClose()
+			if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+				commitRef.current()
+				onClose()
+			}
 		}
 		activeDocument.addEventListener('mousedown', handler)
 		return () => activeDocument.removeEventListener('mousedown', handler)
@@ -1270,24 +1290,10 @@ function DateCell({ value, format, isEditing, onStartEdit, onSave, onClose }: {
 		)
 	}
 
-	const handleDateChange = (newDate: string) => {
-		if (!newDate) { onSave(null); return }
-		if (showTime && timePart) onSave(`${newDate}T${timePart}`)
-		else if (showTime) onSave(`${newDate}T00:00`)
-		else onSave(newDate)
-	}
-
-	const handleTimeChange = (newTime: string) => {
-		const d = datePart ?? new Date().toISOString().slice(0, 10)
-		if (!newTime) onSave(d)
-		else onSave(`${d}T${newTime}`)
-	}
-
 	const toggleTime = () => {
 		const next = !showTime
 		setShowTime(next)
-		if (!next && datePart) onSave(datePart)
-		else if (next && datePart) onSave(`${datePart}T${timePart ?? '00:00'}`)
+		if (next && !draft.current.time) draft.current.time = '00:00'
 	}
 
 	return (
@@ -1296,13 +1302,16 @@ function DateCell({ value, format, isEditing, onStartEdit, onSave, onClose }: {
 				type="date"
 				className="nb-cell-input nb-cell-input--date"
 				defaultValue={datePart ?? ''}
-				onChange={e => handleDateChange(e.target.value)}
-				onKeyDown={e => { if (e.key === 'Escape') onClose() }}
+				onChange={e => { draft.current.date = e.target.value || null }}
+				onKeyDown={e => {
+					if (e.key === 'Enter') { commit(); onClose() }
+					if (e.key === 'Escape') onClose()
+				}}
 			/>
 			{showTime && (
 				<TimeInput24h
 					defaultValue={timePart ?? '00:00'}
-					onChange={handleTimeChange}
+					onChange={v => { draft.current.time = v }}
 					onEscape={onClose}
 				/>
 			)}
