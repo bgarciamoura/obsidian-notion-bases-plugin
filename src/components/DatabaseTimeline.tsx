@@ -10,6 +10,7 @@ import {
 	getColumnIconStatic, getDefaultOperator,
 } from './filter-utils'
 import { FilterPillsRow } from './FilterPillsRow'
+import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
@@ -370,9 +371,11 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 
 	// ── Actions ───────────────────────────────────────────────────────────────
 
-	const saveActivePills = useCallback(async (filters: ActiveFilter[]) => {
+	const saveActivePillsNow = useCallback(async (filters: ActiveFilter[]) => {
 		await saveView({ ...activeView, activePills: filters.map(f => ({ id: f.id, columnId: f.columnId, operator: f.operator, value: f.value, conjunction: f.conjunction })) })
 	}, [saveView, activeView])
+	// Debounced: typing a filter value must not persist per keystroke (#60)
+	const saveActivePills = useDebouncedCallback(saveActivePillsNow, 400)
 
 	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
 		const next = [...activeFilters, { id: crypto.randomUUID(), columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '', conjunction: 'and' as const }]

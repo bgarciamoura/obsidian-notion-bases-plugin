@@ -100,10 +100,19 @@ export function useDatabaseRows(options: UseDatabaseRowsOptions): UseDatabaseRow
 
 	const loadVersion = useRef(0)
 	const filtersInitialized = useRef(false)
+	const hasLoaded = useRef(false)
+
+	// Ref so loadData doesn't depend on externalView's identity — the view object
+	// is recreated on every config write (e.g. typing in a filter), and a dep here
+	// would re-trigger a full reload per keystroke (issue #60).
+	const externalViewRef = useRef(externalView)
+	externalViewRef.current = externalView
 
 	const loadData = useCallback(async () => {
 		if (!dbFile) { setLoading(false); return }
-		setLoading(true)
+		// Background refreshes keep the current UI mounted — flipping to the
+		// loading state here would unmount open dropdowns/editors and steal focus.
+		if (!hasLoaded.current) setLoading(true)
 		const version = ++loadVersion.current
 
 		const cfg = manager.readConfig(dbFile)
@@ -129,17 +138,18 @@ export function useDatabaseRows(options: UseDatabaseRowsOptions): UseDatabaseRow
 
 		if (!filtersInitialized.current) {
 			filtersInitialized.current = true
-			const pills = externalView.activePills ?? []
+			const pills = externalViewRef.current.activePills ?? []
 			setActiveFilters(restoreFilterPills(pills, cfg.schema))
 		}
 
 		setConfig({ schema: cfg.schema, views: cfg.views })
 		setRows(noteRows)
 		onLoaded?.(cfg, noteRows)
+		hasLoaded.current = true
 		setLoading(false)
-	}, [dbFile, manager, includeSubfolders, app, externalView, onLoaded])
+	}, [dbFile, manager, includeSubfolders, app, onLoaded])
 
-	useEffect(() => { filtersInitialized.current = false }, [dbFile])
+	useEffect(() => { filtersInitialized.current = false; hasLoaded.current = false }, [dbFile])
 
 	useEffect(() => { void loadData() }, [loadData])
 

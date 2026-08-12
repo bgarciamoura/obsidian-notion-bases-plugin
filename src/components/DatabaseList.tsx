@@ -12,6 +12,7 @@ import {
 	getCardConditionalStyle,
 } from './filter-utils'
 import { FilterPillsRow } from './FilterPillsRow'
+import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { useDatabaseRows } from '../hooks/useDatabaseRows'
@@ -232,10 +233,12 @@ export function DatabaseList({ dbFile, manager, externalView, onViewChange }: Da
 
 	// ── Filter actions ───────────────────────────────────────────────────────
 
-	const saveActivePills = useCallback(async (filters: ActiveFilter[]) => {
+	const saveActivePillsNow = useCallback(async (filters: ActiveFilter[]) => {
 		const pills = filters.map(f => ({ id: f.id, columnId: f.columnId, operator: f.operator, value: f.value, conjunction: f.conjunction }))
 		await saveView({ ...activeView, activePills: pills })
 	}, [saveView, activeView])
+	// Debounced: typing a filter value must not persist per keystroke (#60)
+	const saveActivePills = useDebouncedCallback(saveActivePillsNow, 400)
 
 	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
 		const next: ActiveFilter[] = [...activeFilters, { id: crypto.randomUUID(), columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '', conjunction: 'and' }]
