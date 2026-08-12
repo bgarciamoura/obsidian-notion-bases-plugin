@@ -15,6 +15,11 @@ export function stringifyScalar(v: unknown): string {
 	return JSON.stringify(v) ?? ''
 }
 
+/** True when the value is an absolute http(s) URL — used to tell external image sources from vault paths. */
+export function isHttpUrl(v: string): boolean {
+	return /^https?:\/\//i.test(v.trim())
+}
+
 /**
  * Epoch millis → local "YYYY-MM-DDTHH:mm" string, the storage format of date
  * cells. Local (not UTC) so system columns display the user's wall-clock time.

@@ -259,6 +259,7 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 
 	// Image picker
 	image_picker_title: 'Selecionar imagem',
+	image_url_placeholder: 'Cole a URL de uma imagem',
 	image_picker_clear: 'Limpar',
 	image_picker_empty_vault: 'Nenhuma imagem encontrada no vault',
 	image_picker_empty_folder: 'Nenhuma imagem encontrada em',

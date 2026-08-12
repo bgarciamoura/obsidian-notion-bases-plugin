@@ -257,6 +257,7 @@ const en = {
 
 	// Image picker
 	image_picker_title: 'Select image',
+	image_url_placeholder: 'Paste an image URL',
 	image_picker_clear: 'Clear',
 	image_picker_empty_vault: 'No images found in vault',
 	image_picker_empty_folder: 'No images found in',

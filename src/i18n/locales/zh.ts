@@ -259,6 +259,7 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 
 	// Image picker
 	image_picker_title: '选择图片',
+	image_url_placeholder: '粘贴图片链接',
 	image_picker_clear: '清除',
 	image_picker_empty_vault: '仓库中未找到图片',
 	image_picker_empty_folder: '未找到图片于',

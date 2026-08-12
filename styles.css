@@ -3343,6 +3343,23 @@
 	flex-shrink: 0;
 }
 
+.nb-image-picker-url-input {
+	margin: 8px 10px 0;
+	width: calc(100% - 20px);
+	padding: 5px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	flex-shrink: 0;
+}
+
+.nb-image-picker-url-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
 .nb-image-picker-clear {
 	background: none;
 	border: none;

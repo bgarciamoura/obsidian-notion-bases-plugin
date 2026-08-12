@@ -22,7 +22,7 @@ import { Pagination } from './Pagination'
 import { usePagination } from '../hooks/usePagination'
 import { BottomSheet } from './BottomSheet'
 import { ConditionalFormatPanel } from './ConditionalFormatPanel'
-import { stringifyScalar } from '../value-utils'
+import { stringifyScalar, isHttpUrl } from '../value-utils'
 
 interface DatabaseGalleryProps {
 	dbFile: TFile | null
@@ -123,8 +123,10 @@ const GalleryCard = React.memo(function GalleryCard({
 	const app = useApp()
 
 	const coverImagePath = coverField?.type === 'image' ? ((row as Record<string, unknown>)[coverField.id] as string | null) ?? null : null
-	const coverImageFile = coverImagePath ? app.vault.getFileByPath(coverImagePath) : null
-	const coverImageUrl = coverImageFile ? app.vault.getResourcePath(coverImageFile) : null
+	// External http(s) URLs are used as-is; anything else resolves as a vault path (#59)
+	const coverIsExternal = !!coverImagePath && isHttpUrl(coverImagePath)
+	const coverImageFile = coverImagePath && !coverIsExternal ? app.vault.getFileByPath(coverImagePath) : null
+	const coverImageUrl = coverIsExternal ? coverImagePath : (coverImageFile ? app.vault.getResourcePath(coverImageFile) : null)
 	const coverTextValue = coverField && coverField.type !== 'image'
 		? (coverField.type === 'title' ? row._title : String(((row as Record<string, unknown>)[coverField.id] as string | number | boolean | null | undefined) ?? ''))
 		: null
