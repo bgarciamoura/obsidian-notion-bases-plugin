@@ -381,3 +381,39 @@ describe('error handling', () => {
 		expect(evalF('  ')).toBeNull()
 	})
 })
+
+// ── Notion-style names (#72) ─────────────────────────────────────────────────
+
+describe('Notion formula names', () => {
+	it('dateBetween uses Notion argument order (later, earlier)', () => {
+		expect(evalF('dateBetween(DATE(2026, 1, 10), DATE(2026, 1, 1), "days")')).toBe(9)
+		expect(evalF('DATEDIFF(DATE(2026, 1, 1), DATE(2026, 1, 10), "days")')).toBe(9)
+	})
+
+	it('dateSubtract shifts a date backwards', () => {
+		expect(evalF('FORMATDATE(dateSubtract(DATE(2026, 3, 15), 1, "months"), "YYYY-MM-DD")')).toBe('2026-02-15')
+	})
+
+	it('dateAdd works under its Notion spelling', () => {
+		expect(evalF('FORMATDATE(dateAdd(DATE(2026, 1, 1), 2, "weeks"), "YYYY-MM-DD")')).toBe('2026-01-15')
+	})
+
+	it('prop resolves a column by display name, case-insensitively', () => {
+		expect(evalF('prop("Price") * 2', { price: 10 })).toBe(20)
+		expect(evalF('prop("quantity") + 1', { qty: 4 })).toBe(5)
+	})
+
+	it('aliases map to the native functions', () => {
+		expect(evalF('length("hello")')).toBe(5)
+		expect(evalF('toNumber("42") + 1')).toBe(43)
+		expect(evalF('empty("")')).toBe(true)
+		expect(evalF('mean(price)', { price: 4 })).toBe(4)
+		expect(evalF('pow(2, 10)')).toBe(1024)
+		expect(evalF('ceiling(1.2)')).toBe(2)
+	})
+
+	it('aliases pass syntax validation', () => {
+		expect(validateFormulaSyntax('dateBetween(NOW(), TODAY(), "hours")')).toBeNull()
+		expect(validateFormulaSyntax('prop("Status")')).toBeNull()
+	})
+})

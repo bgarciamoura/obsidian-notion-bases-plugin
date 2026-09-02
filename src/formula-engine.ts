@@ -177,7 +177,8 @@ class Parser {
 					while (this.is('COMMA')) { this.eat(); args.push(this.expr()) }
 				}
 				this.expect('RPAREN')
-				return { k: 'call', fn: t.val.toUpperCase(), args }
+				const up = t.val.toUpperCase()
+				return { k: 'call', fn: FN_ALIASES[up] ?? up, args }
 			}
 			return { k: 'col', name: t.val }
 		}
@@ -344,7 +345,20 @@ const KNOWN_FNS = new Set([
 	'TEXT', 'VALUE',
 	'NOW', 'TODAY', 'DATE', 'YEAR', 'MONTH', 'DAY', 'HOUR', 'MINUTE',
 	'WEEKDAY', 'DATEDIF', 'DATEDIFF', 'DATEADD', 'FORMATDATE',
+	'DATEBETWEEN', 'DATESUBTRACT', 'PROP',
 ])
+
+// Notion formula names accepted as spellings of the native functions (#72).
+// Only names whose semantics and argument order match exactly are aliased;
+// dateBetween and dateSubtract differ and get their own handlers instead.
+const FN_ALIASES: Record<string, string> = {
+	LENGTH: 'LEN',
+	TONUMBER: 'VALUE',
+	EMPTY: 'ISEMPTY',
+	MEAN: 'AVG',
+	POW: 'POWER',
+	CEILING: 'CEIL',
+}
 
 // ── Avaliador ─────────────────────────────────────────────────────────────────
 
@@ -625,6 +639,26 @@ function evalNode(n: Node, ctx: Ctx): unknown {
 				const d = toDate(evalNode(args[0], ctx))
 				if (!d) return null
 				return formatDatePattern(d, toStr(evalNode(args[1], ctx)))
+			}
+			// Notion's dateBetween(later, earlier, unit) — same math as DATEDIF
+			// but with the arguments in the opposite order (#72).
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
+			case_DATEBETWEEN: if (fn === 'DATEBETWEEN') {
+				if (args.length < 2 || args.length > 3) throw new FormulaError('DATEBETWEEN(fim, inicio, unidade?)')
+				return evalNode({ k: 'call', fn: 'DATEDIF', args: [args[1], args[0], ...(args[2] ? [args[2]] : [])] }, ctx)
+			}
+			// Notion's dateSubtract(date, n, unit) = DATEADD with a negated amount (#72).
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
+			case_DATESUBTRACT: if (fn === 'DATESUBTRACT') {
+				if (args.length < 2 || args.length > 3) throw new FormulaError('DATESUBTRACT(data, n, unidade?)')
+				const negated: Node = { k: 'neg', x: args[1] }
+				return evalNode({ k: 'call', fn: 'DATEADD', args: [args[0], negated, ...(args[2] ? [args[2]] : [])] }, ctx)
+			}
+			// Notion's prop("Column name") — resolves a column by its name (#72).
+			// eslint-disable-next-line no-unused-labels -- labels used as named case markers for function dispatch readability
+			case_PROP: if (fn === 'PROP') {
+				if (args.length !== 1) throw new FormulaError('PROP(nome)')
+				return resolveCol(toStr(evalNode(args[0], ctx)), ctx)
 			}
 
 			throw new FormulaError(i18n('formula_err_not_implemented').replace('$fn', fn))
