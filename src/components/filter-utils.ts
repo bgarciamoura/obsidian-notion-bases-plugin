@@ -1,5 +1,5 @@
 import type React from 'react'
-import { ColumnSchema, ConditionalFormatRule, FilterOperator, NoteRow, SortConfig } from '../types'
+import { ColumnSchema, ConditionalFormatRule, FilterConfig, FilterOperator, NoteRow, SortConfig, ViewConfig } from '../types'
 import { t } from '../i18n'
 import { stringifyScalar } from '../value-utils'
 
@@ -64,6 +64,23 @@ export function isMultiValueFilter(f: ActiveFilter): boolean {
 
 export function parseMultiValue(value: string): string[] {
 	return value.split(MULTI_VALUE_SEPARATOR).filter(v => v !== '')
+}
+
+/**
+ * Hand-written `filters:` from the view frontmatter, normalized into the
+ * activePills shape so they run through the same filter engine (#64).
+ * `is_any_of`/`is_none_of` become multi-value `is`/`is_not`, and an array
+ * value is joined with the multi-value separator.
+ */
+export function filterConfigsToPills(filters: FilterConfig[] | undefined): NonNullable<ViewConfig['activePills']> {
+	if (!filters || filters.length === 0) return []
+	return filters.filter(f => f && typeof f.columnId === 'string').map(f => ({
+		id: f.id ?? crypto.randomUUID(),
+		columnId: f.columnId,
+		operator: f.operator === 'is_any_of' ? 'is' as const : f.operator === 'is_none_of' ? 'is_not' as const : f.operator,
+		value: Array.isArray(f.value) ? f.value.map(String).join(MULTI_VALUE_SEPARATOR) : String(f.value ?? ''),
+		conjunction: f.conjunction === 'or' ? 'or' as const : 'and' as const,
+	}))
 }
 
 export function toggleMultiValue(current: string, option: string): string {

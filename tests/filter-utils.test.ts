@@ -7,6 +7,7 @@ import {
 	getDefaultOperator,
 	parseMultiValue,
 	toggleMultiValue,
+	filterConfigsToPills,
 	isMultiValueFilter,
 	ActiveFilter,
 	MULTI_VALUE_SEPARATOR,
@@ -345,5 +346,67 @@ describe('applySorts', () => {
 		const original = [...rows]
 		applySorts(rows, [{ columnId: '_title', direction: 'asc' }])
 		expect(rows).toEqual(original)
+	})
+})
+
+// ── filterConfigsToPills (#64) ───────────────────────────────────────────────
+
+describe('filterConfigsToPills', () => {
+	it('returns empty for undefined or empty input', () => {
+		expect(filterConfigsToPills(undefined)).toEqual([])
+		expect(filterConfigsToPills([])).toEqual([])
+	})
+
+	it('normalizes is_any_of to a multi-value is pill', () => {
+		const [pill] = filterConfigsToPills([
+			{ columnId: 'type', operator: 'is_any_of', value: ['Journal', 'Daily'] },
+		])
+		expect(pill.operator).toBe('is')
+		expect(pill.value).toBe(`Journal${MULTI_VALUE_SEPARATOR}Daily`)
+		expect(pill.conjunction).toBe('and')
+	})
+
+	it('normalizes is_none_of to a multi-value is_not pill', () => {
+		const [pill] = filterConfigsToPills([
+			{ columnId: 'type', operator: 'is_none_of', value: ['Archive'] },
+		])
+		expect(pill.operator).toBe('is_not')
+		expect(pill.value).toBe('Archive')
+	})
+
+	it('keeps plain operators, string values and or conjunction', () => {
+		const [a, b] = filterConfigsToPills([
+			{ columnId: 'archived', operator: 'is_unchecked' },
+			{ columnId: 'status', operator: 'is', value: 'Done', conjunction: 'or' },
+		])
+		expect(a.operator).toBe('is_unchecked')
+		expect(a.value).toBe('')
+		expect(b.conjunction).toBe('or')
+	})
+
+	it('drops malformed entries without a columnId', () => {
+		const pills = filterConfigsToPills([
+			{ operator: 'is', value: 'x' } as never,
+			{ columnId: 'ok', operator: 'is', value: 'y' },
+		])
+		expect(pills).toHaveLength(1)
+		expect(pills[0].columnId).toBe('ok')
+	})
+
+	it('produces pills that filter rows end-to-end (is any of)', () => {
+		const rows = [
+			makeRow({ _title: 'a', type: 'Journal', archived: false }),
+			makeRow({ _title: 'b', type: 'Daily', archived: false }),
+			makeRow({ _title: 'c', type: 'Meeting', archived: false }),
+		]
+		const pills = filterConfigsToPills([
+			{ columnId: 'type', operator: 'is_any_of', value: ['Journal', 'Daily'] },
+		])
+		const active: ActiveFilter[] = pills.map(p => ({
+			id: p.id, columnId: p.columnId, columnName: p.columnId, columnType: 'select',
+			icon: '', operator: p.operator, value: p.value, conjunction: p.conjunction ?? 'and',
+		}))
+		const result = applyFilters(rows, active)
+		expect(result.map(r => r._title)).toEqual(['a', 'b'])
 	})
 })

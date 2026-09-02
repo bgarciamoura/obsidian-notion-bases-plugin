@@ -82,11 +82,16 @@ export type FilterOperator =
 	| 'is_empty'
 	| 'is_not_empty'
 
+// Hand-written view filters (`filters:` in `_database.md` frontmatter).
+// Normalized into filter pills on load: `is_any_of`/`is_none_of` and array
+// values map onto the multi-value `is`/`is_not` machinery, and `conjunction`
+// starts a new OR group. Ignored when the view already has activePills.
 export interface FilterConfig {
-	id: string
+	id?: string
 	columnId: string
-	operator: FilterOperator
-	value: string
+	operator: FilterOperator | 'is_any_of' | 'is_none_of'
+	value?: string | string[]
+	conjunction?: 'and' | 'or'
 }
 
 export interface SortConfig {
