@@ -41,11 +41,12 @@ import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
 import { t } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
-import { applyManualOrder, isMultiValueFilter, matchesDateFilter, parseMultiValue, toggleMultiValue, getConditionalStyle } from './filter-utils'
+import { applyManualOrder, computeSummaryStat, isMultiValueFilter, matchesDateFilter, parseMultiValue, toggleMultiValue, getConditionalStyle } from './filter-utils'
 import { MobileToolbar, IconFields, IconSort, IconFilter, IconActions, IconSubfolders } from './MobileToolbar'
 import { BottomSheet } from './BottomSheet'
 import { SaveIndicator } from './SaveIndicator'
 import { ConditionalFormatPanel } from './ConditionalFormatPanel'
+import { SummaryStatsPanel } from './SummaryStatsPanel'
 import { Pagination } from './Pagination'
 import { useSaveTracker } from '../hooks/useSaveTracker'
 import { usePagination } from '../hooks/usePagination'
@@ -789,6 +790,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 	const csvInputRef = useRef<HTMLInputElement>(null)
 	const [cfPanelOpen, setCfPanelOpen] = useState(false)
 	const cfPanelRef = useRef<HTMLDivElement>(null)
+	const [summaryPanelOpen, setSummaryPanelOpen] = useState(false)
+	const summaryPanelRef = useRef<HTMLDivElement>(null)
 	const mobileActionBarRef = useRef<HTMLDivElement>(null)
 	const tableRef = useRef<HTMLTableElement>(null)
 	const tableWrapperRef = useRef<HTMLDivElement>(null)
@@ -1475,6 +1478,15 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		activeDocument.addEventListener('mousedown', handler)
 		return () => activeDocument.removeEventListener('mousedown', handler)
 	}, [cfPanelOpen])
+
+	useEffect(() => {
+		if (!summaryPanelOpen) return
+		const handler = (e: MouseEvent) => {
+			if (summaryPanelRef.current && !summaryPanelRef.current.contains(e.target as Node)) setSummaryPanelOpen(false)
+		}
+		activeDocument.addEventListener('mousedown', handler)
+		return () => activeDocument.removeEventListener('mousedown', handler)
+	}, [summaryPanelOpen])
 
 	// ── Posição do dropdown de pill (portal) ──────────────────────────────────
 
@@ -2415,6 +2427,28 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 						? <span className="nb-row-count">{filtered} de {total} {total !== 1 ? t('record_plural').toLowerCase() : t('record_singular').toLowerCase()}</span>
 						: <span className="nb-row-count">{total} {total !== 1 ? t('record_plural').toLowerCase() : t('record_singular').toLowerCase()}</span>
 				})()}
+				{(activeView.summaryStats ?? []).map(stat => (
+					<span key={stat.id} className="nb-summary-stat" title={`${config.schema.find(c => c.id === stat.columnId)?.name ?? stat.columnId} ${OPERATOR_LABELS[stat.operator]} ${stat.value}`}>
+						{stat.label || (config.schema.find(c => c.id === stat.columnId)?.name ?? stat.columnId)}: <strong>{computeSummaryStat(rows, stat, config.schema)}</strong>
+					</span>
+				))}
+				<div className="nb-fields-menu-wrapper nb-summary-wrapper" ref={summaryPanelRef}>
+					<button
+						className={`nb-summary-add-btn${summaryPanelOpen ? ' nb-toolbar-btn--active' : ''}`}
+						onClick={() => setSummaryPanelOpen(v => !v)}
+						title={t('summary_stats')}
+					>
+						Σ
+					</button>
+					{summaryPanelOpen && (
+						<SummaryStatsPanel
+							stats={activeView.summaryStats ?? []}
+							schema={config.schema}
+							onChange={stats => { void saveView({ ...activeView, summaryStats: stats }) }}
+							onClose={() => setSummaryPanelOpen(false)}
+						/>
+					)}
+				</div>
 				<Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setPage} />
 			</div>
 

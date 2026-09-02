@@ -1,5 +1,5 @@
 import type React from 'react'
-import { ColumnSchema, ConditionalFormatRule, FilterConfig, FilterOperator, NoteRow, SortConfig, ViewConfig } from '../types'
+import { ColumnSchema, ConditionalFormatRule, FilterConfig, FilterOperator, NoteRow, SortConfig, SummaryStat, ViewConfig } from '../types'
 import { t } from '../i18n'
 import { stringifyScalar } from '../value-utils'
 
@@ -234,6 +234,26 @@ export function applyFilters(rows: NoteRow[], filters: ActiveFilter[]): NoteRow[
 	}
 	if (current.length > 0) groups.push(current)
 	return rows.filter(row => groups.some(group => group.every(f => matchesFilter(row, f))))
+}
+
+/**
+ * Counts the rows matching a summary statistic's condition (#67). Runs over
+ * the full row set (not the filtered view) so the number is a snapshot of the
+ * whole database.
+ */
+export function computeSummaryStat(rows: NoteRow[], stat: SummaryStat, schema: ColumnSchema[]): number {
+	const col = schema.find(c => c.id === stat.columnId)
+	const filter: ActiveFilter = {
+		id: stat.id,
+		columnId: stat.columnId,
+		columnName: col?.name ?? stat.columnId,
+		columnType: col?.type ?? 'text',
+		icon: '',
+		operator: stat.operator,
+		value: stat.value,
+		conjunction: 'and',
+	}
+	return rows.filter(row => matchesFilter(row, filter)).length
 }
 
 export function applyManualOrder(rows: NoteRow[], order: string[] | undefined): NoteRow[] {

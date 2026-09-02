@@ -8,11 +8,12 @@ import {
 	parseMultiValue,
 	toggleMultiValue,
 	filterConfigsToPills,
+	computeSummaryStat,
 	isMultiValueFilter,
 	ActiveFilter,
 	MULTI_VALUE_SEPARATOR,
 } from '../src/components/filter-utils'
-import { NoteRow } from '../src/types'
+import { ColumnSchema, NoteRow } from '../src/types'
 import { TFile } from 'obsidian'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -442,5 +443,36 @@ describe('gt/lt on formula, lookup and rollup columns', () => {
 			expect(ops).toContain('lt')
 			expect(ops).toContain('contains')
 		}
+	})
+})
+
+// ── computeSummaryStat (#67) ─────────────────────────────────────────────────
+
+describe('computeSummaryStat', () => {
+	const schema: ColumnSchema[] = [
+		{ id: 'status', name: 'Status', type: 'select', visible: true },
+		{ id: 'points', name: 'Points', type: 'number', visible: true },
+		{ id: 'done', name: 'Done', type: 'checkbox', visible: true },
+	]
+	const rows = [
+		makeRow({ status: 'Done', points: 5, done: true }),
+		makeRow({ status: 'Done', points: 2, done: true }),
+		makeRow({ status: 'Open', points: 8, done: false }),
+	]
+
+	it('counts rows matching a select condition', () => {
+		expect(computeSummaryStat(rows, { id: '1', label: 'Done', columnId: 'status', operator: 'is', value: 'Done' }, schema)).toBe(2)
+	})
+
+	it('counts rows matching a numeric comparison', () => {
+		expect(computeSummaryStat(rows, { id: '2', label: 'Big', columnId: 'points', operator: 'gt', value: '4' }, schema)).toBe(2)
+	})
+
+	it('counts rows matching a checkbox condition', () => {
+		expect(computeSummaryStat(rows, { id: '3', label: 'Open', columnId: 'done', operator: 'is_unchecked', value: '' }, schema)).toBe(1)
+	})
+
+	it('returns the full count when the condition value is empty', () => {
+		expect(computeSummaryStat(rows, { id: '4', label: 'All', columnId: 'status', operator: 'is', value: '' }, schema)).toBe(3)
 	})
 })

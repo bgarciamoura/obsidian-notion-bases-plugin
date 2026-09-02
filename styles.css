@@ -5778,3 +5778,34 @@ body.nb-tl-resizing.nb-tl-resizing.nb-tl-resizing * {
 	overflow: hidden;
 	align-items: flex-start;
 }
+
+/* ── Estatísticas de resumo na barra de contagem (#67) ── */
+.nb-summary-stat {
+	font-size: 11px;
+	color: var(--text-muted);
+	padding: 1px 8px;
+	border-radius: 10px;
+	background: var(--background-secondary);
+	white-space: nowrap;
+}
+.nb-summary-stat strong {
+	color: var(--text-normal);
+}
+.nb-summary-add-btn {
+	background: none;
+	border: none;
+	color: var(--text-faint);
+	cursor: pointer;
+	font-size: 12px;
+	padding: 1px 6px;
+	border-radius: 4px;
+}
+.nb-summary-add-btn:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+/* O painel abre para cima: a barra de contagem fica no rodapé da view */
+.nb-summary-wrapper .nb-fields-dropdown {
+	top: auto;
+	bottom: calc(100% + 4px);
+}

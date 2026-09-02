@@ -138,7 +138,18 @@ export interface ViewConfig {
 	chartAggregation?: 'count' | 'sum' | 'avg' | 'min' | 'max'
 	rowOrder?: string[]
 	conditionalFormats?: ConditionalFormatRule[]
+	summaryStats?: SummaryStat[]
 	filtersCollapsed?: boolean
+}
+
+// A custom statistic shown in the table's record-count bar (#67): counts the
+// rows of the whole database matching one condition, labeled by the user.
+export interface SummaryStat {
+	id: string
+	label: string
+	columnId: string
+	operator: FilterOperator
+	value: string
 }
 
 export interface ConditionalFormatRule {
