@@ -55,7 +55,7 @@ interface ColumnHeaderProps {
 	schema: ColumnSchema[]
 	onUpdateSchema: (schema: ColumnSchema[]) => Promise<void>
 	onRenameColumn: (oldId: string, newName: string) => Promise<void>
-	onChangeType: (newType: ColumnType) => boolean | Promise<boolean>
+	onChangeType: (newType: ColumnType) => boolean | Partial<ColumnSchema> | Promise<boolean | Partial<ColumnSchema>>
 	manager: DatabaseManager
 	dbFile: TFile | null
 }
@@ -543,8 +543,9 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 
 	const handleTypeChange = async (type: ColumnType) => {
 		const allowed = await onChangeType(type)
-		if (!allowed) return
-		await updateCol({ type, systemField: undefined })
+		if (allowed === false) return
+		const extra = typeof allowed === 'object' ? allowed : {}
+		await updateCol({ type, systemField: undefined, ...extra })
 		if (type === 'formula') {
 			setEditingFormula(true)
 		} else if (type === 'lookup' || type === 'relation') {
