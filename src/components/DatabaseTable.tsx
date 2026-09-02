@@ -903,13 +903,32 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 	// ── Validar e trocar tipo de coluna ─────────────────────────────────────
 
-	const handleChangeColumnType = useCallback((colId: string, newType: ColumnType): boolean => {
+	const handleChangeColumnType = useCallback((colId: string, newType: ColumnType): boolean | Partial<ColumnSchema> => {
 		const col = config.schema.find(c => c.id === colId)
 		if (!col) return true
 		const error = validateTypeChange(rows, colId, col.type, newType)
 		if (error) {
 			new Notice(`${t('validate_type_change_prefix')}${error}`, 6000)
 			return false
+		}
+		// Converting to a choice type must seed the options from the values the
+		// notes already hold — otherwise views that group by this column (board)
+		// would have no columns for the existing values (#68).
+		if ((newType === 'select' || newType === 'multiselect' || newType === 'status') && !col.options?.length) {
+			const unique = new Set<string>()
+			for (const r of rows) {
+				const v = r[colId]
+				if (Array.isArray(v)) {
+					for (const item of v) {
+						const s = stringifyScalar(item).trim()
+						if (s) unique.add(s)
+					}
+				} else if (v !== null && v !== undefined) {
+					const s = stringifyScalar(v).trim()
+					if (s) unique.add(s)
+				}
+			}
+			if (unique.size > 0) return { options: Array.from(unique).map(value => ({ value })) }
 		}
 		return true
 	}, [config.schema, rows])

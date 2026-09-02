@@ -237,21 +237,40 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 		const options = (groupByCol.type === 'status' && !groupByCol.options?.length)
 			? DEFAULT_STATUS_OPTIONS
 			: (groupByCol.options ?? [])
+		// Frontmatter values may not be strings (e.g. numbers), so compare
+		// through the same stringification used everywhere else.
+		const groupValue = (r: (typeof sortedRows)[number]): string => {
+			const v = r[groupByCol.id]
+			return v === null || v === undefined ? '' : stringifyScalar(v).trim()
+		}
+		// Values present in notes but missing from the schema options still get
+		// a column — otherwise their cards would vanish from the board entirely.
+		const known = new Set(options.map(o => o.value))
+		const extras: string[] = []
+		for (const r of sortedRows) {
+			const v = groupValue(r)
+			if (v === '' || known.has(v)) continue
+			known.add(v)
+			extras.push(v)
+		}
 		const all = [
 			...options.map(opt => ({
 				value: opt.value,
 				label: opt.value,
 				color: opt.color,
-				rows: sortedRows.filter(r => r[groupByCol.id] === opt.value),
+				rows: sortedRows.filter(r => groupValue(r) === opt.value),
+			})),
+			...extras.map(value => ({
+				value,
+				label: value,
+				color: undefined as string | undefined,
+				rows: sortedRows.filter(r => groupValue(r) === value),
 			})),
 			{
 				value: '',
 				label: t('no_value'),
 				color: undefined,
-				rows: sortedRows.filter(r => {
-					const v = r[groupByCol.id]
-					return v === null || v === undefined || stringifyScalar(v).trim() === ''
-				}),
+				rows: sortedRows.filter(r => groupValue(r) === ''),
 			},
 		]
 		// Apply saved column order
