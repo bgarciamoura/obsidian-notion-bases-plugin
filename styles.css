@@ -5772,3 +5772,9 @@ body.nb-tl-resizing.nb-tl-resizing.nb-tl-resizing * {
 	vertical-align: -0.125em;
 	flex-shrink: 0;
 }
+
+/* Card do Week view com duração real (campo de data final) */
+.nb-cal-card--spanning {
+	overflow: hidden;
+	align-items: flex-start;
+}

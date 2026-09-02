@@ -188,6 +188,11 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		[config.schema, activeView.calendarDateField]
 	)
 
+	const endDateField = useMemo(
+		() => config.schema.find(c => c.id === activeView.calendarEndDateField) ?? null,
+		[config.schema, activeView.calendarEndDateField]
+	)
+
 	const visibleCols = useMemo(
 		() => config.schema.filter(col => col.visible && !activeView.hiddenColumns.includes(col.id)),
 		[config.schema, activeView.hiddenColumns]
@@ -362,6 +367,23 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 		const datePart = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 		await trackSave(app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
 			const existing = fm[dateField.id]
+			// Shift the end date by the same number of days so the event
+			// keeps its duration when dragged to another day (#58).
+			if (endDateField) {
+				const oldStart = parseDateValue(existing)
+				const oldEnd = parseDateValue(fm[endDateField.id])
+				if (oldStart && oldEnd) {
+					const deltaDays = Math.round((new Date(year, month, day).getTime() - new Date(oldStart.year, oldStart.month, oldStart.day).getTime()) / 86400000)
+					if (deltaDays !== 0) {
+						const newEnd = new Date(oldEnd.year, oldEnd.month, oldEnd.day + deltaDays)
+						const endDatePart = `${newEnd.getFullYear()}-${String(newEnd.getMonth() + 1).padStart(2, '0')}-${String(newEnd.getDate()).padStart(2, '0')}`
+						const existingEnd = fm[endDateField.id]
+						fm[endDateField.id] = (typeof existingEnd === 'string' && existingEnd.includes('T'))
+							? `${endDatePart}T${existingEnd.split('T')[1]}`
+							: endDatePart
+					}
+				}
+			}
 			if (typeof existing === 'string' && existing.includes('T')) {
 				fm[dateField.id] = `${datePart}T${existing.split('T')[1]}`
 			} else {
@@ -414,6 +436,24 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 						key={col.id}
 						className={`nb-menu-item${activeView.calendarDateField === col.id ? ' nb-menu-item--active' : ''}`}
 						onClick={() => { void saveView({ ...activeView, calendarDateField: col.id }); setDateFieldMenuOpen(false) }}
+					>
+						<span className="nb-menu-item-icon"><IconCalendar /></span>
+						<span>{col.name}</span>
+					</button>
+				))}
+				<div className="nb-fields-dropdown-label">{t('end_date_field_label')}</div>
+				<button
+					className={`nb-menu-item${!activeView.calendarEndDateField ? ' nb-menu-item--active' : ''}`}
+					onClick={() => { void saveView({ ...activeView, calendarEndDateField: undefined }); setDateFieldMenuOpen(false) }}
+				>
+					<span className="nb-menu-item-icon">—</span>
+					<span>{t('none_value')}</span>
+				</button>
+				{config.schema.filter(c => c.type === 'date').map(col => (
+					<button
+						key={`end-${col.id}`}
+						className={`nb-menu-item${activeView.calendarEndDateField === col.id ? ' nb-menu-item--active' : ''}`}
+						onClick={() => { void saveView({ ...activeView, calendarEndDateField: col.id }); setDateFieldMenuOpen(false) }}
 					>
 						<span className="nb-menu-item-icon"><IconCalendar /></span>
 						<span>{col.name}</span>
@@ -483,6 +523,24 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 									key={col.id}
 									className={`nb-menu-item${activeView.calendarDateField === col.id ? ' nb-menu-item--active' : ''}`}
 									onClick={() => { void saveView({ ...activeView, calendarDateField: col.id }); setDateFieldMenuOpen(false) }}
+								>
+									<span className="nb-menu-item-icon"><IconCalendar /></span>
+									<span>{col.name}</span>
+								</button>
+							))}
+							<div className="nb-fields-dropdown-label">{t('end_date_field_label')}</div>
+							<button
+								className={`nb-menu-item${!activeView.calendarEndDateField ? ' nb-menu-item--active' : ''}`}
+								onClick={() => { void saveView({ ...activeView, calendarEndDateField: undefined }); setDateFieldMenuOpen(false) }}
+							>
+								<span className="nb-menu-item-icon">—</span>
+								<span>{t('none_value')}</span>
+							</button>
+							{config.schema.filter(c => c.type === 'date').map(col => (
+								<button
+									key={`end-${col.id}`}
+									className={`nb-menu-item${activeView.calendarEndDateField === col.id ? ' nb-menu-item--active' : ''}`}
+									onClick={() => { void saveView({ ...activeView, calendarEndDateField: col.id }); setDateFieldMenuOpen(false) }}
 								>
 									<span className="nb-menu-item-icon"><IconCalendar /></span>
 									<span>{col.name}</span>
@@ -681,18 +739,38 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 											{timedRows.map(row => {
 												const p = parseDateValue((row as Record<string, unknown>)[dateField.id])
 												if (!p || p.hour === undefined || p.minute === undefined) return null
-												const topPct = ((p.hour * 60 + p.minute) / 1440) * 100
+												const startMin = p.hour * 60 + p.minute
+												// Optional end field stretches the card to the real
+												// duration (#58); events crossing midnight are clamped
+												// to the end of the day column.
+												let endMin: number | null = null
+												let endLabel: string | null = null
+												if (endDateField) {
+													const pe = parseDateValue((row as Record<string, unknown>)[endDateField.id])
+													if (pe && pe.hour !== undefined && pe.minute !== undefined) {
+														const dayDelta = new Date(pe.year, pe.month, pe.day).getTime() - new Date(p.year, p.month, p.day).getTime()
+														if (dayDelta > 0) {
+															endMin = 1440
+															endLabel = formatTime(pe.hour, pe.minute)
+														} else if (dayDelta === 0 && pe.hour * 60 + pe.minute > startMin) {
+															endMin = pe.hour * 60 + pe.minute
+															endLabel = formatTime(pe.hour, pe.minute)
+														}
+													}
+												}
+												const topPct = (startMin / 1440) * 100
+												const heightPct = endMin !== null ? ((endMin - startMin) / 1440) * 100 : null
 												return (
 													<div
 														key={row._file.path}
-														className="nb-cal-card nb-cal-card--timed"
+														className={`nb-cal-card nb-cal-card--timed${heightPct !== null ? ' nb-cal-card--spanning' : ''}`}
 														draggable
 														onDragStart={e => handleCardDragStart(e, row)}
 														onClick={e => { e.stopPropagation(); void app.workspace.getLeaf().openFile(row._file) }}
-														style={{ top: `${topPct}%` }}
+														style={{ top: `${topPct}%`, ...(heightPct !== null ? { height: `${heightPct}%` } : {}) }}
 													>
 														<div className="nb-cal-card-title-row">
-															<span className="nb-cal-time-badge">{formatTime(p.hour, p.minute)}</span>
+															<span className="nb-cal-time-badge">{endLabel ? `${formatTime(p.hour, p.minute)}–${endLabel}` : formatTime(p.hour, p.minute)}</span>
 															<span className="nb-cal-card-title">{row._title}</span>
 														</div>
 													</div>

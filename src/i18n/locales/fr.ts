@@ -36,6 +36,7 @@ const fr: Partial<Record<keyof typeof en, string>> = {
 	sort_by: 'Trier par',
 	group_by_label: 'Grouper par',
 	date_field_label: 'Champ de date',
+	end_date_field_label: 'Champ de date de fin',
 	cover_field_label: 'Champ de couverture',
 	card_size_label: 'Taille de carte',
 	row_height_label: 'Hauteur de ligne',

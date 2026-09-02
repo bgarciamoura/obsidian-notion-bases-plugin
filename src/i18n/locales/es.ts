@@ -36,6 +36,7 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	sort_by: 'Ordenar por',
 	group_by_label: 'Agrupar por',
 	date_field_label: 'Campo de fecha',
+	end_date_field_label: 'Campo de fecha final',
 	cover_field_label: 'Campo de portada',
 	card_size_label: 'Tamaño de tarjeta',
 	row_height_label: 'Altura de fila',

@@ -34,6 +34,7 @@ const en = {
 	sort_by: 'Sort by',
 	group_by_label: 'Group by',
 	date_field_label: 'Date field',
+	end_date_field_label: 'End date field',
 	cover_field_label: 'Cover field',
 	card_size_label: 'Card size',
 	row_height_label: 'Row height',

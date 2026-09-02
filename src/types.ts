@@ -120,6 +120,7 @@ export interface ViewConfig {
 	galleryCoverField?: string
 	galleryCardSize?: 'small' | 'medium' | 'large'
 	calendarDateField?: string
+	calendarEndDateField?: string
 	calendarViewMode?: 'month' | 'week'
 	timelineStartField?: string
 	timelineEndField?: string
