@@ -37,6 +37,8 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	group_by_label: 'Gruppieren nach',
 	date_field_label: 'Datumsfeld',
 	summary_stats: 'Zusammenfassungsstatistiken',
+	card_title_field_label: 'Kartentitel-Feld',
+	renamed_with_suffix: 'Eine Notiz namens "$name" existiert bereits — gespeichert als "$final"',
 	no_summary_stats: 'Noch keine Statistiken',
 	add_stat: 'Statistik hinzufügen',
 	stat_label: 'Beschriftung',

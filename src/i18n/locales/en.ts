@@ -35,6 +35,8 @@ const en = {
 	group_by_label: 'Group by',
 	date_field_label: 'Date field',
 	summary_stats: 'Summary statistics',
+	card_title_field_label: 'Card title field',
+	renamed_with_suffix: 'A note named "$name" already exists — saved as "$final"',
 	no_summary_stats: 'No statistics yet',
 	add_stat: 'Add statistic',
 	stat_label: 'Label',

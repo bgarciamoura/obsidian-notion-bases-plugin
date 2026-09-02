@@ -37,6 +37,8 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	group_by_label: '分组条件',
 	date_field_label: '日期字段',
 	summary_stats: '汇总统计',
+	card_title_field_label: '卡片标题字段',
+	renamed_with_suffix: '已存在名为“$name”的笔记 — 已保存为“$final”',
 	no_summary_stats: '暂无统计',
 	add_stat: '添加统计',
 	stat_label: '标签',

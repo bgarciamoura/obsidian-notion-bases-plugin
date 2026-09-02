@@ -37,6 +37,8 @@ const es: Partial<Record<keyof typeof en, string>> = {
 	group_by_label: 'Agrupar por',
 	date_field_label: 'Campo de fecha',
 	summary_stats: 'Estadísticas de resumen',
+	card_title_field_label: 'Campo de título de la tarjeta',
+	renamed_with_suffix: 'Ya existe una nota llamada "$name" — guardada como "$final"',
 	no_summary_stats: 'Aún no hay estadísticas',
 	add_stat: 'Añadir estadística',
 	stat_label: 'Etiqueta',

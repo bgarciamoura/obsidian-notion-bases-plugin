@@ -37,6 +37,8 @@ const ja: Partial<Record<keyof typeof en, string>> = {
 	group_by_label: 'グループ化条件',
 	date_field_label: '日付フィールド',
 	summary_stats: '集計統計',
+	card_title_field_label: 'カードタイトルのフィールド',
+	renamed_with_suffix: '「$name」という名前のノートは既に存在します — 「$final」として保存しました',
 	no_summary_stats: '統計はまだありません',
 	add_stat: '統計を追加',
 	stat_label: 'ラベル',
