@@ -124,6 +124,10 @@ export interface ViewConfig {
 	boardHideNoValue?: boolean
 	galleryCoverField?: string
 	galleryCardSize?: 'small' | 'medium' | 'large'
+	// Column shown as the card title on Calendar/Board/Timeline instead of the
+	// filename (#41): lets recurring events share a clean display name while
+	// each row keeps a unique file
+	cardTitleField?: string
 	calendarDateField?: string
 	calendarEndDateField?: string
 	calendarViewMode?: 'month' | 'week'

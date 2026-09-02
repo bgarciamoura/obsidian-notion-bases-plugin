@@ -9,6 +9,7 @@ import {
 	ActiveFilter, applyFilters, applySorts,
 	getDefaultOperator,
 	getCardConditionalStyle,
+	getCardTitle,
 } from './filter-utils'
 import { getColumnIcon, IconFile, IconCopy, IconTrash } from './icons'
 import { FilterPillsRow } from './FilterPillsRow'
@@ -81,11 +82,12 @@ interface BoardCardProps {
 	onTouchStart?: (e: React.TouchEvent, file: TFile) => void
 	onContextMenu?: (e: React.MouseEvent, file: TFile) => void
 	cardStyle?: React.CSSProperties
+	cardTitleField?: string
 }
 
 const BoardCard = React.memo(function BoardCard({
 	row, isMobile, visibleCols, dbFolderPath, includeSubfolders,
-	onOpen, onDragStart, onTouchStart, onContextMenu, cardStyle,
+	onOpen, onDragStart, onTouchStart, onContextMenu, cardStyle, cardTitleField,
 }: BoardCardProps) {
 	const fileFolder = row._file.parent?.path ?? ''
 	const relPath = includeSubfolders && fileFolder.length > dbFolderPath.length
@@ -104,7 +106,7 @@ const BoardCard = React.memo(function BoardCard({
 			onContextMenu={!isMobile ? e => { e.preventDefault(); onContextMenu?.(e, row._file) } : undefined}
 			onClick={() => onOpen(row._file)}
 		>
-			<div className="nb-board-card-title">{row._title}</div>
+			<div className="nb-board-card-title">{getCardTitle(row, cardTitleField)}</div>
 			{relPath ? <div className="nb-folder-path">{relPath}</div> : null}
 			{visibleCols.length > 0 && (
 				<div className="nb-board-card-props">
@@ -594,6 +596,24 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 						<span>{col.name}</span>
 					</button>
 				))}
+							<div className="nb-fields-dropdown-label">{t('card_title_field_label')}</div>
+				<button
+					className={`nb-menu-item${!activeView.cardTitleField ? ' nb-menu-item--active' : ''}`}
+					onClick={() => { void saveView({ ...activeView, cardTitleField: undefined }); setGroupByMenuOpen(false) }}
+				>
+					<span className="nb-menu-item-icon"><IconFile /></span>
+					<span>{t('name_column')}</span>
+				</button>
+				{config.schema.filter(c => c.type !== 'title').map(col => (
+					<button
+						key={`ct-${col.id}`}
+						className={`nb-menu-item${activeView.cardTitleField === col.id ? ' nb-menu-item--active' : ''}`}
+						onClick={() => { void saveView({ ...activeView, cardTitleField: col.id }); setGroupByMenuOpen(false) }}
+					>
+						<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
+						<span>{col.name}</span>
+					</button>
+				))}
 			</BottomSheet>
 			<BottomSheet open={filterMenuOpen} onClose={() => setFilterMenuOpen(false)} title={t('filter')}>
 				<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), <IconFile />, 'title')}>
@@ -653,6 +673,24 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 									key={col.id}
 									className={`nb-menu-item${activeView.groupByColumnId === col.id ? ' nb-menu-item--active' : ''}`}
 									onClick={() => { void saveView({ ...activeView, groupByColumnId: col.id }); setGroupByMenuOpen(false) }}
+								>
+									<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
+									<span>{col.name}</span>
+								</button>
+							))}
+													<div className="nb-fields-dropdown-label">{t('card_title_field_label')}</div>
+							<button
+								className={`nb-menu-item${!activeView.cardTitleField ? ' nb-menu-item--active' : ''}`}
+								onClick={() => { void saveView({ ...activeView, cardTitleField: undefined }); setGroupByMenuOpen(false) }}
+							>
+								<span className="nb-menu-item-icon"><IconFile /></span>
+								<span>{t('name_column')}</span>
+							</button>
+							{config.schema.filter(c => c.type !== 'title').map(col => (
+								<button
+									key={`ct-${col.id}`}
+									className={`nb-menu-item${activeView.cardTitleField === col.id ? ' nb-menu-item--active' : ''}`}
+									onClick={() => { void saveView({ ...activeView, cardTitleField: col.id }); setGroupByMenuOpen(false) }}
 								>
 									<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
 									<span>{col.name}</span>
@@ -881,6 +919,7 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 												<BoardCard
 													key={row._file.path}
 													row={row}
+													cardTitleField={activeView.cardTitleField}
 													isMobile={isMobile}
 													visibleCols={visibleCols}
 													dbFolderPath={dbFolderPath}

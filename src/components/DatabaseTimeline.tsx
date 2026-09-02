@@ -8,6 +8,7 @@ import {
 import {
 	ActiveFilter, applyFilters, applySorts,
 	getDefaultOperator,
+	getCardTitle,
 } from './filter-utils'
 import { getColumnIcon, IconFile, IconCalendar, IconCopy, IconTrash } from './icons'
 import { FilterPillsRow } from './FilterPillsRow'
@@ -149,12 +150,13 @@ interface TimelineBarProps {
 	onOpen: (file: TFile) => void
 	onContextMenu: (file: TFile) => void
 	onResizeStart: (filePath: string, handle: 'left' | 'right', startX: number, origBarLeft: number, origBarWidth: number, startFieldId: string | null, endFieldId: string | null) => void
+	cardTitleField?: string
 }
 
 const TimelineBar = React.memo(function TimelineBar({
 	row, barLeft, barWidth, isMobile, visibleCols, dbFolderPath, includeSubfolders,
 	origBarLeft, origBarWidth, startFieldId, endFieldId,
-	onOpen, onContextMenu, onResizeStart,
+	onOpen, onContextMenu, onResizeStart, cardTitleField,
 }: TimelineBarProps) {
 	const fileFolder = row._file.parent?.path ?? ''
 	const relPath = includeSubfolders && fileFolder.length > dbFolderPath.length
@@ -171,7 +173,7 @@ const TimelineBar = React.memo(function TimelineBar({
 					e.stopPropagation(); e.preventDefault()
 					onResizeStart(row._file.path, 'left', e.clientX, origBarLeft, origBarWidth, startFieldId, endFieldId)
 				}} />
-			<span className="nb-tl-bar-title">{row._title}</span>
+			<span className="nb-tl-bar-title">{getCardTitle(row, cardTitleField)}</span>
 			{relPath ? <span className="nb-folder-path" style={{ marginLeft: 4 }}>{relPath}</span> : null}
 			{visibleCols.map(col => {
 				const val = row[col.id]
@@ -516,6 +518,24 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 						<span className="nb-field-name">{col.name}</span>
 					</label>
 				))}
+							<div className="nb-fields-dropdown-label">{t('card_title_field_label')}</div>
+				<button
+					className={`nb-menu-item${!activeView.cardTitleField ? ' nb-menu-item--active' : ''}`}
+					onClick={() => { void saveView({ ...activeView, cardTitleField: undefined }); setFieldsMenuOpen(false) }}
+				>
+					<span className="nb-menu-item-icon"><IconFile /></span>
+					<span>{t('name_column')}</span>
+				</button>
+				{config.schema.filter(c => c.type !== 'title').map(col => (
+					<button
+						key={`ct-${col.id}`}
+						className={`nb-menu-item${activeView.cardTitleField === col.id ? ' nb-menu-item--active' : ''}`}
+						onClick={() => { void saveView({ ...activeView, cardTitleField: col.id }); setFieldsMenuOpen(false) }}
+					>
+						<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
+						<span>{col.name}</span>
+					</button>
+				))}
 			</BottomSheet>
 			<BottomSheet open={filterMenuOpen} onClose={() => setFilterMenuOpen(false)} title={t('filter')}>
 				<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), <IconFile />, 'title')}>
@@ -585,6 +605,24 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 									<span className="nb-field-icon">{getColumnIcon(col.type)}</span>
 									<span className="nb-field-name">{col.name}</span>
 								</label>
+							))}
+													<div className="nb-fields-dropdown-label">{t('card_title_field_label')}</div>
+							<button
+								className={`nb-menu-item${!activeView.cardTitleField ? ' nb-menu-item--active' : ''}`}
+								onClick={() => { void saveView({ ...activeView, cardTitleField: undefined }); setFieldsMenuOpen(false) }}
+							>
+								<span className="nb-menu-item-icon"><IconFile /></span>
+								<span>{t('name_column')}</span>
+							</button>
+							{config.schema.filter(c => c.type !== 'title').map(col => (
+								<button
+									key={`ct-${col.id}`}
+									className={`nb-menu-item${activeView.cardTitleField === col.id ? ' nb-menu-item--active' : ''}`}
+									onClick={() => { void saveView({ ...activeView, cardTitleField: col.id }); setFieldsMenuOpen(false) }}
+								>
+									<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
+									<span>{col.name}</span>
+								</button>
 							))}
 						</div>
 					)}
@@ -682,7 +720,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 							) : (
 								<div key={item.row._file.path} className="nb-tl-sidebar-row" style={{ height: ROW_H }}
 									onClick={() => { void app.workspace.getLeaf().openFile(item.row._file) }}>
-									<span className="nb-tl-row-label">{item.row._title}</span>
+									<span className="nb-tl-row-label">{getCardTitle(item.row, activeView.cardTitleField)}</span>
 									{(() => {
 										const dbFolder = dbFile?.parent?.path ?? ''
 										const fileFolder = item.row._file.parent?.path ?? ''
@@ -733,6 +771,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 											return (
 												<TimelineBar
 													row={item.row}
+													cardTitleField={activeView.cardTitleField}
 													barLeft={bLeft}
 													barWidth={bWidth}
 													origBarLeft={item.barLeft}
@@ -768,7 +807,7 @@ export function DatabaseTimeline({ dbFile, manager, externalView, onViewChange }
 							{noIntervalRows.map(row => (
 								<div key={row._file.path} className="nb-cal-card nb-cal-card--no-date"
 									onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}>
-									<span className="nb-cal-card-title">{row._title}</span>
+									<span className="nb-cal-card-title">{getCardTitle(row, activeView.cardTitleField)}</span>
 								</div>
 							))}
 						</div>

@@ -37,6 +37,8 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	group_by_label: 'Agrupar por',
 	date_field_label: 'Campo de data',
 	summary_stats: 'Estatísticas de resumo',
+	card_title_field_label: 'Campo de título do card',
+	renamed_with_suffix: 'Já existe uma nota chamada "$name" — salva como "$final"',
 	no_summary_stats: 'Nenhuma estatística ainda',
 	add_stat: 'Adicionar estatística',
 	stat_label: 'Rótulo',

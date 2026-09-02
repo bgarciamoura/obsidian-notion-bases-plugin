@@ -1,4 +1,4 @@
-import { App, TFile, TFolder, normalizePath, parseYaml } from 'obsidian'
+import { App, Notice, TFile, TFolder, normalizePath, parseYaml } from 'obsidian'
 import { t } from './i18n'
 import {
 	ColumnSchema,
@@ -324,10 +324,21 @@ export class DatabaseManager {
 	}
 
 	async renameNote(file: TFile, newBasename: string): Promise<void> {
-		if (!newBasename.trim() || newBasename === file.basename) return
-		const newPath = normalizePath(
-			`${file.parent?.path ?? ''}/${newBasename.trim()}.md`
-		)
+		const trimmed = newBasename.trim()
+		if (!trimmed || trimmed === file.basename) return
+		const folder = file.parent?.path ?? ''
+		// A row's title is its filename, so a duplicate title would collide on
+		// disk. Auto-suffix to the first free name and tell the user (#41).
+		let finalName = trimmed
+		let newPath = normalizePath(`${folder}/${finalName}.md`)
+		let i = 2
+		while (this.app.vault.getAbstractFileByPath(newPath) && newPath !== file.path) {
+			finalName = `${trimmed} ${i++}`
+			newPath = normalizePath(`${folder}/${finalName}.md`)
+		}
+		if (finalName !== trimmed) {
+			new Notice(t('renamed_with_suffix').replace('$name', trimmed).replace('$final', finalName), 5000)
+		}
 		await this.app.fileManager.renameFile(file, newPath)
 	}
 

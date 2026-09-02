@@ -237,6 +237,20 @@ export function applyFilters(rows: NoteRow[], filters: ActiveFilter[]): NoteRow[
 }
 
 /**
+ * Title shown on a card (#41): the view's cardTitleField value when set and
+ * non-empty, else the filename. Recurring events can share a display name
+ * while each row keeps a unique file underneath.
+ */
+export function getCardTitle(row: NoteRow, cardTitleField: string | undefined): string {
+	if (cardTitleField) {
+		const v = row[cardTitleField]
+		const s = v === null || v === undefined ? '' : stringifyScalar(v).trim()
+		if (s) return s
+	}
+	return row._title
+}
+
+/**
  * Counts the rows matching a summary statistic's condition (#67). Runs over
  * the full row set (not the filtered view) so the number is a snapshot of the
  * whole database.

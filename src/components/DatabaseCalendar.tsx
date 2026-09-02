@@ -8,6 +8,7 @@ import {
 import {
 	ActiveFilter, applyFilters,
 	getDefaultOperator,
+	getCardTitle,
 } from './filter-utils'
 import { getColumnIcon, IconFile, IconCalendar, IconPlus, IconCopy, IconTrash } from './icons'
 import { FilterPillsRow } from './FilterPillsRow'
@@ -459,6 +460,24 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 						<span>{col.name}</span>
 					</button>
 				))}
+				<div className="nb-fields-dropdown-label">{t('card_title_field_label')}</div>
+				<button
+					className={`nb-menu-item${!activeView.cardTitleField ? ' nb-menu-item--active' : ''}`}
+					onClick={() => { void saveView({ ...activeView, cardTitleField: undefined }); setDateFieldMenuOpen(false) }}
+				>
+					<span className="nb-menu-item-icon"><IconFile /></span>
+					<span>{t('name_column')}</span>
+				</button>
+				{config.schema.filter(c => c.type !== 'title').map(col => (
+					<button
+						key={`ct-${col.id}`}
+						className={`nb-menu-item${activeView.cardTitleField === col.id ? ' nb-menu-item--active' : ''}`}
+						onClick={() => { void saveView({ ...activeView, cardTitleField: col.id }); setDateFieldMenuOpen(false) }}
+					>
+						<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
+						<span>{col.name}</span>
+					</button>
+				))}
 			</BottomSheet>
 			<BottomSheet open={fieldsMenuOpen} onClose={() => setFieldsMenuOpen(false)} title={t('fields')}>
 				{config.schema.map(col => (
@@ -543,6 +562,24 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 									onClick={() => { void saveView({ ...activeView, calendarEndDateField: col.id }); setDateFieldMenuOpen(false) }}
 								>
 									<span className="nb-menu-item-icon"><IconCalendar /></span>
+									<span>{col.name}</span>
+								</button>
+							))}
+							<div className="nb-fields-dropdown-label">{t('card_title_field_label')}</div>
+							<button
+								className={`nb-menu-item${!activeView.cardTitleField ? ' nb-menu-item--active' : ''}`}
+								onClick={() => { void saveView({ ...activeView, cardTitleField: undefined }); setDateFieldMenuOpen(false) }}
+							>
+								<span className="nb-menu-item-icon"><IconFile /></span>
+								<span>{t('name_column')}</span>
+							</button>
+							{config.schema.filter(c => c.type !== 'title').map(col => (
+								<button
+									key={`ct-${col.id}`}
+									className={`nb-menu-item${activeView.cardTitleField === col.id ? ' nb-menu-item--active' : ''}`}
+									onClick={() => { void saveView({ ...activeView, cardTitleField: col.id }); setDateFieldMenuOpen(false) }}
+								>
+									<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
 									<span>{col.name}</span>
 								</button>
 							))}
@@ -680,7 +717,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 													onDragStart={e => handleCardDragStart(e, row)}
 													onClick={e => { e.stopPropagation(); void app.workspace.getLeaf().openFile(row._file) }}
 												>
-													<span className="nb-cal-card-title">{row._title}</span>
+													<span className="nb-cal-card-title">{getCardTitle(row, activeView.cardTitleField)}</span>
 												</div>
 											))}
 										</div>
@@ -771,7 +808,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 													>
 														<div className="nb-cal-card-title-row">
 															<span className="nb-cal-time-badge">{endLabel ? `${formatTime(p.hour, p.minute)}–${endLabel}` : formatTime(p.hour, p.minute)}</span>
-															<span className="nb-cal-card-title">{row._title}</span>
+															<span className="nb-cal-card-title">{getCardTitle(row, activeView.cardTitleField)}</span>
 														</div>
 													</div>
 												)
@@ -829,7 +866,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 													>
 														<div className="nb-cal-card-title-row">
 															{dateField && (() => { const tm = getRowTime(row, dateField.id); return tm ? <span className="nb-cal-time-badge">{tm}</span> : null })()}
-															<span className="nb-cal-card-title">{row._title}</span>
+															<span className="nb-cal-card-title">{getCardTitle(row, activeView.cardTitleField)}</span>
 														</div>
 														{!isMobile && (() => {
 															const dbFolder = dbFile?.parent?.path ?? ''
@@ -882,7 +919,7 @@ export function DatabaseCalendar({ dbFile, manager, externalView, onViewChange }
 										onDragStart={e => handleCardDragStart(e, row)}
 										onClick={() => { void app.workspace.getLeaf().openFile(row._file) }}
 									>
-										<span className="nb-cal-card-title">{row._title}</span>
+										<span className="nb-cal-card-title">{getCardTitle(row, activeView.cardTitleField)}</span>
 										{(() => {
 											const dbFolder = dbFile?.parent?.path ?? ''
 											const fileFolder = row._file.parent?.path ?? ''

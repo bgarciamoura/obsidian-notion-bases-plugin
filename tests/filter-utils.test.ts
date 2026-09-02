@@ -9,6 +9,7 @@ import {
 	toggleMultiValue,
 	filterConfigsToPills,
 	computeSummaryStat,
+	getCardTitle,
 	isMultiValueFilter,
 	ActiveFilter,
 	MULTI_VALUE_SEPARATOR,
@@ -474,5 +475,24 @@ describe('computeSummaryStat', () => {
 
 	it('returns the full count when the condition value is empty', () => {
 		expect(computeSummaryStat(rows, { id: '4', label: 'All', columnId: 'status', operator: 'is', value: '' }, schema)).toBe(3)
+	})
+})
+
+// ── getCardTitle (#41) ───────────────────────────────────────────────────────
+
+describe('getCardTitle', () => {
+	it('returns the filename when no display field is set', () => {
+		expect(getCardTitle(makeRow({ _title: 'Weekly Meeting 3' }), undefined)).toBe('Weekly Meeting 3')
+	})
+
+	it('returns the display field value when set and non-empty', () => {
+		const row = makeRow({ _title: 'Weekly Meeting 3', event: 'Weekly Meeting' })
+		expect(getCardTitle(row, 'event')).toBe('Weekly Meeting')
+	})
+
+	it('falls back to the filename when the display value is empty or missing', () => {
+		expect(getCardTitle(makeRow({ _title: 'Note A', event: '' }), 'event')).toBe('Note A')
+		expect(getCardTitle(makeRow({ _title: 'Note B', event: null }), 'event')).toBe('Note B')
+		expect(getCardTitle(makeRow({ _title: 'Note C' }), 'missing')).toBe('Note C')
 	})
 })
