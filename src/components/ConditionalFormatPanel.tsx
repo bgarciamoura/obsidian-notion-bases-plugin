@@ -28,7 +28,7 @@ const PRESET_COLORS = [
 export function ConditionalFormatPanel({ rules, schema, onChange, onClose }: ConditionalFormatPanelProps) {
 	const [editingRule, setEditingRule] = useState<ConditionalFormatRule | null>(null)
 
-	const availableCols = schema.filter(c => c.visible && c.type !== 'formula' && c.type !== 'lookup' && c.type !== 'rollup')
+	const availableCols = schema.filter(c => c.visible)
 
 	const addRule = () => {
 		const col = availableCols[0]

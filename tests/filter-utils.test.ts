@@ -410,3 +410,37 @@ describe('filterConfigsToPills', () => {
 		expect(result.map(r => r._title)).toEqual(['a', 'b'])
 	})
 })
+
+// ── Ordering on computed columns (#69, #70) ──────────────────────────────────
+
+describe('gt/lt on formula, lookup and rollup columns', () => {
+	const f = (operator: ActiveFilter['operator'], value: string, columnType = 'formula') =>
+		makeFilter({ columnId: 'calc', columnType, operator, value })
+
+	it('compares numerically when both sides are numbers', () => {
+		expect(matchesFilter(makeRow({ calc: 10 }), f('gt', '5'))).toBe(true)
+		expect(matchesFilter(makeRow({ calc: 3 }), f('gt', '5'))).toBe(false)
+		expect(matchesFilter(makeRow({ calc: 5 }), f('gte', '5'))).toBe(true)
+		expect(matchesFilter(makeRow({ calc: '42' }), f('lt', '100'))).toBe(true)
+		expect(matchesFilter(makeRow({ calc: 100 }), f('lte', '99'))).toBe(false)
+	})
+
+	it('compares as dates when both sides parse as dates', () => {
+		expect(matchesFilter(makeRow({ calc: '2026-05-01' }), f('gt', '2026-01-01'))).toBe(true)
+		expect(matchesFilter(makeRow({ calc: '2025-12-31' }), f('gte', '2026-01-01'))).toBe(false)
+	})
+
+	it('falls back to alphabetical comparison for text', () => {
+		expect(matchesFilter(makeRow({ calc: 'banana' }), f('gt', 'abacate'))).toBe(true)
+		expect(matchesFilter(makeRow({ calc: 'abacate' }), f('lt', 'banana', 'lookup'))).toBe(true)
+	})
+
+	it('offers the full operator set for computed column types', () => {
+		for (const type of ['formula', 'lookup', 'rollup']) {
+			const ops = getOperatorsForType(type)
+			expect(ops).toContain('gt')
+			expect(ops).toContain('lt')
+			expect(ops).toContain('contains')
+		}
+	})
+})

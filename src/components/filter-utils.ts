@@ -19,6 +19,9 @@ export const NUMBER_OPERATORS: FilterOperator[] = ['is', 'is_not', 'gt', 'gte', 
 export const DATE_OPERATORS: FilterOperator[] = ['is', 'is_not', 'gt', 'gte', 'lt', 'lte', 'is_empty', 'is_not_empty']
 export const SELECT_OPERATORS: FilterOperator[] = ['is', 'is_not', 'contains', 'not_contains', 'is_empty', 'is_not_empty']
 export const CHECKBOX_OPERATORS: FilterOperator[] = ['is_checked', 'is_unchecked', 'is_empty', 'is_not_empty']
+// Computed columns (formula/lookup/rollup) can hold numbers, dates or text,
+// so they get the full operator set (#69, #70)
+export const COMPUTED_OPERATORS: FilterOperator[] = ['is', 'is_not', 'gt', 'gte', 'lt', 'lte', 'contains', 'not_contains', 'is_empty', 'is_not_empty']
 
 export function getOperatorsForType(type: string): FilterOperator[] {
 	switch (type) {
@@ -28,6 +31,7 @@ export function getOperatorsForType(type: string): FilterOperator[] {
 		case 'multiselect': return SELECT_OPERATORS
 		case 'status': return SELECT_OPERATORS
 		case 'checkbox': return CHECKBOX_OPERATORS
+		case 'formula': case 'lookup': case 'rollup': return COMPUTED_OPERATORS
 		default: return TEXT_OPERATORS
 	}
 }
@@ -186,6 +190,33 @@ export function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 		case 'not_contains': return !cell.includes(v)
 		case 'starts_with': return cell.startsWith(v)
 		case 'ends_with': return cell.endsWith(v)
+		// Ordering on computed columns (formula/lookup/rollup) — the runtime
+		// value decides the comparison: numeric when both sides are numbers,
+		// date when both parse as dates, alphabetical otherwise (#69, #70)
+		case 'gt': case 'gte': case 'lt': case 'lte': {
+			// Strict full-string parse — parseFloat would read the year off a
+			// date like "2026-05-01" and compare the wrong thing
+			const strictNum = (s: string) => (/^-?\d+(\.\d+)?$/.test(s.trim()) ? parseFloat(s) : NaN)
+			const nc = strictNum(cell)
+			const nv = strictNum(v)
+			if (!isNaN(nc) && !isNaN(nv)) {
+				switch (f.operator) {
+					case 'gt': return nc > nv
+					case 'gte': return nc >= nv
+					case 'lt': return nc < nv
+					default: return nc <= nv
+				}
+			}
+			if (toDayString(cell) && toDayString(v)) {
+				return matchesDateFilter(raw, f.operator, f.value)
+			}
+			switch (f.operator) {
+				case 'gt': return cell > v
+				case 'gte': return cell >= v
+				case 'lt': return cell < v
+				default: return cell <= v
+			}
+		}
 		default: return true
 	}
 }
