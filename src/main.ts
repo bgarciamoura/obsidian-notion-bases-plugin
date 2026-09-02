@@ -3,6 +3,7 @@ import { t } from './i18n'
 import { DATABASE_VIEW_TYPE, DatabaseView } from './database-view'
 import { DatabaseManager } from './database-manager'
 import { DEFAULT_SETTINGS, NotionBasesSettings, NotionBasesSettingTab } from './settings'
+import { SelectOptionSuggest } from './select-option-suggest'
 import { runtimePrefs } from './runtime-prefs'
 import { DatabasePickerModal } from './database-picker-modal'
 import { QuickAddModal } from './quick-add-modal'
@@ -27,6 +28,9 @@ export default class NotionBasesPlugin extends Plugin {
 			DATABASE_VIEW_TYPE,
 			leaf => new DatabaseView(leaf, this)
 		)
+
+		// Autocomplete das options de select ao editar frontmatter em source mode (#71)
+		this.registerEditorSuggest(new SelectOptionSuggest(this.app, this.manager))
 
 		// Ribbon — selecionar banco de dados
 		this.addRibbonIcon('table', 'Notion Bases', () => {
