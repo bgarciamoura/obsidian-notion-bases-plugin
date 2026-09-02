@@ -1,10 +1,11 @@
 import { TFile } from 'obsidian'
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import { DatabaseSettingsModal } from '../database-settings-modal'
 import { DatabaseConfig, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW, EmbedState, ViewConfig } from '../types'
 import { applyFilters } from './filter-utils'
+import { IconCalendar, IconChart, IconSettings } from './icons'
 import { restoreFilterPills } from '../hooks/useDatabaseRows'
 import { evaluateFormulas } from '../formula-engine'
 import { DatabaseTable } from './DatabaseTable'
@@ -27,7 +28,7 @@ interface DatabaseRootProps {
 	onEmbedStateChange?: (state: EmbedState) => Promise<void>
 }
 
-const VIEW_ICONS: Record<string, string> = { table: '⊞', list: '≡', board: '▦', gallery: '⊟', calendar: '📅', timeline: '▬', chart: '📊' }
+const VIEW_ICONS: Record<string, ReactNode> = { table: '⊞', list: '≡', board: '▦', gallery: '⊟', calendar: <IconCalendar />, timeline: '▬', chart: <IconChart /> }
 const VIEW_LABELS = () => ({ table: t('view_table'), list: t('view_list'), board: t('view_board'), gallery: t('view_gallery'), calendar: t('view_calendar'), timeline: t('view_timeline'), chart: t('view_chart') })
 
 export function DatabaseRoot({
@@ -452,7 +453,7 @@ export function DatabaseRoot({
 						}, manager, dbFile, restrictToPaths).open()
 					}}
 				>
-					⚙
+					<IconSettings />
 				</button>
 			</div>
 			{activeView.type === 'table'

@@ -36,6 +36,7 @@ import { useDatabaseRows } from '../hooks/useDatabaseRows'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
 import { ColumnHeader } from './ColumnHeader'
+import { getColumnIcon, IconCopy, IconFile, IconFolder, IconPin, IconTrash, IconZap } from './icons'
 import { CellRenderer, CellContext } from './cells/CellRenderer'
 import { FolderPickerModal } from '../folder-picker-modal'
 import { t } from '../i18n'
@@ -284,20 +285,12 @@ function validateTypeChange(rows: NoteRow[], columnId: string, fromType: ColumnT
 
 // ── Helpers estáticos ────────────────────────────────────────────────────────
 
-function getColumnIconStatic(type: string): string {
-	const icons: Record<string, string> = {
-		title: '📄', text: 'Aa', number: '#', select: '◉',
-		multiselect: '◈', date: '📅', checkbox: '☑', formula: 'ƒ', relation: '🔗', lookup: '↗',
-	}
-	return icons[type] ?? '·'
-}
-
 interface ActiveFilter {
 	id: string
 	columnId: string
 	columnName: string
 	columnType: string
-	icon: string
+	icon: ReactNode
 	operator: FilterOperator
 	value: string
 	conjunction: 'and' | 'or'
@@ -632,7 +625,7 @@ function SortableTh({ id, size, children, stickyLeft, isLastPinned, isPinned, on
 						onClick={e => { e.stopPropagation(); onTogglePin() }}
 						title={isPinned ? t('tooltip_unpin_column') : t('tooltip_pin_column')}
 					>
-						📌
+						<IconPin />
 					</button>
 				)}
 			</div>
@@ -1062,7 +1055,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				const sorted = column.getIsSorted()
 				return (
 					<div className="nb-header-title">
-						<span>📄</span>
+						<span><IconFile /></span>
 						<span>{t('name_column')}</span>
 						<button
 							className={`nb-sort-btn ${sorted ? 'nb-sort-btn--sorted' : ''}`}
@@ -1522,8 +1515,6 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 
 		// ── Filtros ───────────────────────────────────────────────────────────────
 
-	const getColumnIcon = getColumnIconStatic
-
 	const saveActivePillsNow = useCallback(async (filters: { columnId: string }[]) => {
 		const pills = (filters as ActiveFilter[]).map(f => ({ id: f.id, columnId: f.columnId, operator: f.operator, value: f.value, conjunction: f.conjunction }))
 		await saveView({ ...activeView, activePills: pills })
@@ -1541,7 +1532,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 		void saveActivePills(next)
 	}
 
-	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
+	const addFilter = (columnId: string, columnName: string, icon: ReactNode, columnType: string) => {
 		const filterId = crypto.randomUUID()
 		const next: ActiveFilter[] = [...activeFilters, { id: filterId, columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '', conjunction: 'and' as const }]
 		setActiveFilters(next)
@@ -1754,13 +1745,13 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			</BottomSheet>
 			<BottomSheet open={actionsMenuOpen} onClose={() => setActionsMenuOpen(false)} title={t('actions')}>
 				<button className="nb-menu-item" onClick={() => { void handleDeleteSelected() }} disabled={table.getSelectedRowModel().rows.length === 0}>
-					<span className="nb-menu-item-icon">🗑</span><span>{t('delete_selected')}</span>
+					<span className="nb-menu-item-icon"><IconTrash /></span><span>{t('delete_selected')}</span>
 				</button>
 				<button className="nb-menu-item" onClick={handleMoveSelected} disabled={table.getSelectedRowModel().rows.length === 0}>
-					<span className="nb-menu-item-icon">📁</span><span>{t('move_selected')}</span>
+					<span className="nb-menu-item-icon"><IconFolder /></span><span>{t('move_selected')}</span>
 				</button>
 				<button className="nb-menu-item" onClick={() => { void handleDuplicateSelected() }} disabled={table.getSelectedRowModel().rows.length === 0}>
-					<span className="nb-menu-item-icon">📋</span><span>{t('duplicate_selected')}</span>
+					<span className="nb-menu-item-icon"><IconCopy /></span><span>{t('duplicate_selected')}</span>
 				</button>
 				<div className="nb-menu-separator" />
 				<button className="nb-menu-item" onClick={handleExportCsv}>
@@ -1772,8 +1763,8 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				<input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={e => { void handleImportCsv(e) }} />
 			</BottomSheet>
 			<BottomSheet open={filterMenuOpen} onClose={() => setFilterMenuOpen(false)} title={t('filter')}>
-				<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
-					<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
+				<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), <IconFile />, 'title')}>
+					<span className="nb-menu-item-icon"><IconFile /></span><span>{t('name_column')}</span>
 				</button>
 				{config.schema.map(col => (
 					<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIcon(col.type), col.type)}>
@@ -1935,17 +1926,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 											: col.visible}
 										onChange={() => { void toggleFieldVisibility(col.id) }}
 									/>
-									<span className="nb-field-icon">{
-										col.type === 'text' ? 'Aa' :
-										col.type === 'number' ? '#' :
-										col.type === 'select' ? '◉' :
-										col.type === 'multiselect' ? '◈' :
-										col.type === 'date' ? '📅' :
-										col.type === 'checkbox' ? '☑' :
-										col.type === 'lookup' ? '↗' :
-										col.type === 'relation' ? '🔗' :
-									col.type === 'formula' ? 'ƒ' : '·'
-									}</span>
+									<span className="nb-field-icon">{getColumnIcon(col.type)}</span>
 									<span className="nb-field-name">{col.name}</span>
 								</label>
 							))}
@@ -1975,7 +1956,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 								onClick={() => { void handleDeleteSelected() }}
 								disabled={table.getSelectedRowModel().rows.length === 0}
 							>
-								<span className="nb-menu-item-icon">🗑</span>
+								<span className="nb-menu-item-icon"><IconTrash /></span>
 								<span>{t('delete_selected')}</span>
 							</button>
 							<button
@@ -1983,7 +1964,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 								onClick={handleMoveSelected}
 								disabled={table.getSelectedRowModel().rows.length === 0}
 							>
-								<span className="nb-menu-item-icon">📁</span>
+								<span className="nb-menu-item-icon"><IconFolder /></span>
 								<span>{t('move_selected')}</span>
 							</button>
 							<button
@@ -1991,7 +1972,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 								onClick={() => { void handleDuplicateSelected() }}
 								disabled={table.getSelectedRowModel().rows.length === 0}
 							>
-								<span className="nb-menu-item-icon">📋</span>
+								<span className="nb-menu-item-icon"><IconCopy /></span>
 								<span>{t('duplicate_selected')}</span>
 							</button>
 							<div className="nb-menu-separator" />
@@ -2033,10 +2014,10 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 							<div className="nb-fields-dropdown-label">{t('filter_by')}</div>
 							<button
 								className="nb-menu-item"
-								onClick={() => addFilter('_title', 'Nome', '📄', 'title')}
+								onClick={() => addFilter('_title', t('name_column'), <IconFile />, 'title')}
 								
 							>
-								<span className="nb-menu-item-icon">📄</span>
+								<span className="nb-menu-item-icon"><IconFile /></span>
 								<span>{t('name_column')}</span>
 							</button>
 							{config.schema.map(col => (
@@ -2052,7 +2033,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 							))}
 							<div className="nb-menu-separator" />
 							<button className="nb-menu-item" onClick={() => setFilterMenuOpen(false)}>
-								<span className="nb-menu-item-icon">⚡</span>
+								<span className="nb-menu-item-icon"><IconZap /></span>
 								<span>{t('add_filter_advanced')}</span>
 							</button>
 						</div>
@@ -2316,7 +2297,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 																	className={`nb-pin-btn${pinnedColumnId === '_title' ? ' nb-pin-btn--active' : ''}`}
 																	onClick={() => { void handleTogglePin('_title') }}
 																	title={pinnedColumnId === '_title' ? t('tooltip_unpin_column') : t('tooltip_pin_column')}
-																>📌</button>
+																><IconPin /></button>
 															</div>
 															<ResizeHandle onResize={w => { void handleColumnResize('_title', w) }} onAutoFit={() => { void handleColumnAutoFit('_title') }} />
 														</th>
@@ -2442,10 +2423,10 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 			{/* Context menu (long-press mobile / right-click desktop) */}
 			<BottomSheet open={contextMenuFile !== null} onClose={() => setContextMenuFile(null)} title={contextMenuFile?.basename ?? ''}>
 				<button className="nb-menu-item" onClick={() => { if (contextMenuFile) { void app.workspace.getLeaf().openFile(contextMenuFile) } setContextMenuFile(null) }}>
-					<span className="nb-menu-item-icon">📄</span><span>{t('open_note')}</span>
+					<span className="nb-menu-item-icon"><IconFile /></span><span>{t('open_note')}</span>
 				</button>
 				<button className="nb-menu-item" onClick={() => { if (contextMenuFile) { void manager.duplicateNotes([contextMenuFile]) } setContextMenuFile(null) }}>
-					<span className="nb-menu-item-icon">📋</span><span>{t('duplicate_note')}</span>
+					<span className="nb-menu-item-icon"><IconCopy /></span><span>{t('duplicate_note')}</span>
 				</button>
 				{hierarchyCol && contextMenuFile && (hierarchyMap?.get(contextMenuFile.path)?.depth ?? 0) < 3 && (
 					<button className="nb-menu-item" onClick={() => { void handleAddSubRow(contextMenuFile.basename); setContextMenuFile(null) }}>
@@ -2454,7 +2435,7 @@ export function DatabaseTable({ dbFile, manager, externalView, onViewChange }: D
 				)}
 				<div className="nb-menu-separator" />
 				<button className="nb-menu-item nb-menu-item--danger" onClick={() => { if (contextMenuFile) { void manager.deleteNotes([contextMenuFile]) } setContextMenuFile(null) }}>
-					<span className="nb-menu-item-icon">🗑</span><span>{t('delete_note')}</span>
+					<span className="nb-menu-item-icon"><IconTrash /></span><span>{t('delete_note')}</span>
 				</button>
 			</BottomSheet>
 		</div>

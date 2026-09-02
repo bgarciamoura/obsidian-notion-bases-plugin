@@ -4,6 +4,7 @@ import { TFile } from 'obsidian'
 import { ColumnSchema, NumberFormat, SelectOption } from '../../types'
 import { useApp } from '../../context'
 import { t } from '../../i18n'
+import { IconClock, IconFilm, IconMusic, IconPhone } from '../icons'
 
 interface CellProps {
 	col: ColumnSchema
@@ -515,7 +516,7 @@ function PhoneCell({ value, isEditing, onStartEdit, onCommit, onCancel }: {
 			{value ? (
 				<span className="nb-cell-link-wrapper">
 					<span className="nb-cell-link" onClick={openTel}>{applyPhoneMask(value)}</span>
-					<span className="nb-cell-link-icon" onClick={openTel}>📞</span>
+					<span className="nb-cell-link-icon" onClick={openTel}><IconPhone /></span>
 				</span>
 			) : (
 				<span className="nb-cell-empty">—</span>
@@ -1320,7 +1321,7 @@ function DateCell({ value, format, isEditing, onStartEdit, onSave, onClose }: {
 				onClick={e => { e.stopPropagation(); toggleTime() }}
 				title={showTime ? t('calendar_remove_time') : t('calendar_add_time')}
 			>
-				🕐
+				<IconClock />
 			</button>
 		</div>
 	)
@@ -1660,7 +1661,7 @@ function AudioCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 								className={`nb-select-option${value === f.path ? ' nb-select-option--active' : ''}`}
 								onClick={e => { e.stopPropagation(); onCommit(f.path) }}
 							>
-								<span>🎵</span>
+								<span><IconMusic /></span>
 								<span>{f.name}</span>
 							</button>
 						))
@@ -1760,7 +1761,7 @@ function VideoCell({ col, value, isEditing, onStartEdit, onCommit, onCancel }: {
 								className={`nb-select-option${value === f.path ? ' nb-select-option--active' : ''}`}
 								onClick={e => { e.stopPropagation(); onCommit(f.path) }}
 							>
-								<span>🎬</span>
+								<span><IconFilm /></span>
 								<span>{f.name}</span>
 							</button>
 						))

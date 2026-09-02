@@ -36,13 +36,16 @@ export default tseslint.config(
 		rules: {
 			"@typescript-eslint/require-await": "error",
 			"@typescript-eslint/no-unnecessary-type-assertion": "error",
+			// "Bases" — proper noun, part of the plugin name "Notion Bases"
+			"obsidianmd/ui/sentence-case": ["warn", { ignoreWords: ["Bases"] }],
 		},
 	},
 	{
 		files: ["src/i18n/locales/en.ts"],
 		rules: {
 			"obsidianmd/ui/sentence-case-locale-module": ["error", {
-				ignoreWords: ["AND", "OR", "IF"],
+				// "Bases" — proper noun, part of the plugin name "Notion Bases"
+				ignoreWords: ["AND", "OR", "IF", "Bases"],
 				// Counts, filename suffixes and dataview syntax literals are not prose
 				ignoreRegex: ["^\\d", "^\\(copy", "key:: value"],
 			}],

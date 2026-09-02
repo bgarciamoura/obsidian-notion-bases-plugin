@@ -498,7 +498,7 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	formula_err_not_implemented: '函数未实现：$fn()',
 
 	// Plugin
-	plugin_display_name: 'Notion bases',
+	plugin_display_name: 'Notion Bases',
 	no_databases_found: '未找到数据库。使用"创建新数据库"命令来创建一个。',
 
 	// Commands

@@ -5,7 +5,8 @@ import {
 	ColumnSchema, DatabaseConfig, DEFAULT_DATABASE_CONFIG, NoteRow, ViewConfig,
 } from '../types'
 import { evaluateFormulas } from '../formula-engine'
-import { ActiveFilter, getColumnIconStatic } from '../components/filter-utils'
+import { ActiveFilter } from '../components/filter-utils'
+import { getColumnIcon } from '../components/icons'
 import { t } from '../i18n'
 
 const CHUNK_SIZE = 200
@@ -69,7 +70,7 @@ export function restoreFilterPills(
 				columnId: '_title',
 				columnName: t('name_column'),
 				columnType: 'title',
-				icon: '📄',
+				icon: getColumnIcon('title'),
 				operator: p.operator,
 				value: p.value,
 				conjunction: p.conjunction ?? 'and',
@@ -82,7 +83,7 @@ export function restoreFilterPills(
 			columnId: col.id,
 			columnName: col.name,
 			columnType: col.type,
-			icon: getColumnIconStatic(col.type),
+			icon: getColumnIcon(col.type),
 			operator: p.operator,
 			value: p.value,
 			conjunction: p.conjunction ?? 'and',

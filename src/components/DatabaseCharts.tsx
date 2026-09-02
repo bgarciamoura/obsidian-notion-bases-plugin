@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian'
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
@@ -8,8 +8,9 @@ import {
 } from '../types'
 import {
 	ActiveFilter, applyFilters, applySorts,
-	getColumnIconStatic, getDefaultOperator,
+	getDefaultOperator,
 } from './filter-utils'
+import { getColumnIcon, IconFile } from './icons'
 import { FilterPillsRow } from './FilterPillsRow'
 import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
 import { t } from '../i18n'
@@ -579,7 +580,7 @@ export function DatabaseCharts({ dbFile, manager, externalView, onViewChange }: 
 	// Debounced: typing a filter value must not persist per keystroke (#60)
 	const saveActivePills = useDebouncedCallback(saveActivePillsNow, 400)
 
-	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
+	const addFilter = (columnId: string, columnName: string, icon: ReactNode, columnType: string) => {
 		const next: ActiveFilter[] = [...activeFilters, { id: crypto.randomUUID(), columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '', conjunction: 'and' }]
 		setActiveFilters(next); void saveActivePills(next); setFilterMenuOpen(false)
 	}
@@ -716,12 +717,12 @@ export function DatabaseCharts({ dbFile, manager, externalView, onViewChange }: 
 				{configContent}
 			</BottomSheet>
 			<BottomSheet open={filterMenuOpen} onClose={() => setFilterMenuOpen(false)} title={t('filter')}>
-				<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), '📄', 'title')}>
-					<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
+				<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), <IconFile />, 'title')}>
+					<span className="nb-menu-item-icon"><IconFile /></span><span>{t('name_column')}</span>
 				</button>
 				{config.schema.map(col => (
-					<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
-						<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
+					<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIcon(col.type), col.type)}>
+						<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
 						<span>{col.name}</span>
 					</button>
 				))}
@@ -808,12 +809,12 @@ export function DatabaseCharts({ dbFile, manager, externalView, onViewChange }: 
 					{filterMenuOpen && (
 						<div className="nb-fields-dropdown nb-filter-menu-dropdown">
 							<div className="nb-fields-dropdown-label">{t('filter_by')}</div>
-							<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), '📄', 'title')}>
-								<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
+							<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), <IconFile />, 'title')}>
+								<span className="nb-menu-item-icon"><IconFile /></span><span>{t('name_column')}</span>
 							</button>
 							{config.schema.map(col => (
-								<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
-									<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
+								<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIcon(col.type), col.type)}>
+									<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
 									<span>{col.name}</span>
 								</button>
 							))}
