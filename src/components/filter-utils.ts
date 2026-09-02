@@ -8,7 +8,7 @@ export interface ActiveFilter {
 	columnId: string
 	columnName: string
 	columnType: string
-	icon: string
+	icon: React.ReactNode
 	operator: FilterOperator
 	value: string
 	conjunction: 'and' | 'or'
@@ -72,15 +72,6 @@ export function toggleMultiValue(current: string, option: string): string {
 	if (idx >= 0) values.splice(idx, 1)
 	else values.push(option)
 	return values.join(MULTI_VALUE_SEPARATOR)
-}
-
-export function getColumnIconStatic(type: string): string {
-	const icons: Record<string, string> = {
-		title: '📄', text: 'Aa', number: '#', select: '◉',
-		multiselect: '◈', date: '📅', checkbox: '☑', formula: 'ƒ', relation: '🔗', lookup: '↗',
-		image: '🖼', audio: '🎵', video: '🎬',
-	}
-	return icons[type] ?? '·'
 }
 
 /** Local calendar day ("YYYY-MM-DD") of a date value, or null if unparseable. */

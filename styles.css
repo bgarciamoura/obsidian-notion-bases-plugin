@@ -5766,3 +5766,9 @@ body.nb-tl-resizing.nb-tl-resizing.nb-tl-resizing * {
 	white-space: nowrap;
 	vertical-align: baseline;
 }
+
+/* ── Ícones SVG monocromáticos (substituem os antigos emojis) ── */
+.nb-icon {
+	vertical-align: -0.125em;
+	flex-shrink: 0;
+}

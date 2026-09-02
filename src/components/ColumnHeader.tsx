@@ -7,27 +7,7 @@ import { useApp } from '../context'
 import { t } from '../i18n'
 import { DatabaseManager } from '../database-manager'
 import { displayLocale, getMoment } from '../format-cell-value'
-
-const TYPE_ICONS: Record<ColumnType, string> = {
-	title:       '📄',
-	text:        'Aa',
-	number:      '#',
-	select:      '◉',
-	multiselect: '◈',
-	date:        '📅',
-	checkbox:    '☑',
-	url:         '↗',
-	email:       '✉',
-	phone:       '📞',
-	status:      '◎',
-	formula:     'ƒ',
-	relation:    '🔗',
-	lookup:      '↗',
-	rollup:      'Σ',
-	image:       '🖼',
-	audio:       '🎵',
-	video:       '🎬',
-}
+import { getColumnIcon, IconCalendar, IconClock, IconEye, IconFilm, IconImage, IconLink, IconMusic, IconPen, IconPencil, IconTrash } from './icons'
 
 const TYPE_LABELS = (): Record<ColumnType, string> => ({
 	title:       t('type_title'),
@@ -988,7 +968,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const dateFmtPanel = editingDateFmt && dateFmtPanelPos ? createPortal(
 		<div ref={dateFmtPanelRef} className="nb-formula-floating-panel" style={{ top: dateFmtPanelPos.y, left: dateFmtPanelPos.x }}>
 			<div className="nb-formula-titlebar" onMouseDown={handleDateFmtTitleBarMouseDown}>
-				<span className="nb-formula-titlebar-icon">📅</span>
+				<span className="nb-formula-titlebar-icon"><IconCalendar /></span>
 				<span className="nb-formula-titlebar-title">{t('date_format_title')}: {col.name}</span>
 				<button className="nb-formula-close" onClick={handleCloseDateFmt} title={t('tooltip_close')}>×</button>
 			</div>
@@ -1079,7 +1059,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const lookupPanel = editingLookup && lookupPanelPos ? createPortal(
 		<div ref={lookupPanelRef} className="nb-formula-floating-panel" style={{ top: lookupPanelPos.y, left: lookupPanelPos.x }}>
 			<div className="nb-formula-titlebar" onMouseDown={handleLookupTitleBarMouseDown}>
-				<span className="nb-formula-titlebar-icon">{col.type === 'relation' ? '🔗' : '↗'}</span>
+				<span className="nb-formula-titlebar-icon">{col.type === 'relation' ? <IconLink /> : '↗'}</span>
 				<span className="nb-formula-titlebar-title">{col.type === 'relation' ? t('relation_panel_title') : t('lookup_panel_title')}: {col.name}</span>
 				<button className="nb-formula-close" onClick={handleCloseLookup} title={t('tooltip_close')}>×</button>
 			</div>
@@ -1096,7 +1076,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 					<label className="nb-lookup-label">{t('lookup_col_to_display')}</label>
 					<select className="nb-lookup-select" value={lookupRefColId} onChange={e => setLookupRefColId(e.target.value)} disabled={!lookupDbPath}>
 						<option value="">{t('lookup_select_col')}</option>
-						<option value="_title">{'📄 ' + t('lookup_file_name')}</option>
+						<option value="_title">{t('lookup_file_name')}</option>
 						{refDbSchema.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 					</select>
 				</div>
@@ -1106,7 +1086,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						<label className="nb-lookup-label">{t('lookup_join_col')}</label>
 						<select className="nb-lookup-select" value={lookupMatchColId} onChange={e => setLookupMatchColId(e.target.value)}>
 							<option value="">{t('lookup_select_col')}</option>
-							<option value="_title">{'📄 ' + t('lookup_join_col_title')}</option>
+							<option value="_title">{t('lookup_join_col_title')}</option>
 							{schema.filter(c => c.id !== col.id && c.type !== 'formula' && c.type !== 'lookup').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 						</select>
 						<p className="nb-lookup-hint">{t('lookup_hint')}</p>
@@ -1145,7 +1125,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const imageCfgPanel = editingImageConfig && imagePanelPos ? createPortal(
 		<div ref={imgPanelRef} className="nb-formula-floating-panel" style={{ top: imagePanelPos.y, left: imagePanelPos.x, minWidth: 280 }}>
 			<div className="nb-formula-titlebar" onMouseDown={handleImageTitleBarMouseDown}>
-				<span className="nb-formula-titlebar-icon">🖼</span>
+				<span className="nb-formula-titlebar-icon"><IconImage /></span>
 				<span className="nb-formula-titlebar-title">{t('image_panel_title')}: {col.name}</span>
 				<button className="nb-formula-close" onClick={handleCloseImageConfig} title={t('tooltip_close')}>×</button>
 			</div>
@@ -1172,7 +1152,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const audioCfgPanel = editingAudioConfig && audioPanelPos ? createPortal(
 		<div ref={audioPanelRef} className="nb-formula-floating-panel" style={{ top: audioPanelPos.y, left: audioPanelPos.x, minWidth: 280 }}>
 			<div className="nb-formula-titlebar" onMouseDown={handleAudioTitleBarMouseDown}>
-				<span className="nb-formula-titlebar-icon">🎵</span>
+				<span className="nb-formula-titlebar-icon"><IconMusic /></span>
 				<span className="nb-formula-titlebar-title">{t('audio_panel_title')}: {col.name}</span>
 				<button className="nb-formula-close" onClick={handleCloseAudioConfig} title={t('tooltip_close')}>×</button>
 			</div>
@@ -1199,7 +1179,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 	const videoCfgPanel = editingVideoConfig && videoPanelPos ? createPortal(
 		<div ref={videoPanelRef} className="nb-formula-floating-panel" style={{ top: videoPanelPos.y, left: videoPanelPos.x, minWidth: 280 }}>
 			<div className="nb-formula-titlebar" onMouseDown={handleVideoTitleBarMouseDown}>
-				<span className="nb-formula-titlebar-icon">🎬</span>
+				<span className="nb-formula-titlebar-icon"><IconFilm /></span>
 				<span className="nb-formula-titlebar-title">{t('video_panel_title')}: {col.name}</span>
 				<button className="nb-formula-close" onClick={handleCloseVideoConfig} title={t('tooltip_close')}>×</button>
 			</div>
@@ -1245,7 +1225,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 					onClick={() => { setMenuOpen(v => !v); setEditingFormula(false); setEditingLookup(false); setEditingNumberFmt(false); setEditingDateFmt(false); setEditingImageConfig(false) }}
 					title={col.name}
 				>
-					<span className="nb-header-icon">{TYPE_ICONS[col.type]}</span>
+					<span className="nb-header-icon">{getColumnIcon(col.type)}</span>
 					<span className="nb-header-name">{col.name}</span>
 				</button>
 			)}
@@ -1254,7 +1234,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 			{menuOpen && !editingFormula && !editingLookup && !editingRollup && !editingNumberFmt && !editingDateFmt && !editingImageConfig && (
 				<div className="nb-column-menu">
 					<button className="nb-menu-item" onClick={() => { setMenuOpen(false); setRenaming(true) }}>
-						<span className="nb-menu-item-icon">✏️</span>
+						<span className="nb-menu-item-icon"><IconPencil /></span>
 						<span>{t('rename_column')}</span>
 					</button>
 
@@ -1274,7 +1254,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 
 					{col.type === 'relation' && (
 						<button className="nb-menu-item" onClick={() => setEditingLookup(true)}>
-							<span className="nb-menu-item-icon">🔗</span>
+							<span className="nb-menu-item-icon"><IconLink /></span>
 							<span>{t('configure_relation')}</span>
 						</button>
 					)}
@@ -1295,28 +1275,28 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 
 					{col.type === 'date' && (
 						<button className="nb-menu-item" onClick={() => setEditingDateFmt(true)}>
-							<span className="nb-menu-item-icon">📅</span>
+							<span className="nb-menu-item-icon"><IconCalendar /></span>
 							<span>{t('format_date')}</span>
 						</button>
 					)}
 
 					{col.type === 'image' && (
 						<button className="nb-menu-item" onClick={() => setEditingImageConfig(true)}>
-							<span className="nb-menu-item-icon">🖼</span>
+							<span className="nb-menu-item-icon"><IconImage /></span>
 							<span>{t('configure_image_folder')}</span>
 						</button>
 					)}
 
 					{col.type === 'audio' && (
 						<button className="nb-menu-item" onClick={() => setEditingAudioConfig(true)}>
-							<span className="nb-menu-item-icon">🎵</span>
+							<span className="nb-menu-item-icon"><IconMusic /></span>
 							<span>{t('configure_audio_folder')}</span>
 						</button>
 					)}
 
 					{col.type === 'video' && (
 						<button className="nb-menu-item" onClick={() => setEditingVideoConfig(true)}>
-							<span className="nb-menu-item-icon">🎬</span>
+							<span className="nb-menu-item-icon"><IconFilm /></span>
 							<span>{t('configure_video_folder')}</span>
 						</button>
 					)}
@@ -1329,7 +1309,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 							className={`nb-menu-item nb-menu-type-item ${col.type === type && !col.systemField ? 'nb-menu-item--active' : ''}`}
 							onClick={() => { void handleTypeChange(type) }}
 						>
-							<span className="nb-menu-item-icon">{TYPE_ICONS[type]}</span>
+							<span className="nb-menu-item-icon">{getColumnIcon(type)}</span>
 							<span>{TYPE_LABELS()[type]}</span>
 						</button>
 					))}
@@ -1342,7 +1322,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 							className={`nb-menu-item nb-menu-type-item ${col.systemField === sf ? 'nb-menu-item--active' : ''}`}
 							onClick={() => { void handleSystemField(sf) }}
 						>
-							<span className="nb-menu-item-icon">{sf === 'ctime' ? '🕓' : '🖊'}</span>
+							<span className="nb-menu-item-icon">{sf === 'ctime' ? <IconClock /> : <IconPen />}</span>
 							<span>{label}</span>
 						</button>
 					))}
@@ -1368,11 +1348,11 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 
 					<div className="nb-menu-separator" />
 					<button className="nb-menu-item" onClick={() => { void handleHide() }}>
-						<span className="nb-menu-item-icon">👁</span>
+						<span className="nb-menu-item-icon"><IconEye /></span>
 						<span>{t('hide_field')}</span>
 					</button>
 					<button className="nb-menu-item nb-menu-item--danger" onClick={() => { void handleDelete() }}>
-						<span className="nb-menu-item-icon">🗑</span>
+						<span className="nb-menu-item-icon"><IconTrash /></span>
 						<span>{t('delete_field')}</span>
 					</button>
 				</div>

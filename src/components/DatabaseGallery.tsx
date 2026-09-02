@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian'
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
@@ -8,9 +8,10 @@ import {
 } from '../types'
 import {
 	ActiveFilter, applyFilters, applySorts,
-	getColumnIconStatic, getDefaultOperator,
+	getDefaultOperator,
 	getCardConditionalStyle,
 } from './filter-utils'
+import { getColumnIcon, IconFile } from './icons'
 import { FilterPillsRow } from './FilterPillsRow'
 import { useDebouncedCallback } from '../hooks/useDebouncedCallback'
 import { t } from '../i18n'
@@ -151,7 +152,7 @@ const GalleryCard = React.memo(function GalleryCard({
 				</div>
 			) : (
 				<div className="nb-gallery-cover nb-gallery-cover--empty">
-					<span className="nb-gallery-cover-icon">📄</span>
+					<span className="nb-gallery-cover-icon"><IconFile /></span>
 				</div>
 			)}
 			<div className="nb-gallery-body">
@@ -292,7 +293,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 	// Debounced: typing a filter value must not persist per keystroke (#60)
 	const saveActivePills = useDebouncedCallback(saveActivePillsNow, 400)
 
-	const addFilter = (columnId: string, columnName: string, icon: string, columnType: string) => {
+	const addFilter = (columnId: string, columnName: string, icon: ReactNode, columnType: string) => {
 		const next: ActiveFilter[] = [...activeFilters, { id: crypto.randomUUID(), columnId, columnName, columnType, icon, operator: getDefaultOperator(columnType), value: '', conjunction: 'and' }]
 		setActiveFilters(next); void saveActivePills(next); setFilterMenuOpen(false)
 	}
@@ -350,7 +351,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 				{config.schema.map(col => (
 					<label key={col.id} className="nb-field-row">
 						<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
-						<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
+						<span className="nb-field-icon">{getColumnIcon(col.type)}</span>
 						<span className="nb-field-name">{col.name}</span>
 					</label>
 				))}
@@ -369,18 +370,18 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 						className={`nb-menu-item${activeView.galleryCoverField === col.id ? ' nb-menu-item--active' : ''}`}
 						onClick={() => { void saveView({ ...activeView, galleryCoverField: col.id }); setCoverMenuOpen(false) }}
 					>
-						<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
+						<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
 						<span>{col.name}</span>
 					</button>
 				))}
 			</BottomSheet>
 			<BottomSheet open={filterMenuOpen} onClose={() => setFilterMenuOpen(false)} title={t('filter')}>
-				<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
-					<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
+				<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), <IconFile />, 'title')}>
+					<span className="nb-menu-item-icon"><IconFile /></span><span>{t('name_column')}</span>
 				</button>
 				{config.schema.map(col => (
-					<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
-						<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
+					<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIcon(col.type), col.type)}>
+						<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
 						<span>{col.name}</span>
 					</button>
 				))}
@@ -446,7 +447,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 							{config.schema.map(col => (
 								<label key={col.id} className="nb-field-row">
 									<input type="checkbox" className="nb-field-checkbox" checked={col.visible && !activeView.hiddenColumns.includes(col.id)} onChange={() => { void toggleFieldVisibility(col.id) }} />
-									<span className="nb-field-icon">{getColumnIconStatic(col.type)}</span>
+									<span className="nb-field-icon">{getColumnIcon(col.type)}</span>
 									<span className="nb-field-name">{col.name}</span>
 								</label>
 							))}
@@ -475,7 +476,7 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 									className={`nb-menu-item${activeView.galleryCoverField === col.id ? ' nb-menu-item--active' : ''}`}
 									onClick={() => { void saveView({ ...activeView, galleryCoverField: col.id }); setCoverMenuOpen(false) }}
 								>
-									<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
+									<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
 									<span>{col.name}</span>
 								</button>
 							))}
@@ -532,12 +533,12 @@ export function DatabaseGallery({ dbFile, manager, externalView, onViewChange }:
 					{filterMenuOpen && (
 						<div className="nb-fields-dropdown nb-filter-menu-dropdown">
 							<div className="nb-fields-dropdown-label">{t('filter_by')}</div>
-							<button className="nb-menu-item" onClick={() => addFilter('_title', 'Nome', '📄', 'title')}>
-								<span className="nb-menu-item-icon">📄</span><span>{t('name_column')}</span>
+							<button className="nb-menu-item" onClick={() => addFilter('_title', t('name_column'), <IconFile />, 'title')}>
+								<span className="nb-menu-item-icon"><IconFile /></span><span>{t('name_column')}</span>
 							</button>
 							{config.schema.map(col => (
-								<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIconStatic(col.type), col.type)}>
-									<span className="nb-menu-item-icon">{getColumnIconStatic(col.type)}</span>
+								<button key={col.id} className="nb-menu-item" onClick={() => addFilter(col.id, col.name, getColumnIcon(col.type), col.type)}>
+									<span className="nb-menu-item-icon">{getColumnIcon(col.type)}</span>
 									<span>{col.name}</span>
 								</button>
 							))}
