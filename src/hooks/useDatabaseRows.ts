@@ -5,7 +5,7 @@ import {
 	ColumnSchema, DatabaseConfig, DEFAULT_DATABASE_CONFIG, NoteRow, ViewConfig,
 } from '../types'
 import { evaluateFormulas } from '../formula-engine'
-import { ActiveFilter } from '../components/filter-utils'
+import { ActiveFilter, filterConfigsToPills } from '../components/filter-utils'
 import { getColumnIcon } from '../components/icons'
 import { t } from '../i18n'
 
@@ -140,7 +140,9 @@ export function useDatabaseRows(options: UseDatabaseRowsOptions): UseDatabaseRow
 		if (!filtersInitialized.current) {
 			filtersInitialized.current = true
 			const pills = externalViewRef.current.activePills ?? []
-			setActiveFilters(restoreFilterPills(pills, cfg.schema))
+			// Hand-written `filters:` seed the pills when the view has none (#64)
+			const seeded = pills.length > 0 ? pills : filterConfigsToPills(externalViewRef.current.filters)
+			setActiveFilters(restoreFilterPills(seeded, cfg.schema))
 		}
 
 		setConfig({ schema: cfg.schema, views: cfg.views })

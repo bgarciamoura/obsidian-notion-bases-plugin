@@ -4,7 +4,7 @@ import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
 import { DatabaseSettingsModal } from '../database-settings-modal'
 import { DatabaseConfig, DEFAULT_DATABASE_CONFIG, DEFAULT_VIEW, EmbedState, ViewConfig } from '../types'
-import { applyFilters } from './filter-utils'
+import { applyFilters, filterConfigsToPills } from './filter-utils'
 import { IconCalendar, IconChart, IconSettings } from './icons'
 import { restoreFilterPills } from '../hooks/useDatabaseRows'
 import { evaluateFormulas } from '../formula-engine'
@@ -431,8 +431,9 @@ export function DatabaseRoot({
 						if (!dbFile) return
 						const restrictToPaths = (() => {
 							const pills = activeView.activePills ?? []
-							if (pills.length === 0) return undefined
-							const filters = restoreFilterPills(pills, config.schema)
+							const seeded = pills.length > 0 ? pills : filterConfigsToPills(activeView.filters)
+							if (seeded.length === 0) return undefined
+							const filters = restoreFilterPills(seeded, config.schema)
 							if (filters.length === 0) return undefined
 							const notes = manager.getNotesInDatabase(dbFile, activeView.includeSubfolders)
 							const rawRows = notes.map(f => manager.getNoteDataSync(f, config.schema))
