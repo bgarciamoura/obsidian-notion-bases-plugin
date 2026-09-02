@@ -36,6 +36,7 @@ const zh: Partial<Record<keyof typeof en, string>> = {
 	sort_by: '排序条件',
 	group_by_label: '分组条件',
 	date_field_label: '日期字段',
+	end_date_field_label: '结束日期字段',
 	cover_field_label: '封面字段',
 	card_size_label: '卡片大小',
 	row_height_label: '行高',

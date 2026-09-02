@@ -36,6 +36,7 @@ const de: Partial<Record<keyof typeof en, string>> = {
 	sort_by: 'Sortieren nach',
 	group_by_label: 'Gruppieren nach',
 	date_field_label: 'Datumsfeld',
+	end_date_field_label: 'Enddatumsfeld',
 	cover_field_label: 'Titelbildfeld',
 	card_size_label: 'Kartengröße',
 	row_height_label: 'Zeilenhöhe',

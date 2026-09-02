@@ -36,6 +36,7 @@ const ptBR: Partial<Record<keyof typeof en, string>> = {
 	sort_by: 'Ordenar por',
 	group_by_label: 'Agrupar por',
 	date_field_label: 'Campo de data',
+	end_date_field_label: 'Campo de data final',
 	cover_field_label: 'Campo de capa',
 	card_size_label: 'Tamanho dos cards',
 	row_height_label: 'Altura das linhas',
