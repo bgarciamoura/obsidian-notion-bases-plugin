@@ -294,14 +294,29 @@ export function applyFilters(rows: NoteRow[], filters: ActiveFilter[]): NoteRow[
  * Title shown on a card (#41): the view's cardTitleField value when set and
  * non-empty, else the filename. Recurring events can share a display name
  * while each row keeps a unique file underneath.
+ *
+ * List fields (multiselect, links) are joined item by item. Stringifying the
+ * array whole turned an empty list into the literal "[]", which read as a
+ * non-empty title and blocked the filename fallback.
  */
 export function getCardTitle(row: NoteRow, cardTitleField: string | undefined): string {
 	if (cardTitleField) {
 		const v = row[cardTitleField]
-		const s = v === null || v === undefined ? '' : stringifyScalar(v).trim()
+		const items = Array.isArray(v) ? v : [v]
+		const s = items
+			.map(item => (item === null || item === undefined ? '' : linkDisplayText(stringifyScalar(item).trim())))
+			.filter(text => text !== '')
+			.join(', ')
 		if (s) return s
 	}
 	return row._title
+}
+
+/** `[[path|Alias]]` → "Alias", `[[folder/Note]]` → "Note"; anything else unchanged. */
+function linkDisplayText(text: string): string {
+	const link = /^\[\[([^\]|]+)(?:\|([^\]]+))?\]\]$/.exec(text)
+	if (!link) return text
+	return (link[2] ?? link[1].split('/').pop() ?? link[1]).trim()
 }
 
 /**

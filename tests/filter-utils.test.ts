@@ -486,6 +486,19 @@ describe('getCardTitle', () => {
 		expect(getCardTitle(makeRow({ _title: 'Weekly Meeting 3' }), undefined)).toBe('Weekly Meeting 3')
 	})
 
+	it('falls back to the filename when a list field is empty, not "[]"', () => {
+		expect(getCardTitle(makeRow({ _title: 'ACI', notes: [] }), 'notes')).toBe('ACI')
+		expect(getCardTitle(makeRow({ _title: 'BMC', notes: ['', null] }), 'notes')).toBe('BMC')
+	})
+
+	it('joins the items of a list field', () => {
+		expect(getCardTitle(makeRow({ _title: 'x', plan: ['Pro', 'Elevate'] }), 'plan')).toBe('Pro, Elevate')
+	})
+
+	it('shows links by their alias or note name', () => {
+		const row = makeRow({ _title: 'x', notes: ['[[Notion/Granola/ATT Sync|ATT Sync]]', '[[folder/Kickoff]]'] })
+		expect(getCardTitle(row, 'notes')).toBe('ATT Sync, Kickoff')
+	})
 
 	it('returns the display field value when set and non-empty', () => {
 		const row = makeRow({ _title: 'Weekly Meeting 3', event: 'Weekly Meeting' })
