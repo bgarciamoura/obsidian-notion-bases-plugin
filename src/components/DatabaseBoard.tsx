@@ -10,6 +10,7 @@ import {
 	getDefaultOperator,
 	getCardConditionalStyle,
 	getCardTitle,
+	restrictGroupValues,
 } from './filter-utils'
 import { getColumnIcon, IconFile, IconCopy, IconTrash } from './icons'
 import { FilterPillsRow } from './FilterPillsRow'
@@ -284,10 +285,20 @@ export function DatabaseBoard({ dbFile, manager, externalView, onViewChange }: D
 			const rest = all.filter(x => !order.includes(x.value))
 			ordered = [...inOrder, ...rest]
 		}
-		let result = hideEmpty ? ordered.filter(c => c.rows.length > 0) : ordered
+		// A filter on the group-by column decides which columns exist at all, not
+		// just which cards they hold — filtering AE to three people shows three
+		// columns. An `is` filter can never match an empty value, so it also
+		// drops the no-value column.
+		const { include, exclude } = restrictGroupValues(debouncedFilters, groupByCol.id)
+		let result = ordered.filter(c => {
+			const v = c.value.toLowerCase()
+			if (include && (c.value === '' || !include.has(v))) return false
+			return !exclude.has(v)
+		})
+		if (hideEmpty) result = result.filter(c => c.rows.length > 0)
 		if (hideNoValue) result = result.filter(c => c.value !== '')
 		return result
-	}, [groupByCol, sortedRows, hideEmpty, hideNoValue, activeView.boardColumnOrder])
+	}, [groupByCol, sortedRows, debouncedFilters, hideEmpty, hideNoValue, activeView.boardColumnOrder])
 
 	// ── Actions ───────────────────────────────────────────────────────────────
 

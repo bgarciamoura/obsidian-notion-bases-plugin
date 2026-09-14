@@ -221,6 +221,60 @@ export function matchesFilter(row: NoteRow, f: ActiveFilter): boolean {
 	}
 }
 
+/**
+ * Which board columns the active filters leave reachable for a group-by
+ * column. Filtering only removes cards, so without this every option still
+ * gets an (empty) column. Returns lowercased values to keep (`include`, from
+ * `is`) and to drop (`exclude`, from `is_not`); null means unrestricted.
+ *
+ * Mirrors applyFilters' grouping: OR splits groups, a row passes if any group
+ * passes. Values are only restricted when every group pins the column with
+ * `is`, since an unrestricted group can surface any value. `is_not` is only
+ * honoured with a single group for the same reason.
+ */
+export function restrictGroupValues(
+	filters: ActiveFilter[],
+	columnId: string,
+): { include: Set<string> | null; exclude: Set<string> } {
+	const exclude = new Set<string>()
+	if (filters.length === 0) return { include: null, exclude }
+
+	const groups: ActiveFilter[][] = []
+	let current: ActiveFilter[] = []
+	for (const f of filters) {
+		if (f.conjunction === 'or' && current.length > 0) {
+			groups.push(current)
+			current = []
+		}
+		current.push(f)
+	}
+	if (current.length > 0) groups.push(current)
+
+	const pinned = (f: ActiveFilter, operator: FilterOperator) =>
+		f.columnId === columnId && isMultiValueFilter(f) && f.operator === operator && parseMultiValue(f.value).length > 0
+
+	let include: Set<string> | null = new Set<string>()
+	for (const group of groups) {
+		const isFilters = group.filter(f => pinned(f, 'is'))
+		if (isFilters.length === 0) { include = null; break }
+		// Within an AND group each `is` narrows further, so intersect them
+		let groupValues: Set<string> | null = null
+		for (const f of isFilters) {
+			const values = new Set(parseMultiValue(f.value).map(v => v.toLowerCase()))
+			groupValues = groupValues === null ? values : new Set([...groupValues].filter(v => values.has(v)))
+		}
+		for (const v of groupValues ?? []) include.add(v)
+	}
+
+	if (groups.length === 1) {
+		for (const f of groups[0].filter(f => pinned(f, 'is_not'))) {
+			for (const v of parseMultiValue(f.value)) exclude.add(v.toLowerCase())
+		}
+	}
+
+	return { include, exclude }
+}
+
 export function applyFilters(rows: NoteRow[], filters: ActiveFilter[]): NoteRow[] {
 	if (filters.length === 0) return rows
 	const groups: ActiveFilter[][] = []

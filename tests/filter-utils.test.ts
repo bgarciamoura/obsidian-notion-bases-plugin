@@ -11,6 +11,7 @@ import {
 	computeSummaryStat,
 	getCardTitle,
 	isMultiValueFilter,
+	restrictGroupValues,
 	ActiveFilter,
 	MULTI_VALUE_SEPARATOR,
 } from '../src/components/filter-utils'
@@ -485,6 +486,7 @@ describe('getCardTitle', () => {
 		expect(getCardTitle(makeRow({ _title: 'Weekly Meeting 3' }), undefined)).toBe('Weekly Meeting 3')
 	})
 
+
 	it('returns the display field value when set and non-empty', () => {
 		const row = makeRow({ _title: 'Weekly Meeting 3', event: 'Weekly Meeting' })
 		expect(getCardTitle(row, 'event')).toBe('Weekly Meeting')
@@ -494,5 +496,58 @@ describe('getCardTitle', () => {
 		expect(getCardTitle(makeRow({ _title: 'Note A', event: '' }), 'event')).toBe('Note A')
 		expect(getCardTitle(makeRow({ _title: 'Note B', event: null }), 'event')).toBe('Note B')
 		expect(getCardTitle(makeRow({ _title: 'Note C' }), 'missing')).toBe('Note C')
+	})
+})
+
+// ── restrictGroupValues ──────────────────────────────────────────────────────
+
+describe('restrictGroupValues', () => {
+	const ae = (operator: ActiveFilter['operator'], values: string[], overrides: Partial<ActiveFilter> = {}) =>
+		makeFilter({ columnId: 'AE', columnType: 'select', operator, value: values.join(MULTI_VALUE_SEPARATOR), ...overrides })
+
+	it('is unrestricted with no filters', () => {
+		const { include, exclude } = restrictGroupValues([], 'AE')
+		expect(include).toBeNull()
+		expect(exclude.size).toBe(0)
+	})
+
+	it('keeps only the values picked with is, case-insensitively', () => {
+		const { include } = restrictGroupValues([ae('is', ['Meghan', 'Kevin Crean', 'Margo McGee'])], 'AE')
+		expect([...include!].sort()).toEqual(['kevin crean', 'margo mcgee', 'meghan'])
+	})
+
+	it('ignores filters on other columns', () => {
+		const other = makeFilter({ columnId: 'Plan', columnType: 'select', operator: 'is', value: 'Pro' })
+		expect(restrictGroupValues([other], 'AE').include).toBeNull()
+	})
+
+	it('ignores an is filter with nothing selected', () => {
+		expect(restrictGroupValues([ae('is', [])], 'AE').include).toBeNull()
+	})
+
+	it('intersects two is filters in the same AND group', () => {
+		const { include } = restrictGroupValues([ae('is', ['Meghan', 'Jack']), ae('is', ['Jack', 'Sydney'], { id: '2' })], 'AE')
+		expect([...include!]).toEqual(['jack'])
+	})
+
+	it('unions values across OR groups', () => {
+		const { include } = restrictGroupValues([ae('is', ['Meghan']), ae('is', ['Jack'], { id: '2', conjunction: 'or' })], 'AE')
+		expect([...include!].sort()).toEqual(['jack', 'meghan'])
+	})
+
+	it('is unrestricted when an OR group does not pin the column', () => {
+		const other = makeFilter({ id: '2', columnId: 'Plan', columnType: 'select', operator: 'is', value: 'Pro', conjunction: 'or' })
+		expect(restrictGroupValues([ae('is', ['Meghan']), other], 'AE').include).toBeNull()
+	})
+
+	it('collects is_not values to drop', () => {
+		const { include, exclude } = restrictGroupValues([ae('is_not', ['Jack'])], 'AE')
+		expect(include).toBeNull()
+		expect([...exclude]).toEqual(['jack'])
+	})
+
+	it('does not drop is_not values across OR groups', () => {
+		const other = makeFilter({ id: '2', columnId: 'Plan', columnType: 'select', operator: 'is', value: 'Pro', conjunction: 'or' })
+		expect(restrictGroupValues([ae('is_not', ['Jack']), other], 'AE').exclude.size).toBe(0)
 	})
 })
