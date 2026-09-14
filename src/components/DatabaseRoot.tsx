@@ -1,4 +1,4 @@
-import { TFile } from 'obsidian'
+import { Notice, TFile } from 'obsidian'
 import { Fragment, ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { useApp } from '../context'
 import { DatabaseManager } from '../database-manager'
@@ -46,6 +46,11 @@ export function DatabaseRoot({
 		pendingSelfWrites.current++
 		try {
 			await manager.writeConfig(dbFile, cfg)
+		} catch (e) {
+			// Callers fire-and-forget this write, so a failure would otherwise
+			// vanish and the view would silently revert on the next session.
+			console.error('[Notion Bases] Failed to save database config', e)
+			new Notice(`${t('save_error')}: ${e instanceof Error ? e.message : String(e)}`)
 		} finally {
 			window.setTimeout(() => { pendingSelfWrites.current = Math.max(0, pendingSelfWrites.current - 1) }, 150)
 		}
