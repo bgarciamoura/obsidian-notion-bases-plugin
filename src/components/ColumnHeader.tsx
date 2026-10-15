@@ -1266,7 +1266,7 @@ export function ColumnHeader({ col, schema, onUpdateSchema, onRenameColumn, onCh
 						</button>
 					)}
 
-					{col.type === 'number' && (
+					{(col.type === 'number' || col.type === 'formula' || col.type === 'rollup' || col.type === 'lookup') && (
 						<button className="nb-menu-item" onClick={() => setEditingNumberFmt(true)}>
 							<span className="nb-menu-item-icon">#</span>
 							<span>{t('format_number')}</span>

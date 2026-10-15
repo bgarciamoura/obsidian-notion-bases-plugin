@@ -19,7 +19,7 @@ interface CellProps {
 // Usamos um contexto React separado para isso
 import { createContext, useContext } from 'react'
 import { stringifyScalar, isHttpUrl } from '../../value-utils'
-import { displayLocale, formatDateText } from '../../format-cell-value'
+import { displayLocale, formatCellValueText, formatDateText } from '../../format-cell-value'
 
 interface CellContextType {
 	editingCell: { rowIndex: number; columnId: string } | null
@@ -1345,10 +1345,15 @@ function CheckboxCell({ value, onCommit }: {
 	)
 }
 
+function computedDisplay(value: unknown, col: ColumnSchema): string {
+	if (typeof value === 'number' && col.numberFormat) return formatCellValueText(value, col)
+	return stringifyScalar(value)
+}
+
 // ── FormulaCell ──────────────────────────────────────────────────────────────
 
 function FormulaCell({ value, col }: { value: unknown; col: ColumnSchema }) {
-	const display = value === null || value === undefined ? '—' : stringifyScalar(value)
+	const display = value === null || value === undefined ? '—' : computedDisplay(value, col)
 	return (
 		<div className="nb-cell-formula" title={t('formula_panel_title') + ': ' + (col.formula ?? '')}>
 			{display}
@@ -1359,7 +1364,7 @@ function FormulaCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 // ── LookupCell ───────────────────────────────────────────────────────────────
 
 function LookupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
-	const display = value === null || value === undefined ? '—' : stringifyScalar(value)
+	const display = value === null || value === undefined ? '—' : computedDisplay(value, col)
 	return (
 		<div className="nb-cell-formula nb-cell-lookup" title={t('lookup_panel_title') + ' de ' + (col.refDatabasePath ?? '')}>
 			{display}
@@ -1368,7 +1373,7 @@ function LookupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
 }
 
 function RollupCell({ value, col }: { value: unknown; col: ColumnSchema }) {
-	const display = value === null || value === undefined ? '—' : stringifyScalar(value)
+	const display = value === null || value === undefined ? '—' : computedDisplay(value, col)
 	return (
 		<div className="nb-cell-formula nb-cell-rollup" title={t('rollup_panel_title') + ': ' + (col.rollupFunction ?? '')}>
 			{display}
