@@ -25,6 +25,23 @@ describe('formatCellValueText', () => {
 		expect(formatCellValueText(1234.5, c)).toContain('1,234.50')
 	})
 
+	it('applies numberFormat to numeric formula, rollup and lookup values', () => {
+		const numberFormat = { decimals: 1, thousandsSeparator: true }
+		for (const type of ['formula', 'rollup', 'lookup'] as const) {
+			expect(formatCellValueText(1234567.5, col(type, { numberFormat }))).toBe('1,234,567.5')
+		}
+	})
+
+	it('leaves non-numeric computed values untouched when numberFormat is set', () => {
+		const c = col('formula', { numberFormat: { decimals: 2, thousandsSeparator: true } })
+		expect(formatCellValueText('abc', c)).toBe('abc')
+		expect(formatCellValueText(['a', 'b'], c)).toBe('a, b')
+	})
+
+	it('returns raw number for computed columns without numberFormat', () => {
+		expect(formatCellValueText(1234567.5, col('formula'))).toBe('1234567.5')
+	})
+
 	it('returns raw number when no format is set', () => {
 		expect(formatCellValueText(42, col('number'))).toBe('42')
 	})

@@ -82,6 +82,11 @@ export function formatCellValueText(value: unknown, col: ColumnSchema | undefine
 		return toStr(value)
 	}
 
+	if (col.numberFormat && typeof value === 'number' && Number.isFinite(value)
+		&& (col.type === 'formula' || col.type === 'rollup' || col.type === 'lookup')) {
+		return formatNumber(value, col.numberFormat)
+	}
+
 	switch (col.type) {
 		case 'number': {
 			const n = typeof value === 'number' ? value : Number(toStr(value))
